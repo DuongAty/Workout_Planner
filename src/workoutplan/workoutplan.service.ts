@@ -6,6 +6,7 @@ import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { PaginationDto } from 'src/untils/pagination.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from 'src/exercise/exercise.entity';
+import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class WorkoutplanService {
@@ -17,10 +18,14 @@ export class WorkoutplanService {
     private exerciseService: Repository<Exercise>,
   ) {}
 
-  async createWorkout(createWorkoutDto: CreateWorkoutDto): Promise<Workout> {
+  async createWorkout(
+    createWorkoutDto: CreateWorkoutDto,
+    user: User,
+  ): Promise<Workout> {
     const { name } = createWorkoutDto;
     const workout = this.workoutPlanService.create({
       name,
+      user,
     });
     return await this.workoutPlanService.save(workout);
   }
@@ -28,11 +33,13 @@ export class WorkoutplanService {
   async getAllWorkout(
     getWorkoutFilter: GetWorkoutFilter,
     paginationDto: PaginationDto,
+    user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
     const { search } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
+    query.where({ user });
     if (search) {
       query.andWhere('(LOWER(workout.name) LIKE LOWER(:search))', {
         search: `%${search}%`,
@@ -44,9 +51,9 @@ export class WorkoutplanService {
     return { data, total, totalPages };
   }
 
-  async findOne(id: string): Promise<Workout> {
+  async findOne(id: string, user: User): Promise<Workout> {
     const workout = await this.workoutPlanService.findOne({
-      where: { id },
+      where: { id, user },
     });
     if (!workout) {
       throw new NotFoundException(`Workout with ID "${id}" not found`);
@@ -54,15 +61,21 @@ export class WorkoutplanService {
     return workout;
   }
 
-  async deleteWorkoutById(id: string): Promise<void> {
-    const result = await this.workoutPlanService.delete({ id });
+  async deleteWorkoutById(id: string, user: User): Promise<void> {
+    const result = await this.workoutPlanService.delete({ id, user });
     if (result.affected === 0) {
       throw new NotFoundException(`Workout with id: ${id} not found`);
     }
   }
 
-  async updateNameWorkout(id: string, name: string): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({ where: { id } });
+  async updateNameWorkout(
+    id: string,
+    name: string,
+    user: User,
+  ): Promise<Workout> {
+    const workout = await this.workoutPlanService.findOne({
+      where: { id, user },
+    });
     if (!workout) {
       throw new NotFoundException(`Workout with id: ${id} not found`);
     }
@@ -71,9 +84,9 @@ export class WorkoutplanService {
     return workout;
   }
 
-  async cloneWorkout(id: string): Promise<Workout> {
+  async cloneWorkout(id: string, user: User): Promise<Workout> {
     const original = await this.workoutPlanService.findOne({
-      where: { id },
+      where: { id, user },
       relations: ['exercises'],
     });
     if (!original) {
@@ -81,6 +94,7 @@ export class WorkoutplanService {
     }
     const newWorkout = this.workoutPlanService.create({
       name: original.name + ' (Clone)',
+      user,
     });
     await this.workoutPlanService.save(newWorkout);
     const newExercises = original.exercises.map((ex) =>
@@ -92,10 +106,26 @@ export class WorkoutplanService {
         restTime: ex.restTime,
         note: ex.note,
         workoutId: newWorkout.id,
+        user,
       }),
     );
     await this.exerciseService.save(newExercises);
     newWorkout.exercises = newExercises;
     return newWorkout;
+  }
+
+  async getExercisesByWorkoutId(id: string, user: User): Promise<Workout> {
+    const workout = await this.workoutPlanService.findOne({
+      where: {
+        id,
+        user,
+      },
+      relations: ['exercises'],
+    });
+
+    if (!workout) {
+      throw new NotFoundException(`Workout với ID ${id} không tìm thấy.`);
+    }
+    return workout;
   }
 }
