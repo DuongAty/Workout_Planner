@@ -8,7 +8,7 @@ const mockUser = { id: 'id', username: 'duong', password: '123' };
 const mockWorkoutService = {
   createWorkout: jest.fn(),
   getAllWorkout: jest.fn().mockResolvedValue('value'),
-  findOne: jest.fn().mockResolvedValue(''),
+  findOneWorkout: jest.fn().mockResolvedValue(''),
   deleteWorkoutById: jest.fn(),
   updateNameWorkout: jest.fn(),
   cloneWorkout: jest.fn(),
@@ -91,13 +91,13 @@ describe('Workoutplancontroller', () => {
   describe('findOneWorkout', () => {
     const workoutId = mockWorkout.id;
     it('It should return the result that the service returned.', async () => {
-      service.findOne.mockResolvedValue(mockWorkout);
+      service.findOneWorkout.mockResolvedValue(mockWorkout);
       const result = await controller.getWorkoutbyId(workoutId, mockUser);
-      expect(service.findOne).toHaveBeenCalledWith(workoutId, mockUser);
+      expect(service.findOneWorkout).toHaveBeenCalledWith(workoutId, mockUser);
       expect(result).toEqual(mockWorkout);
     });
     it('throws NotFoundException when workout not found', async () => {
-      service.findOne.mockRejectedValue(
+      service.findOneWorkout.mockRejectedValue(
         new NotFoundException(`Workout with ID ${workoutId} not found`),
       );
       await expect(

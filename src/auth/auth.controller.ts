@@ -1,6 +1,7 @@
 import { Body, Controller, Logger, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
+import { AccessTokenPayload } from './type/accessToken.type';
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   private logger = new Logger('AuthController');
@@ -14,7 +15,7 @@ export class AuthController {
   @Post('/login')
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<AccessTokenPayload> {
     return this.authService.signIn(authCredentialsDto);
   }
 }
