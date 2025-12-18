@@ -18,13 +18,11 @@ export class ExerciseService {
   ) {}
 
   async findOneWorkout(id: string, user: User): Promise<Workout> {
-    const workout = await this.workoutRepository.findOne({
-      where: { id, user },
-    });
-    if (!workout) {
-      throw new NotFoundException(`Workout with ID "${id}" not found`);
+    try {
+      return await this.workoutRepository.findOneByOrFail({ id, user });
+    } catch (error) {
+      throw new NotFoundException(`Exercise with ID "${id}" not found`);
     }
-    return workout;
   }
 
   async createExercise(
@@ -67,13 +65,11 @@ export class ExerciseService {
   }
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {
-    const exercies = await this.exerciseService.findOne({
-      where: { id, user },
-    });
-    if (!exercies) {
+    try {
+      return await this.exerciseService.findOneByOrFail({ id, user });
+    } catch (error) {
       throw new NotFoundException(`Exercise with ID "${id}" not found`);
     }
-    return exercies;
   }
 
   async deleteExerciseById(id: string, user: User): Promise<void> {

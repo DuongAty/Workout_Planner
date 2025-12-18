@@ -41,7 +41,7 @@ export class WorkoutplanService {
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
     if (search) {
-      query.andWhere('(LOWER(workout.name) LIKE LOWER(:search))', {
+      query.andWhere('workout.name ILIKE :search', {
         search: `%${search}%`,
       });
     }
@@ -51,14 +51,19 @@ export class WorkoutplanService {
     return { data, total, totalPages };
   }
 
-  async findOneWorkout(id: string, user: User): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({
-      where: { id, user },
-    });
-    if (!workout) {
+  async findOneWorkout(
+    id: string,
+    user: User,
+    relations: string[] = [],
+  ): Promise<Workout> {
+    try {
+      return await this.workoutPlanService.findOneOrFail({
+        where: { id, user },
+        relations,
+      });
+    } catch (error) {
       throw new NotFoundException(`Workout with ID "${id}" not found`);
     }
-    return workout;
   }
 
   async deleteWorkoutById(id: string, user: User): Promise<void> {
@@ -80,13 +85,7 @@ export class WorkoutplanService {
   }
 
   async cloneWorkout(id: string, user: User): Promise<Workout> {
-    const original = await this.workoutPlanService.findOne({
-      where: { id, user },
-      relations: ['exercises'],
-    });
-    if (!original) {
-      throw new NotFoundException(`Workout ID: ${id} không tồn tại`);
-    }
+    const original = await this.findOneWorkout(id, user, ['exercises']);
     const newWorkout = this.workoutPlanService.create({
       name: original.name + ' (Clone)',
       user,
@@ -110,17 +109,6 @@ export class WorkoutplanService {
   }
 
   async getExercisesByWorkoutId(id: string, user: User): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({
-      where: {
-        id,
-        user,
-      },
-      relations: ['exercises'],
-    });
-
-    if (!workout) {
-      throw new NotFoundException(`Workout với ID ${id} không tìm thấy.`);
-    }
-    return workout;
+    return await this.findOneWorkout(id, user, ['exercises']);
   }
 }

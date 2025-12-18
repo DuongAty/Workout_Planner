@@ -22,6 +22,7 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { AppLogger } from 'src/common/helper/logger.helper';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -35,8 +36,10 @@ export class WorkoutplanController {
     @Body() createWorkoutDto: CreateWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
-    this.logger.verbose(
-      `User "${user.username}" create a workout with Data: ${JSON.stringify(createWorkoutDto)}`,
+    AppLogger.verbose(
+      `User "${user.username}" creating an workout`,
+      createWorkoutDto,
+      'WorkoutController',
     );
     return this.workoutService.createWorkout(createWorkoutDto, user);
   }
@@ -47,8 +50,10 @@ export class WorkoutplanController {
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
   ): Promise<{ data: Workout[]; totalPages: number }> {
-    this.logger.verbose(
-      `User "${user.username}" get all workout with Data: ${JSON.stringify(getWorkoutFilter)}`,
+    AppLogger.verbose(
+      `User "${user.username}" get all workout `,
+      getWorkoutFilter,
+      'WorkoutController',
     );
     return this.workoutService.getAllWorkout(
       getWorkoutFilter,
@@ -62,8 +67,10 @@ export class WorkoutplanController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
-    this.logger.verbose(
-      `User "${user.username}" get a workout with Id: ${JSON.stringify(id)}`,
+    AppLogger.verbose(
+      `User "${user.username}" get a workout with id `,
+      id,
+      'WorkoutController',
     );
     return this.workoutService.findOneWorkout(id, user);
   }
@@ -73,8 +80,10 @@ export class WorkoutplanController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
-    this.logger.verbose(
-      `User "${user.username}" delete a workout with id: ${JSON.stringify(id)}`,
+    AppLogger.warn(
+      `User "${user.username}" delete a workout `,
+      id,
+      'WorkoutController',
     );
     return this.workoutService.deleteWorkoutById(id, user);
   }
@@ -85,8 +94,10 @@ export class WorkoutplanController {
     @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
-    this.logger.verbose(
-      `User "${user.username}" update a workout with Data: ${JSON.stringify(updateNameWorkoutDto)}`,
+    AppLogger.verbose(
+      `User "${user.username}" update name workout `,
+      updateNameWorkoutDto,
+      'WorkoutController',
     );
     return this.workoutService.updateNameWorkout(
       id,
@@ -97,8 +108,10 @@ export class WorkoutplanController {
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
   cloneWorkout(@Param('id') id: string, @GetUser() user: User) {
-    this.logger.verbose(
-      `User "${user.username}" clone a workout with Data: ${JSON.stringify(id)}`,
+    AppLogger.verbose(
+      `User "${user.username}" clone a workout `,
+      id,
+      'WorkoutController',
     );
     return this.workoutService.cloneWorkout(id, user);
   }
@@ -107,8 +120,10 @@ export class WorkoutplanController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
-    this.logger.verbose(
-      `User "${user.username}" get a workout with exercise. Id: ${JSON.stringify(id)}`,
+    AppLogger.verbose(
+      `User "${user.username}" get a workout with exercise `,
+      id,
+      'WorkoutController',
     );
     return this.workoutService.getExercisesByWorkoutId(id, user);
   }
