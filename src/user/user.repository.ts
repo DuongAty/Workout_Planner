@@ -15,7 +15,7 @@ import { User } from './user.entity';
 import {
   PASSWORD_INCORRECT_MESSAGE,
   USERNAME_NOT_FOUND_MESSAGE,
-} from 'src/auth/auth-constants';
+} from '../auth/auth-constants';
 import { AccessTokenPayload } from 'src/auth/type/accessToken.type';
 @Injectable()
 export class UsersRepository {
