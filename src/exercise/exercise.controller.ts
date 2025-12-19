@@ -28,7 +28,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 @ApiBearerAuth('accessToken')
 export class ExerciseController {
   private logger = new Logger('ExerciseController');
-  constructor(private readonly exerciesServide: ExerciseService) {}
+  constructor(private readonly exerciseService: ExerciseService) {}
 
   @Post(':workoutId/')
   @UseInterceptors(ClassSerializerInterceptor)
@@ -40,7 +40,7 @@ export class ExerciseController {
     this.logger.verbose(
       `User "${user.username}" create a exercise with Data: ${JSON.stringify(createExerciseDto)}`,
     );
-    return this.exerciesServide.createExercise(
+    return this.exerciseService.createExercise(
       workoutId,
       createExerciseDto,
       user,
@@ -48,7 +48,7 @@ export class ExerciseController {
   }
 
   @Get()
-  getWorkout(
+  getExersices(
     @Query() getExerciseFilter: GetExerciseFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
@@ -56,7 +56,7 @@ export class ExerciseController {
     this.logger.verbose(
       `User "${user.username}" get all exercise with Data: ${JSON.stringify(getExerciseFilter)}`,
     );
-    return this.exerciesServide.getAllExercies(
+    return this.exerciseService.getAllExercies(
       getExerciseFilter,
       paginationDto,
       user,
@@ -64,29 +64,29 @@ export class ExerciseController {
   }
 
   @Get('/:id')
-  getWorkoutbyId(
+  getExercisebyId(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Exercise | null> {
     this.logger.verbose(
       `User "${user.username}" get a exercise with id: ${JSON.stringify(id)}`,
     );
-    return this.exerciesServide.findOneExercise(id, user);
+    return this.exerciseService.findOneExercise(id, user);
   }
 
   @Delete('/:id')
-  deleteWorkoutByid(
+  deleteExerciseByid(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
     this.logger.verbose(
       `User "${user.username}" delete a exercise with id: ${JSON.stringify(id)}`,
     );
-    return this.exerciesServide.deleteExerciseById(id, user);
+    return this.exerciseService.deleteExerciseById(id, user);
   }
 
   @Patch('update/:id')
-  updateNameWorkout(
+  updateExercise(
     @Param('id') id: string,
     @Body() updateExerciseDto: UpdateExerciseDto,
     @GetUser() user: User,
@@ -94,6 +94,6 @@ export class ExerciseController {
     this.logger.verbose(
       `User "${user.username}" update a exercise with Data: ${JSON.stringify(updateExerciseDto)}`,
     );
-    return this.exerciesServide.updateExercise(id, updateExerciseDto, user);
+    return this.exerciseService.updateExercise(id, updateExerciseDto, user);
   }
 }

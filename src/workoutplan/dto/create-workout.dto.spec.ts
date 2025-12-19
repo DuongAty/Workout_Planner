@@ -8,9 +8,7 @@ describe('CreateWorkoutDto', () => {
   it('Validation should be passed when the data is valid.', async () => {
     const dto = new CreateWorkoutDto();
     dto.name = validDto.name;
-
     const errors = await validate(dto);
-
     expect(errors.length).toBe(0);
   });
   it('The authentication process will fail if the "name" field is left blank.', async () => {
