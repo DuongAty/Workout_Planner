@@ -90,6 +90,18 @@ describe('ExerciseService', () => {
       );
       expect(result).toEqual(createdExerciseEntity);
     });
+    it('should throw NotFoundException if findOneWorkout fails', async () => {
+      findOneWorkoutSpy.mockRejectedValueOnce(
+        new NotFoundException('Workout not found'),
+      );
+
+      await expect(
+        exerciseService.createExercise(workoutId, createExerciseDto, mockUser),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockExerciseService.create).not.toHaveBeenCalledWith();
+      expect(mockExerciseService.save).not.toHaveBeenCalledWith();
+    });
   });
 
   describe('getAllExercise', () => {
@@ -116,7 +128,7 @@ describe('ExerciseService', () => {
   });
 
   describe('getExerciseById', () => {
-    it('returns workout when found', async () => {
+    it('returns Exercise when found', async () => {
       mockExerciseService.findOne.mockResolvedValue(mockExersise);
       const result = await exerciseService.findOneExercise('id', mockUser);
       expect(mockExerciseService.findOne).toHaveBeenCalledWith({
@@ -124,7 +136,7 @@ describe('ExerciseService', () => {
       });
       expect(result).toEqual(mockExersise);
     });
-    it('throws NotFoundException when workout not found', async () => {
+    it('throws NotFoundException when Exercise not found', async () => {
       mockExerciseService.findOne.mockResolvedValue(null);
       await expect(
         exerciseService.findOneExercise('id', mockUser),
@@ -143,15 +155,15 @@ describe('ExerciseService', () => {
         user: mockUser,
       });
     });
-    it('should throw NotFoundException if workout not found or not owned by user', async () => {
-      const workoutId = 'non-existent-id';
+    it('should throw NotFoundException if Exercise not found or not owned by user', async () => {
+      const exerciseId = 'non-id';
       const deleteResult = { affected: 0, raw: [] };
       mockExerciseService.delete.mockResolvedValue(deleteResult);
       await expect(
-        exerciseService.deleteExerciseById(workoutId, mockUser),
+        exerciseService.deleteExerciseById(exerciseId, mockUser),
       ).rejects.toThrow(NotFoundException);
       expect(mockExerciseService.delete).toHaveBeenCalledWith({
-        id: workoutId,
+        id: exerciseId,
         user: mockUser,
       });
     });
@@ -175,8 +187,8 @@ describe('ExerciseService', () => {
       mockExerciseService.save.mockResolvedValue(expectedResult);
       const result = await exerciseService.updateExercise(
         mockExersise.id,
-        updateDto as any,
-        mockUser as any,
+        updateDto,
+        mockUser,
       );
       expect(findOneExerciseSpy).toHaveBeenCalledWith(
         mockExersise.id,
@@ -192,7 +204,7 @@ describe('ExerciseService', () => {
       );
       expect(result).toEqual(expectedResult);
     });
-    it('throws NotFoundException when workout not found', async () => {
+    it('throws NotFoundException when Exercise not found', async () => {
       mockExerciseService.findOne.mockResolvedValue(null);
       await expect(
         exerciseService.updateExercise('id', updateDto, mockUser),
