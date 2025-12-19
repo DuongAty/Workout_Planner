@@ -14,7 +14,7 @@ export class AuthCredentialsDto {
   @MinLength(8)
   @MaxLength(20)
   @ApiProperty({
-    description: 'Passwoord',
+    description: 'Password',
   })
   password: string;
 }

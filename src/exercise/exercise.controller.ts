@@ -71,10 +71,10 @@ export class ExerciseController {
     this.logger.verbose(
       `User "${user.username}" get a exercise with id: ${JSON.stringify(id)}`,
     );
-    return this.exerciesServide.findOne(id, user);
+    return this.exerciesServide.findOneExercise(id, user);
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   deleteWorkoutByid(
     @Param('id') id: string,
     @GetUser() user: User,

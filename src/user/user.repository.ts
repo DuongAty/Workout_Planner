@@ -1,8 +1,9 @@
 import {
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthCredentialsDto } from '../auth/dto/auth-credentials.dto';
 import { JwtPayload } from './jwt-payload.interface';
 import { User } from './user.entity';
+import { PASSWORD_INCORRECT_MESSAGE, USERNAME_NOT_FOUND_MESSAGE } from 'src/auth/auth-constants';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -43,12 +45,29 @@ export class UsersRepository {
   ): Promise<{ accessToken: string }> {
     const { username, password } = authCredentialsDto;
     const user = await this.userRepository.findOneBy({ username });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const payload: JwtPayload = { username };
-      const accessToken: string = this.jwtService.sign(payload);
-      return { accessToken };
-    } else {
-      throw new UnauthorizedException('Not found');
+    if (!user) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.UNAUTHORIZED,
+          error: 'Unauthorized',
+          message: USERNAME_NOT_FOUND_MESSAGE,
+        },
+        HttpStatus.UNAUTHORIZED,
+      );
     }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.UNAUTHORIZED,
+          error: 'Unauthorized',
+          message: PASSWORD_INCORRECT_MESSAGE,
+        },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const payload: JwtPayload = { username };
+    const accessToken: string = this.jwtService.sign(payload);
+    return { accessToken };
   }
 }

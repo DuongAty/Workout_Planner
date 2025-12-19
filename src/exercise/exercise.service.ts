@@ -8,7 +8,6 @@ import { PaginationDto } from '../untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
-
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -18,18 +17,22 @@ export class ExerciseService {
     private readonly exerciseService: Repository<Exercise>,
   ) {}
 
+  async findOneWorkout(id: string, user: User): Promise<Workout> {
+    const workout = await this.workoutRepository.findOne({
+      where: { id, user },
+    });
+    if (!workout) {
+      throw new NotFoundException(`Workout with ID "${id}" not found`);
+    }
+    return workout;
+  }
+
   async createExercise(
     workoutId: string,
     createExerciseDto: CreateExerciseDto,
     user: User,
   ): Promise<Exercise> {
-    const workout = await this.workoutRepository.findOneBy({
-      id: workoutId,
-      user,
-    });
-    if (!workout) {
-      throw new NotFoundException(`Workout with ID ${workoutId} not found.`);
-    }
+    const workout = await this.findOneWorkout(workoutId, user);
     const newExercise = this.exerciseService.create({
       ...createExerciseDto,
       workoutId: workoutId,
@@ -63,7 +66,7 @@ export class ExerciseService {
     return { data, total, totalPages };
   }
 
-  async findOne(id: string, user: User): Promise<Exercise> {
+  async findOneExercise(id: string, user: User): Promise<Exercise> {
     const exercies = await this.exerciseService.findOne({
       where: { id, user },
     });
@@ -85,12 +88,7 @@ export class ExerciseService {
     updateExerciseDto: UpdateExerciseDto,
     user: User,
   ): Promise<Exercise> {
-    const exercise = await this.exerciseService.findOne({
-      where: { id, user },
-    });
-    if (!exercise) {
-      throw new NotFoundException(`Exercise với ID ${id} không tồn tại`);
-    }
+    const exercise = await this.findOneExercise(id, user);
     const updateData: Partial<Exercise> = {};
     Object.keys(updateExerciseDto).forEach((key) => {
       const value = updateExerciseDto[key];

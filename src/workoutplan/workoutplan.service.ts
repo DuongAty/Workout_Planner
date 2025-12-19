@@ -51,7 +51,7 @@ export class WorkoutplanService {
     return { data, total, totalPages };
   }
 
-  async findOne(id: string, user: User): Promise<Workout> {
+  async findOneWorkout(id: string, user: User): Promise<Workout> {
     const workout = await this.workoutPlanService.findOne({
       where: { id, user },
     });
@@ -73,12 +73,7 @@ export class WorkoutplanService {
     name: string,
     user: User,
   ): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({
-      where: { id, user },
-    });
-    if (!workout) {
-      throw new NotFoundException(`Workout with id: ${id} not found`);
-    }
+    const workout = await this.findOneWorkout(id, user);
     workout.name = name;
     await this.workoutPlanService.save(workout);
     return workout;

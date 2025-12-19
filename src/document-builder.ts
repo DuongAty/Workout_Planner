@@ -4,7 +4,7 @@ export function DocumentConfig(): Omit<OpenAPIObject, 'paths'> {
   const config = new DocumentBuilder()
     .setTitle('API Documentation')
     .setDescription(
-      'API documentation cho Auth, Exercise và Workout Plan modules',
+      'API documentation for Auth, Exercise và Workout Plan modules',
     )
     .setVersion('1.0')
     .addTag('Auth')

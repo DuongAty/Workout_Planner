@@ -5,6 +5,7 @@ import { Workout } from './workoutplan.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { NotFoundException } from '@nestjs/common';
 import { ExerciseService } from '../exercise/exercise.service';
+import { PassportModule } from '@nestjs/passport';
 
 const mockUser = { id: 'id', username: 'duong', password: '123' };
 
@@ -24,6 +25,7 @@ describe('WorkoutplanService', () => {
       save: jest.fn(),
     };
     const module: TestingModule = await Test.createTestingModule({
+      imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       providers: [
         WorkoutplanService,
         ExerciseService,

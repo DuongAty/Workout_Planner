@@ -65,10 +65,10 @@ export class WorkoutplanController {
     this.logger.verbose(
       `User "${user.username}" get a workout with Id: ${JSON.stringify(id)}`,
     );
-    return this.workoutService.findOne(id, user);
+    return this.workoutService.findOneWorkout(id, user);
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   deleteWorkoutByid(
     @Param('id') id: string,
     @GetUser() user: User,
@@ -82,14 +82,17 @@ export class WorkoutplanController {
   @Patch('update/:id')
   updateNameWorkout(
     @Param('id') id: string,
-    @Body() updateNameWorkout: UpdateNameWorkoutDto,
+    @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
     this.logger.verbose(
-      `User "${user.username}" update a workout with Data: ${JSON.stringify(updateNameWorkout)}`,
+      `User "${user.username}" update a workout with Data: ${JSON.stringify(updateNameWorkoutDto)}`,
     );
-    const { name } = updateNameWorkout;
-    return this.workoutService.updateNameWorkout(id, name, user);
+    return this.workoutService.updateNameWorkout(
+      id,
+      updateNameWorkoutDto.name,
+      user,
+    );
   }
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
