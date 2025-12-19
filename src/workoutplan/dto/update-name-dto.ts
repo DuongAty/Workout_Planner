@@ -4,7 +4,7 @@ import { IsNotEmpty } from 'class-validator';
 export class UpdateNameWorkoutDto {
   @IsNotEmpty()
   @ApiProperty({
-    description: 'Tên',
+    description: 'Name',
   })
   name: string;
 }

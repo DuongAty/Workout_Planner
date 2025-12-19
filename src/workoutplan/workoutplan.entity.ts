@@ -1,6 +1,13 @@
-// workout.entity.ts
+import { Exclude } from 'class-transformer';
 import { Exercise } from 'src/exercise/exercise.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { User } from 'src/user/user.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 
 @Entity('workouts')
 export class Workout {
@@ -12,4 +19,8 @@ export class Workout {
 
   @OneToMany(() => Exercise, (exercise) => exercise.workoutPlan)
   exercises: Exercise[];
+
+  @ManyToOne((_type) => User, (user) => user.workout, { eager: false })
+  @Exclude({ toPlainOnly: true })
+  user: User;
 }

@@ -6,18 +6,18 @@ export class CreateExerciseDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty({
-    description: 'Tên Exercies',
+    description: 'Exercies Name',
   })
   name: string;
 
   @ApiProperty({
-    description: 'Nhóm cơ',
+    description: 'Muscle Group',
     enum: MuscleGroup,
     required: false,
   })
   @IsNotEmpty()
   @IsEnum(MuscleGroup, {
-    message: 'Vui lòng chọn một nhóm cơ hợp lệ từ danh sách',
+    message: 'Please select a valid muscle group from the list.',
   })
   muscleGroup?: MuscleGroup;
 

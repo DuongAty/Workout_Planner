@@ -5,10 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule } from '@nestjs/swagger';
 import { WorkoutplanModule } from './workoutplan/workoutplan.module';
 import {
+  AuthDocumentConfig,
   ExerciestDocumentConfig,
   WorkoutDocumentConfig,
 } from './document-builder';
 import { ExerciseModule } from './exercise/exercise.module';
+import { AuthModule } from './auth/auth.module';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -35,6 +37,14 @@ async function bootstrap() {
       include: [ExerciseModule],
     });
   SwaggerModule.setup('api/exercies', app, exerciesDocumentFactory);
+
+  const authConfig = AuthDocumentConfig();
+  const userDocumentFactory = () =>
+    SwaggerModule.createDocument(app, authConfig, {
+      include: [AuthModule],
+    });
+  SwaggerModule.setup('api/auth', app, userDocumentFactory);
+
   await app.listen(port);
   logger.log(`Port ${port}`);
 }
