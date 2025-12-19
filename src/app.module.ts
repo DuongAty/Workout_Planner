@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { configValidationSchema } from './config.schema';
 import { WorkoutplanModule } from './workoutplan/workoutplan.module';
+import { ExerciseModule } from './exercise/exercise.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { WorkoutplanModule } from './workoutplan/workoutplan.module';
       validationSchema: configValidationSchema,
     }),
     WorkoutplanModule,
+    ExerciseModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
