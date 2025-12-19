@@ -21,13 +21,16 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from 'src/common/helper/logger.helper';
+import { AppLogger } from 'src/common/helper/app-logger.service';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class ExerciseController {
-  constructor(private readonly exerciseService: ExerciseService) {}
+  constructor(
+    private readonly exerciseService: ExerciseService,
+    private logger: AppLogger,
+  ) {}
 
   @Post(':workoutId/')
   @UseInterceptors(ClassSerializerInterceptor)
@@ -36,10 +39,10 @@ export class ExerciseController {
     @Body() createExerciseDto: CreateExerciseDto,
     @GetUser() user: User,
   ): Promise<Exercise> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" creating an exercise`,
       createExerciseDto,
-      'ExerciseController',
+      ExerciseController.name,
     );
     return this.exerciseService.createExercise(
       workoutId,
@@ -54,10 +57,10 @@ export class ExerciseController {
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
   ): Promise<{ data: Exercise[]; totalPages: number }> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" get all exercise`,
       getExerciseFilter,
-      'ExerciseController',
+      ExerciseController.name,
     );
     return this.exerciseService.getAllExercies(
       getExerciseFilter,
@@ -71,10 +74,10 @@ export class ExerciseController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Exercise | null> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" get an exercise with id`,
       id,
-      'ExerciseController',
+      ExerciseController.name,
     );
     return this.exerciseService.findOneExercise(id, user);
   }
@@ -84,10 +87,10 @@ export class ExerciseController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" delete an exercise`,
       id,
-      'ExerciseController',
+      ExerciseController.name,
     );
     return this.exerciseService.deleteExerciseById(id, user);
   }
@@ -98,10 +101,10 @@ export class ExerciseController {
     @Body() updateExerciseDto: UpdateExerciseDto,
     @GetUser() user: User,
   ): Promise<Exercise> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" update an exercise with data`,
       updateExerciseDto,
-      'ExerciseController',
+      ExerciseController.name,
     );
     return this.exerciseService.updateExercise(id, updateExerciseDto, user);
   }
