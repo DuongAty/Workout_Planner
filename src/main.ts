@@ -2,8 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { WorkoutplanModule } from './workoutplan/workoutplan.module';
+import {
+  ExerciestDocumentConfig,
+  WorkoutDocumentConfig,
+} from './document-builder';
+import { ExerciseModule } from './exercise/exercise.module';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -17,17 +22,19 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-  const options = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
-    .setVersion('1.0')
-    .build();
-
-  const catDocumentFactory = () =>
-    SwaggerModule.createDocument(app, options, {
+  const workoutConfig = WorkoutDocumentConfig();
+  const workoutDocumentFactory = () =>
+    SwaggerModule.createDocument(app, workoutConfig, {
       include: [WorkoutplanModule],
     });
-  SwaggerModule.setup('api/cats', app, catDocumentFactory);
+  SwaggerModule.setup('api/workout', app, workoutDocumentFactory);
+
+  const exerciestConfig = ExerciestDocumentConfig();
+  const exerciesDocumentFactory = () =>
+    SwaggerModule.createDocument(app, exerciestConfig, {
+      include: [ExerciseModule],
+    });
+  SwaggerModule.setup('api/exercies', app, exerciesDocumentFactory);
   await app.listen(port);
   logger.log(`Port ${port}`);
 }

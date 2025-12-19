@@ -1,11 +1,17 @@
 // exercise.entity.ts
-import { WorkoutExercise } from 'src/entity/workout-exercise.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Workout } from 'src/workoutplan/workoutplan.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  JoinColumn,
+  ManyToOne,
+} from 'typeorm';
 
 @Entity('exercises')
 export class Exercise {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ length: 100 })
   name!: string;
@@ -22,6 +28,15 @@ export class Exercise {
   @Column({ length: 50 })
   muscleGroup!: string;
 
-  @OneToMany(() => WorkoutExercise, (we) => we.exercise)
-  workoutExercises!: WorkoutExercise[];
+  @Column({ length: 100 })
+  note!: string;
+
+  @ManyToOne(() => Workout, (plan) => plan.exercises, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'workoutId' })
+  workoutPlan: Workout;
+
+  @Column()
+  workoutId: string;
 }
