@@ -1,5 +1,5 @@
-import { Exercise } from 'src/exercise/exercise.entity';
-import { Workout } from 'src/workoutplan/workoutplan.entity';
+import { Exercise } from '../exercise/exercise.entity';
+import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 @Entity('users')

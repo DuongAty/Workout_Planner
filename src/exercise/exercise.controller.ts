@@ -15,22 +15,22 @@ import {
 import { ExerciseService } from './exercise.service';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
-import { PaginationDto } from 'src/untils/pagination.dto';
+import { PaginationDto } from '../untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
-import { GetUser } from 'src/user/get-user.decorator';
-import { User } from 'src/user/user.entity';
+import { GetUser } from '../user/get-user.decorator';
+import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller({ path: 'exercise', version: '1' })
+@Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class ExerciseController {
   private logger = new Logger('ExerciseController');
   constructor(private readonly exerciesServide: ExerciseService) {}
 
-  @Post(':workoutId/exercises')
+  @Post(':workoutId/')
   @UseInterceptors(ClassSerializerInterceptor)
   createExercise(
     @Param('workoutId') workoutId: string,

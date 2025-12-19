@@ -6,12 +6,12 @@ export class AuthController {
   private logger = new Logger('AuthController');
   constructor(private authService: AuthService) {}
 
-  @Post('/signup')
+  @Post('/register')
   signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<void> {
     return this.authService.signUp(authCredentialsDto);
   }
 
-  @Post('/signin')
+  @Post('/login')
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
   ): Promise<{ accessToken: string }> {

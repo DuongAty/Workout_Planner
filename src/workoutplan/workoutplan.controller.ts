@@ -15,21 +15,21 @@ import {
 import { WorkoutplanService } from './workoutplan.service';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { PaginationDto } from 'src/untils/pagination.dto';
+import { PaginationDto } from '../untils/pagination.dto';
 import { UpdateNameWorkoutDto } from './dto/update-name-dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
-import { GetUser } from 'src/user/get-user.decorator';
-import { User } from 'src/user/user.entity';
+import { GetUser } from '../user/get-user.decorator';
+import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller({ path: 'workoutplan', version: '1' })
+@Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class WorkoutplanController {
   private logger = new Logger('WorkoutController');
   constructor(private workoutService: WorkoutplanService) {}
-  @Post('create')
+  @Post()
   @UseInterceptors(ClassSerializerInterceptor)
   createWorkout(
     @Body() createWorkoutDto: CreateWorkoutDto,

@@ -3,11 +3,11 @@ import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Workout } from 'src/workoutplan/workoutplan.entity';
-import { PaginationDto } from 'src/untils/pagination.dto';
+import { Workout } from '../workoutplan/workoutplan.entity';
+import { PaginationDto } from '../untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 
 @Injectable()
 export class ExerciseService {

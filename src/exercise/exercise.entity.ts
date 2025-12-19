@@ -1,6 +1,6 @@
 import { Exclude } from 'class-transformer';
-import { User } from 'src/user/user.entity';
-import { Workout } from 'src/workoutplan/workoutplan.entity';
+import { User } from '../user/user.entity';
+import { Workout } from '../workoutplan/workoutplan.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,

@@ -3,14 +3,7 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule } from '@nestjs/swagger';
-import { WorkoutplanModule } from './workoutplan/workoutplan.module';
-import {
-  AuthDocumentConfig,
-  ExerciestDocumentConfig,
-  WorkoutDocumentConfig,
-} from './document-builder';
-import { ExerciseModule } from './exercise/exercise.module';
-import { AuthModule } from './auth/auth.module';
+import { DocumentConfig } from './document-builder';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -24,26 +17,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-  const workoutConfig = WorkoutDocumentConfig();
-  const workoutDocumentFactory = () =>
-    SwaggerModule.createDocument(app, workoutConfig, {
-      include: [WorkoutplanModule],
-    });
-  SwaggerModule.setup('api/workout', app, workoutDocumentFactory);
-
-  const exerciestConfig = ExerciestDocumentConfig();
-  const exerciesDocumentFactory = () =>
-    SwaggerModule.createDocument(app, exerciestConfig, {
-      include: [ExerciseModule],
-    });
-  SwaggerModule.setup('api/exercies', app, exerciesDocumentFactory);
-
-  const authConfig = AuthDocumentConfig();
-  const userDocumentFactory = () =>
-    SwaggerModule.createDocument(app, authConfig, {
-      include: [AuthModule],
-    });
-  SwaggerModule.setup('api/auth', app, userDocumentFactory);
+  const config = DocumentConfig();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port);
   logger.log(`Port ${port}`);
