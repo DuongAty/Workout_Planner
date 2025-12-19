@@ -12,7 +12,11 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthCredentialsDto } from '../auth/dto/auth-credentials.dto';
 import { JwtPayload } from './jwt-payload.interface';
 import { User } from './user.entity';
-import { PASSWORD_INCORRECT_MESSAGE, USERNAME_NOT_FOUND_MESSAGE } from 'src/auth/auth-constants';
+import {
+  PASSWORD_INCORRECT_MESSAGE,
+  USERNAME_NOT_FOUND_MESSAGE,
+} from 'src/auth/auth-constants';
+import { AccessTokenPayload } from 'src/auth/type/accessToken.type';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -42,7 +46,7 @@ export class UsersRepository {
 
   async signIn(
     authCredentialsDto: AuthCredentialsDto,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<AccessTokenPayload> {
     const { username, password } = authCredentialsDto;
     const user = await this.userRepository.findOneBy({ username });
     if (!user) {

@@ -4,36 +4,34 @@ import { IsEnum, IsOptional } from 'class-validator';
 
 export class UpdateExerciseDto {
   @ApiProperty({
-    description: 'Tên',
+    description: 'Exercise Name',
   })
   name: string;
 
-  @IsEnum(MuscleGroup, {
-    message: 'Vui lòng chọn một nhóm cơ',
-  })
   @ApiProperty({
-    description: 'Nhóm cơ',
+    description: 'Muscle Group',
     enum: MuscleGroup,
     required: false,
   })
   @IsOptional()
   @IsEnum(MuscleGroup, {
-    message: 'Vui lòng chọn một nhóm cơ hợp lệ từ danh sách',
+    message: 'Please select a valid muscle group from the list.',
   })
   muscleGroup?: MuscleGroup;
 
   @ApiProperty({
-    description: 'Số sets',
+    description:
+      'Sets are groups of reps done consecutively with rest in between',
   })
   sets: number;
 
   @ApiProperty({
-    description: 'Số reps',
+    description: 'Reps is single, full movements of an exercise',
   })
   reps: number;
 
   @ApiProperty({
-    description: 'Thời gian nghỉ (s)',
+    description: 'Rest time ',
   })
   restTime: number;
 
