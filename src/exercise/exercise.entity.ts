@@ -1,4 +1,5 @@
-// exercise.entity.ts
+import { Exclude } from 'class-transformer';
+import { User } from 'src/user/user.entity';
 import { Workout } from 'src/workoutplan/workoutplan.entity';
 import {
   Entity,
@@ -39,4 +40,8 @@ export class Exercise {
 
   @Column()
   workoutId: string;
+
+  @ManyToOne((_type) => User, (user) => user.exercise, { eager: false })
+  @Exclude({ toPlainOnly: true })
+  user: User;
 }
