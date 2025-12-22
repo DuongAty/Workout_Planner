@@ -25,19 +25,19 @@ export class CreateExerciseDto {
   @Min(1)
   @IsNotEmpty()
   @ApiProperty({
-    description: 'Number of sets',
+    description: 'Groups of repetitions',
     example: 3,
   })
-  sets: number;
+  numberOfSets: number;
 
   @IsInt()
   @Min(1)
   @IsNotEmpty()
   @ApiProperty({
-    description: 'Number of repetitions per set',
+    description: 'Number of repetitions of the movement',
     example: 12,
   })
-  reps: number;
+  repetitions: number;
 
   @IsInt()
   @Min(0)

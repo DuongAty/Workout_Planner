@@ -54,7 +54,7 @@ export class ExerciseService {
       query.andWhere('exercies.muscleGroup = :muscleGroup', { muscleGroup });
     }
     if (search) {
-      query.andWhere('(LOWER(exercies.name) LIKE LOWER(:search))', {
+      query.andWhere('exercies.name ILIKE :search', {
         search: `%${search}%`,
       });
     }

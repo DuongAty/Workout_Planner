@@ -95,8 +95,8 @@ export class WorkoutplanService {
       this.exerciseService.create({
         name: ex.name,
         muscleGroup: ex.muscleGroup,
-        sets: ex.sets,
-        reps: ex.reps,
+        numberOfSets: ex.numberOfSets,
+        repetitions: ex.repetitions,
         restTime: ex.restTime,
         note: ex.note,
         workoutId: newWorkout.id,
