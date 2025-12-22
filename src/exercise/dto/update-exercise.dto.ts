@@ -20,16 +20,16 @@ export class UpdateExerciseDto {
   muscleGroup?: MuscleGroup;
 
   @ApiProperty({
-    description: 'Number of sets',
+    description: 'Groups of repetitions',
     example: 3,
   })
-  sets: number;
+  numberOfSets: number;
 
   @ApiProperty({
-    description: 'Number of repetitions per set',
+    description: 'Number of repetitions of the movement',
     example: 12,
   })
-  reps: number;
+  repetitions: number;
 
   @ApiProperty({
     description: 'Rest time ',

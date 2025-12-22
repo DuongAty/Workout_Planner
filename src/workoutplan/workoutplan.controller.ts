@@ -21,7 +21,7 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from 'src/common/helper/app-logger.service';
+import { AppLogger } from '../common/helper/app-logger.service';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -89,7 +89,7 @@ export class WorkoutplanController {
     return this.workoutService.deleteWorkoutById(id, user);
   }
 
-  @Patch('update/:id')
+  @Patch('/:id')
   updateNameWorkout(
     @Param('id') id: string,
     @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
