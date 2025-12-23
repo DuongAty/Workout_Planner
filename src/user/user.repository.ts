@@ -65,4 +65,22 @@ export class UsersRepository {
     const accessToken: string = this.jwtService.sign(payload);
     return { accessToken };
   }
+  async getUser(accessToken: string): Promise<User> {
+    try {
+      const payload: JwtPayload =
+        await this.jwtService.verifyAsync(accessToken);
+
+      const { username } = payload;
+      const user = await this.userRepository.findOneBy({ username });
+
+      if (!user) {
+        throw new UnauthorizedException(
+          'Người dùng không tồn tại hoặc token không hợp lệ',
+        );
+      }
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
+    }
+  }
 }
