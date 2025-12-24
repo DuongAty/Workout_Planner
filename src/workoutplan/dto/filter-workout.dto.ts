@@ -9,4 +9,11 @@ export class GetWorkoutFilter {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Number of Exercises',
+  })
+  @IsOptional()
+  numExercises?: string;
 }

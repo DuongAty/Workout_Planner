@@ -1,13 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from '../workoutplan/workoutplan.entity';
-import { PaginationDto } from '../untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
+import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -15,6 +21,8 @@ export class ExerciseService {
     private readonly workoutRepository: Repository<Workout>,
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
+    @Inject(forwardRef(() => WorkoutplanService))
+    private readonly workoutplanService: WorkoutplanService,
   ) {}
 
   async findOneWorkout(id: string, user: User): Promise<Workout> {
@@ -37,7 +45,9 @@ export class ExerciseService {
       workoutPlan: workout,
       user,
     });
-    return this.exerciseService.save(newExercise);
+    const savedExercise = await this.exerciseService.save(newExercise);
+    await this.workoutplanService.syncNumExercises(workoutId);
+    return savedExercise;
   }
 
   async getAllExercies(
