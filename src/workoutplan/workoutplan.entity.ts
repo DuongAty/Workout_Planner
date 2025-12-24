@@ -20,6 +20,9 @@ export class Workout {
   @OneToMany(() => Exercise, (exercise) => exercise.workoutPlan)
   exercises: Exercise[];
 
+  @Column({ default: 0 })
+  numExercises: number;
+
   @ManyToOne((_type) => User, (user) => user.workout, { eager: false })
   @Exclude({ toPlainOnly: true })
   user: User;

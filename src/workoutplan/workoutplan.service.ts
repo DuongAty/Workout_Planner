@@ -1,22 +1,31 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { PaginationDto } from '../untils/pagination.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 
 @Injectable()
 export class WorkoutplanService {
-  private logger = new Logger();
   constructor(
     @InjectRepository(Workout)
     private workoutPlanService: Repository<Workout>,
     @InjectRepository(Exercise)
     private exerciseService: Repository<Exercise>,
   ) {}
+
+  async syncNumExercises(workoutId: string): Promise<void> {
+    const count = await this.exerciseService
+      .createQueryBuilder('exercise')
+      .where('exercise.workoutId = :workoutId', { workoutId })
+      .getCount();
+    await this.workoutPlanService.update(workoutId, {
+      numExercises: count,
+    });
+  }
 
   async createWorkout(
     createWorkoutDto: CreateWorkoutDto,
@@ -36,14 +45,17 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search } = getWorkoutFilter;
+    const { search, numExercises } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
     if (search) {
-      query.andWhere('(LOWER(workout.name) LIKE LOWER(:search))', {
+      query.andWhere('workout.name ILIKE :search', {
         search: `%${search}%`,
       });
+    }
+    if (numExercises !== undefined && numExercises !== null) {
+      query.andWhere('workout.numExercises = :numExercises', { numExercises });
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
@@ -51,14 +63,19 @@ export class WorkoutplanService {
     return { data, total, totalPages };
   }
 
-  async findOneWorkout(id: string, user: User): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({
-      where: { id, user },
-    });
-    if (!workout) {
+  async findOneWorkout(
+    id: string,
+    user: User,
+    relations: string[] = [],
+  ): Promise<Workout> {
+    try {
+      return await this.workoutPlanService.findOneOrFail({
+        where: { id, user },
+        relations,
+      });
+    } catch (error) {
       throw new NotFoundException(`Workout with ID "${id}" not found`);
     }
-    return workout;
   }
 
   async deleteWorkoutById(id: string, user: User): Promise<void> {
@@ -80,24 +97,19 @@ export class WorkoutplanService {
   }
 
   async cloneWorkout(id: string, user: User): Promise<Workout> {
-    const original = await this.workoutPlanService.findOne({
-      where: { id, user },
-      relations: ['exercises'],
-    });
-    if (!original) {
-      throw new NotFoundException(`Workout ID: ${id} không tồn tại`);
-    }
+    const original = await this.findOneWorkout(id, user, ['exercises']);
     const newWorkout = this.workoutPlanService.create({
       name: original.name + ' (Clone)',
       user,
+      numExercises: original.exercises.length,
     });
     await this.workoutPlanService.save(newWorkout);
     const newExercises = original.exercises.map((ex) =>
       this.exerciseService.create({
         name: ex.name,
         muscleGroup: ex.muscleGroup,
-        sets: ex.sets,
-        reps: ex.reps,
+        numberOfSets: ex.numberOfSets,
+        repetitions: ex.repetitions,
         restTime: ex.restTime,
         note: ex.note,
         workoutId: newWorkout.id,
@@ -105,22 +117,13 @@ export class WorkoutplanService {
       }),
     );
     await this.exerciseService.save(newExercises);
+    newWorkout.numExercises = newExercises.length;
+    await this.workoutPlanService.save(newWorkout);
     newWorkout.exercises = newExercises;
     return newWorkout;
   }
 
   async getExercisesByWorkoutId(id: string, user: User): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({
-      where: {
-        id,
-        user,
-      },
-      relations: ['exercises'],
-    });
-
-    if (!workout) {
-      throw new NotFoundException(`Workout với ID ${id} không tìm thấy.`);
-    }
-    return workout;
+    return await this.findOneWorkout(id, user, ['exercises']);
   }
 }

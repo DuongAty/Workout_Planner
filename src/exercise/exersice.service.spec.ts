@@ -7,6 +7,7 @@ import { MuscleGroup } from './exercise-musclegroup';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { NotFoundException } from '@nestjs/common';
+import { AppLogger } from '../common/helper/app-logger.service';
 
 const mockUser = { id: 'id', username: 'duong', password: '123' };
 const mockExerciseService = {
@@ -33,6 +34,7 @@ describe('ExerciseService', () => {
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       providers: [
         ExerciseService,
+        AppLogger,
         WorkoutplanService,
         {
           provide: getRepositoryToken(Exercise),
