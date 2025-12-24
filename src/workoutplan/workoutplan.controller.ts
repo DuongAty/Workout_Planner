@@ -14,14 +14,14 @@ import {
 import { WorkoutplanService } from './workoutplan.service';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { PaginationDto } from '../untils/pagination.dto';
 import { UpdateNameWorkoutDto } from './dto/update-name-dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from '../common/helper/app-logger.service';
+import { AppLogger } from 'src/common/logger/app-logger.service';
+import { PaginationDto } from 'src/common/pagination/pagination.dto';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
