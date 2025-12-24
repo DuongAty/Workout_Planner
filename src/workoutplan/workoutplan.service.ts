@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { PaginationDto } from '../untils/pagination.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
+import { PaginationDto } from 'src/common/pagination/pagination.dto';
 
 @Injectable()
 export class WorkoutplanService {
@@ -57,7 +57,7 @@ export class WorkoutplanService {
     relations: string[] = [],
   ): Promise<Workout> {
     try {
-      return await this.workoutPlanService.findOneOrFail({
+      return await this.workoutPlanService.findOrFail({
         where: { id, user },
         relations,
       });

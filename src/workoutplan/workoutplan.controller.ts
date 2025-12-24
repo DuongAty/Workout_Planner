@@ -21,7 +21,7 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from '../common/helper/app-logger.service';
+import { AppLogger } from 'src/common/logger/app-logger.service';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -33,7 +33,7 @@ export class WorkoutplanController {
   ) {}
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
-  createWorkout(
+  create(
     @Body() createWorkoutDto: CreateWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
@@ -46,7 +46,7 @@ export class WorkoutplanController {
   }
 
   @Get()
-  getWorkout(
+  getAll(
     @Query() getWorkoutFilter: GetWorkoutFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
@@ -64,7 +64,7 @@ export class WorkoutplanController {
   }
 
   @Get('/:id')
-  getWorkoutbyId(
+  getOne(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
@@ -77,7 +77,7 @@ export class WorkoutplanController {
   }
 
   @Delete('/:id')
-  deleteWorkoutByid(
+  delete(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
@@ -90,7 +90,7 @@ export class WorkoutplanController {
   }
 
   @Patch('/:id')
-  updateNameWorkout(
+  update(
     @Param('id') id: string,
     @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
     @GetUser() user: User,
@@ -108,7 +108,7 @@ export class WorkoutplanController {
   }
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
-  cloneWorkout(@Param('id') id: string, @GetUser() user: User) {
+  clone(@Param('id') id: string, @GetUser() user: User) {
     this.logger.verbose(
       `User "${user.username}" clone a workout `,
       id,
@@ -117,7 +117,7 @@ export class WorkoutplanController {
     return this.workoutService.cloneWorkout(id, user);
   }
   @Get('/:id/exercises')
-  getExercisesByWorkoutId(
+  getExercisesById(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
