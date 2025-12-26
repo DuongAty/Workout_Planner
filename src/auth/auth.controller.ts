@@ -1,4 +1,12 @@
-import { Body, Controller, Logger, Post, Get, UseGuards, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Logger,
+  Post,
+  Get,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AccessTokenPayload } from './type/accessToken.type';
@@ -24,7 +32,7 @@ export class AuthController {
   @Get('/me')
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
-  async getMe(@Req() req) {
-    return await req.user;
+  getMe(@Req() req) {
+    return { username: req.user.username };
   }
 }
