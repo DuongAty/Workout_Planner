@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,9 +20,11 @@ import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { AppLogger } from 'src/common/logger/app-logger.service';
 import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { fileFilter, storageConfig } from 'src/common/upload/file-upload';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
@@ -33,10 +36,18 @@ export class ExerciseController {
   ) {}
 
   @Post(':workoutId/')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('thumbnail', {
+      storage: storageConfig('thumbnails'),
+      fileFilter: fileFilter,
+    }),
+  )
   @UseInterceptors(ClassSerializerInterceptor)
   create(
     @Param('workoutId') workoutId: string,
     @Body() createExerciseDto: CreateExerciseDto,
+    @UploadedFile() file: Express.Multer.File,
     @GetUser() user: User,
   ): Promise<Exercise> {
     this.logger.verbose(
@@ -48,6 +59,7 @@ export class ExerciseController {
       workoutId,
       createExerciseDto,
       user,
+      file?.path,
     );
   }
 
@@ -92,17 +104,25 @@ export class ExerciseController {
     return this.exerciseService.deleteExerciseById(id, user);
   }
 
-  @Patch('/:id')
-  update(
+  @Patch(':id')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('thumbnail', {
+      storage: storageConfig('thumbnails'),
+      fileFilter: fileFilter,
+    }),
+  )
+  async update(
     @Param('id') id: string,
     @Body() updateExerciseDto: UpdateExerciseDto,
+    @UploadedFile() file: Express.Multer.File,
     @GetUser() user: User,
-  ): Promise<Exercise> {
-    this.logger.verbose(
-      `User "${user.username}" update an exercise with data`,
+  ) {
+    return this.exerciseService.updateExercise(
+      id,
       updateExerciseDto,
-      ExerciseController.name,
+      user,
+      file?.path,
     );
-    return this.exerciseService.updateExercise(id, updateExerciseDto, user);
   }
 }
