@@ -4,7 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   Param,
   Patch,
   Post,
@@ -28,32 +27,34 @@ import { AppLogger } from '../common/helper/logger.helper';
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class WorkoutplanController {
-  private logger = new Logger('WorkoutController');
-  constructor(private workoutService: WorkoutplanService) {}
+  constructor(
+    private workoutService: WorkoutplanService,
+    private logger: AppLogger,
+  ) {}
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
-  createWorkout(
+  create(
     @Body() createWorkoutDto: CreateWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
-    AppLogger.verbose(
-      `User "${user.username}" creating an workout`,
+    this.logger.verbose(
+      `User "${user.username}" creating a workout`,
       createWorkoutDto,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.createWorkout(createWorkoutDto, user);
   }
 
   @Get()
-  getWorkout(
+  getAll(
     @Query() getWorkoutFilter: GetWorkoutFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
   ): Promise<{ data: Workout[]; totalPages: number }> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" get all workout `,
       getWorkoutFilter,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.getAllWorkout(
       getWorkoutFilter,
@@ -63,41 +64,41 @@ export class WorkoutplanController {
   }
 
   @Get('/:id')
-  getWorkoutbyId(
+  getOne(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" get a workout with id `,
       id,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.findOneWorkout(id, user);
   }
 
   @Delete('/:id')
-  deleteWorkoutByid(
+  delete(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
-    AppLogger.warn(
+    this.logger.warn(
       `User "${user.username}" delete a workout `,
       id,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.deleteWorkoutById(id, user);
   }
 
-  @Patch('update/:id')
-  updateNameWorkout(
+  @Patch('/:id')
+  update(
     @Param('id') id: string,
     @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" update name workout `,
       updateNameWorkoutDto,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.updateNameWorkout(
       id,
@@ -107,23 +108,23 @@ export class WorkoutplanController {
   }
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
-  cloneWorkout(@Param('id') id: string, @GetUser() user: User) {
-    AppLogger.verbose(
+  clone(@Param('id') id: string, @GetUser() user: User) {
+    this.logger.verbose(
       `User "${user.username}" clone a workout `,
       id,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.cloneWorkout(id, user);
   }
   @Get('/:id/exercises')
-  getExercisesByWorkoutId(
+  getExercisesById(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
-    AppLogger.verbose(
+    this.logger.verbose(
       `User "${user.username}" get a workout with exercise `,
       id,
-      'WorkoutController',
+      WorkoutplanController.name,
     );
     return this.workoutService.getExercisesByWorkoutId(id, user);
   }

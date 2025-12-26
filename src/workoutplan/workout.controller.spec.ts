@@ -3,6 +3,7 @@ import { WorkoutplanController } from './workoutplan.controller';
 import { WorkoutplanService } from './workoutplan.service';
 import { PassportModule } from '@nestjs/passport';
 import { NotFoundException } from '@nestjs/common';
+import { AppLogger } from '../common/helper/app-logger.service';
 
 const mockUser = { id: 'id', username: 'duong', password: '123' };
 const mockWorkoutService = {
@@ -22,6 +23,7 @@ describe('Workoutplancontroller', () => {
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [WorkoutplanController],
       providers: [
+        AppLogger,
         {
           provide: WorkoutplanService,
           useValue: mockWorkoutService,

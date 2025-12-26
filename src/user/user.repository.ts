@@ -1,9 +1,8 @@
 import {
   ConflictException,
-  HttpException,
-  HttpStatus,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -50,25 +49,17 @@ export class UsersRepository {
     const { username, password } = authCredentialsDto;
     const user = await this.userRepository.findOneBy({ username });
     if (!user) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.UNAUTHORIZED,
-          error: 'Unauthorized',
-          message: USERNAME_NOT_FOUND_MESSAGE,
-        },
-        HttpStatus.UNAUTHORIZED,
-      );
+      throw new UnauthorizedException({
+        status: 401,
+        error: USERNAME_NOT_FOUND_MESSAGE,
+      });
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.UNAUTHORIZED,
-          error: 'Unauthorized',
-          message: PASSWORD_INCORRECT_MESSAGE,
-        },
-        HttpStatus.UNAUTHORIZED,
-      );
+      throw new UnauthorizedException({
+        status: 401,
+        error: PASSWORD_INCORRECT_MESSAGE,
+      });
     }
     const payload: JwtPayload = { username };
     const accessToken: string = this.jwtService.sign(payload);

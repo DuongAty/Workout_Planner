@@ -8,29 +8,22 @@ import { PaginationDto } from '../common/untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
+import { WorkoutplanService } from 'src/workoutplan/workoutplan.service';
+import { PaginationDto } from 'src/common/pagination/pagination.dto';
 @Injectable()
 export class ExerciseService {
   constructor(
-    @InjectRepository(Workout)
-    private readonly workoutRepository: Repository<Workout>,
+    private readonly workoutService: WorkoutplanService,
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
   ) {}
-
-  async findOneWorkout(id: string, user: User): Promise<Workout> {
-    try {
-      return await this.workoutRepository.findOneByOrFail({ id, user });
-    } catch (error) {
-      throw new NotFoundException(`Exercise with ID "${id}" not found`);
-    }
-  }
 
   async createExercise(
     workoutId: string,
     createExerciseDto: CreateExerciseDto,
     user: User,
   ): Promise<Exercise> {
-    const workout = await this.findOneWorkout(workoutId, user);
+    const workout = await this.workoutService.findOneWorkout(workoutId, user);
     const newExercise = this.exerciseService.create({
       ...createExerciseDto,
       workoutId: workoutId,
@@ -66,7 +59,7 @@ export class ExerciseService {
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {
     try {
-      return await this.exerciseService.findOneByOrFail({ id, user });
+      return await this.exerciseService.findOrFail({ id, user });
     } catch (error) {
       throw new NotFoundException(`Exercise with ID "${id}" not found`);
     }
