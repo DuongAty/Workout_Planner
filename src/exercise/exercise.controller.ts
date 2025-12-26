@@ -20,8 +20,8 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from 'src/common/logger/app-logger.service';
-import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { AppLogger } from '../common/helper/logger.helper';
+import { PaginationDto } from '../common/untils/pagination.dto';
 
 @Controller({ version: '1' })
 @UseGuards(AuthGuard())

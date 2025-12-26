@@ -3,6 +3,8 @@ import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Workout } from '../workoutplan/workoutplan.entity';
+import { PaginationDto } from '../common/untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
