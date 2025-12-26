@@ -29,8 +29,14 @@ export class Exercise {
   @Column({ length: 50 })
   muscleGroup!: string;
 
+  @Column({ default: 0 })
+  duration: number;
+
   @Column({ length: 100 })
   note!: string;
+
+  @Column({ nullable: true })
+  thumbnail: string;
 
   @ManyToOne(() => Workout, (plan) => plan.exercises, {
     onDelete: 'CASCADE',

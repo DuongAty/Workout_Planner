@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,24 +8,27 @@ import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
 import { PaginationDto } from 'src/common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
+import * as fs from 'fs';
 @Injectable()
 export class ExerciseService {
   constructor(
     private workoutService: WorkoutplanService,
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
-    @Inject(forwardRef(() => WorkoutplanService))
-    private readonly workoutplanService: WorkoutplanService,
+    private workoutplanService: WorkoutplanService,
   ) {}
 
   async createExercise(
     workoutId: string,
     createExerciseDto: CreateExerciseDto,
     user: User,
+    filePath?: string,
   ): Promise<Exercise> {
     const workout = await this.workoutService.findOneWorkout(workoutId, user);
+    const { thumbnail, ...dataExerciseDto } = createExerciseDto;
     const newExercise = this.exerciseService.create({
-      ...createExerciseDto,
+      ...dataExerciseDto,
+      thumbnail: filePath,
       workoutId: workoutId,
       workoutPlan: workout,
       user,
@@ -45,16 +43,19 @@ export class ExerciseService {
     paginationDto: PaginationDto,
     user: User,
   ): Promise<{ data: Exercise[]; total: number; totalPages: number }> {
-    const { search, muscleGroup } = getExerciseFilter;
+    const { search, muscleGroup, duration } = getExerciseFilter;
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
-    const query = this.exerciseService.createQueryBuilder('exercies');
+    const query = this.exerciseService.createQueryBuilder('exercises');
     query.where({ user });
     if (muscleGroup) {
-      query.andWhere('exercies.muscleGroup = :muscleGroup', { muscleGroup });
+      query.andWhere('exercsies.muscleGroup = :muscleGroup', { muscleGroup });
+    }
+    if (duration) {
+      query.andWhere('exercises.duration = :duration', { duration });
     }
     if (search) {
-      query.andWhere('exercies.name ILIKE :search', {
+      query.andWhere('exercises.name ILIKE :search', {
         search: `%${search}%`,
       });
     }
@@ -83,13 +84,25 @@ export class ExerciseService {
     id: string,
     updateExerciseDto: UpdateExerciseDto,
     user: User,
+    filePath?: string,
   ): Promise<Exercise> {
     const exercise = await this.findOneExercise(id, user);
+    if (filePath && exercise.thumbnail) {
+      const oldPath = `./${exercise.thumbnail}`;
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
     const updateData: Partial<Exercise> = {};
     Object.keys(updateExerciseDto).forEach((key) => {
-      const value = updateExerciseDto[key];
-      if (value !== undefined) updateData[key] = value;
+      if (key !== 'thumbnail') {
+        const value = updateExerciseDto[key];
+        if (value !== undefined) updateData[key] = value;
+      }
     });
+    if (filePath) {
+      updateData.thumbnail = filePath;
+    }
     Object.assign(exercise, updateData);
     await this.exerciseService.save(exercise);
     return exercise;
