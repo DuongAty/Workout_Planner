@@ -18,10 +18,10 @@ export class Exercise {
   name!: string;
 
   @Column('int')
-  reps!: number;
+  repetitions!: number;
 
   @Column('int')
-  sets!: number;
+  numberOfSets!: number;
 
   @Column('int')
   restTime!: number;
