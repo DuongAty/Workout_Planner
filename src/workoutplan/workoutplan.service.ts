@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { PaginationDto } from '../untils/pagination.dto';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';

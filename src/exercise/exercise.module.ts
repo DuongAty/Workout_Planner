@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Exercise } from './exercise.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { AuthModule } from '../auth/auth.module';
-import { LoggerModule } from 'src/common/helper/logger.module';
+import { LoggerModule } from 'src/common/logger/logger.module';
+import { WorkoutplanService } from 'src/workoutplan/workoutplan.service';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { LoggerModule } from 'src/common/helper/logger.module';
     AuthModule,
     LoggerModule,
   ],
-  providers: [ExerciseService],
+  providers: [ExerciseService, WorkoutplanService],
   controllers: [ExerciseController],
 })
 export class ExerciseModule {}

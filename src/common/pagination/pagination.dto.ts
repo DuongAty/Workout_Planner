@@ -6,7 +6,7 @@ export class PaginationDto {
   @ApiProperty({
     required: false,
     default: 2,
-    description: 'Số lượng mục trên mỗi trang',
+    description: 'Number of items per page',
   })
   @IsOptional()
   @Type(() => Number)
@@ -17,7 +17,7 @@ export class PaginationDto {
   @ApiProperty({
     required: false,
     default: 1,
-    description: 'Số trang hiện tại',
+    description: 'Current page number',
   })
   @IsOptional()
   @Type(() => Number)
