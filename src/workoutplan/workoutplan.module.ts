@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Workout } from './workoutplan.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { AuthModule } from '../auth/auth.module';
-import { LoggerModule } from 'src/common/helper/logger.module';
+import { LoggerModule } from 'src/common/logger/logger.module';
 
 @Module({
   imports: [

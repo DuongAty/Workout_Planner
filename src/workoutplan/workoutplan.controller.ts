@@ -21,7 +21,7 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from '../common/helper/logger.helper';
+import { AppLogger } from 'src/common/logger/app-logger.service';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -77,10 +77,7 @@ export class WorkoutplanController {
   }
 
   @Delete('/:id')
-  delete(
-    @Param('id') id: string,
-    @GetUser() user: User,
-  ): Promise<void> {
+  delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
     this.logger.warn(
       `User "${user.username}" delete a workout `,
       id,
