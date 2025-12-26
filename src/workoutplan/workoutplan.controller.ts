@@ -31,9 +31,10 @@ export class WorkoutplanController {
     private workoutService: WorkoutplanService,
     private logger: AppLogger,
   ) {}
+
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
-  createWorkout(
+  create(
     @Body() createWorkoutDto: CreateWorkoutDto,
     @GetUser() user: User,
   ): Promise<Workout> {
@@ -46,7 +47,7 @@ export class WorkoutplanController {
   }
 
   @Get()
-  getWorkout(
+  getAll(
     @Query() getWorkoutFilter: GetWorkoutFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
@@ -64,7 +65,7 @@ export class WorkoutplanController {
   }
 
   @Get('/:id')
-  getWorkoutbyId(
+  getOne(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
@@ -77,10 +78,7 @@ export class WorkoutplanController {
   }
 
   @Delete('/:id')
-  deleteWorkoutByid(
-    @Param('id') id: string,
-    @GetUser() user: User,
-  ): Promise<void> {
+  delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
     this.logger.warn(
       `User "${user.username}" delete a workout `,
       id,
@@ -90,7 +88,7 @@ export class WorkoutplanController {
   }
 
   @Patch('/:id')
-  updateNameWorkout(
+  update(
     @Param('id') id: string,
     @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
     @GetUser() user: User,
@@ -106,9 +104,10 @@ export class WorkoutplanController {
       user,
     );
   }
+
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
-  cloneWorkout(@Param('id') id: string, @GetUser() user: User) {
+  clone(@Param('id') id: string, @GetUser() user: User) {
     this.logger.verbose(
       `User "${user.username}" clone a workout `,
       id,
@@ -116,6 +115,7 @@ export class WorkoutplanController {
     );
     return this.workoutService.cloneWorkout(id, user);
   }
+
   @Get('/:id/exercises')
   getExercisesByWorkoutId(
     @Param('id') id: string,

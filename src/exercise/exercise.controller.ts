@@ -34,7 +34,7 @@ export class ExerciseController {
 
   @Post(':workoutId/')
   @UseInterceptors(ClassSerializerInterceptor)
-  createExercise(
+  create(
     @Param('workoutId') workoutId: string,
     @Body() createExerciseDto: CreateExerciseDto,
     @GetUser() user: User,
@@ -52,7 +52,7 @@ export class ExerciseController {
   }
 
   @Get()
-  getExersices(
+  getAll(
     @Query() getExerciseFilter: GetExerciseFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
@@ -70,7 +70,7 @@ export class ExerciseController {
   }
 
   @Get('/:id')
-  getExercisebyId(
+  getOne(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Exercise | null> {
@@ -83,10 +83,7 @@ export class ExerciseController {
   }
 
   @Delete('/:id')
-  deleteExerciseByid(
-    @Param('id') id: string,
-    @GetUser() user: User,
-  ): Promise<void> {
+  delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
     this.logger.verbose(
       `User "${user.username}" delete an exercise`,
       id,
@@ -96,7 +93,7 @@ export class ExerciseController {
   }
 
   @Patch('/:id')
-  updateExercise(
+  update(
     @Param('id') id: string,
     @Body() updateExerciseDto: UpdateExerciseDto,
     @GetUser() user: User,
