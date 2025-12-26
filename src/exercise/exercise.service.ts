@@ -3,13 +3,11 @@ import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Workout } from '../workoutplan/workoutplan.entity';
-import { PaginationDto } from '../common/untils/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
-import { WorkoutplanService } from 'src/workoutplan/workoutplan.service';
-import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { WorkoutplanService } from '../workoutplan/workoutplan.service';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -59,7 +57,7 @@ export class ExerciseService {
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {
     try {
-      return await this.exerciseService.findOrFail({ id, user });
+      return await this.exerciseService.findOneOrFail({ where: { id, user } });
     } catch (error) {
       throw new NotFoundException(`Exercise with ID "${id}" not found`);
     }

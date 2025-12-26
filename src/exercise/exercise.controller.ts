@@ -20,10 +20,10 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from '../common/helper/logger.helper';
 import { PaginationDto } from '../common/untils/pagination.dto';
+import { AppLogger } from 'src/common/logger/app-logger.service';
 
-@Controller({ version: '1' })
+@Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class ExerciseController {
