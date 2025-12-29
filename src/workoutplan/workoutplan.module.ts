@@ -6,7 +6,7 @@ import { Workout } from './workoutplan.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { AuthModule } from '../auth/auth.module';
 import { LoggerModule } from 'src/common/logger/logger.module';
-
+import { UploadService } from 'src/common/upload/upload.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Workout, Exercise]),
@@ -14,6 +14,6 @@ import { LoggerModule } from 'src/common/logger/logger.module';
     LoggerModule,
   ],
   controllers: [WorkoutplanController],
-  providers: [WorkoutplanService],
+  providers: [WorkoutplanService, UploadService],
 })
 export class WorkoutplanModule {}

@@ -8,6 +8,7 @@ import { AuthModule } from '../auth/auth.module';
 import { LoggerModule } from 'src/common/logger/logger.module';
 import { WorkoutplanModule } from '../workoutplan/workoutplan.module';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
+import { UploadService } from '../common/upload/upload.service';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { WorkoutplanService } from '../workoutplan/workoutplan.service';
     AuthModule,
     LoggerModule,
   ],
-  providers: [ExerciseService, WorkoutplanService],
+  providers: [ExerciseService, WorkoutplanService, UploadService],
   controllers: [ExerciseController],
 })
 export class ExerciseModule {}

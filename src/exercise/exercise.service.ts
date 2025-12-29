@@ -8,33 +8,47 @@ import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
 import { PaginationDto } from 'src/common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
-import * as fs from 'fs';
+import { UploadService } from '../common/upload/upload.service';
 @Injectable()
 export class ExerciseService {
   constructor(
     private workoutService: WorkoutplanService,
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
-    private workoutplanService: WorkoutplanService,
+    private uploadService: UploadService,
   ) {}
+
+  async uploadMedia(
+    id: string,
+    user: User,
+    filePath: string,
+    type: 'thumbnail' | 'videoUrl',
+  ): Promise<Exercise> {
+    const exercise = await this.findOneExercise(id, user);
+    if (type === 'thumbnail' && exercise.thumbnail) {
+      this.uploadService.cleanupFile(exercise.thumbnail);
+      exercise.thumbnail = filePath;
+    } else if (type === 'videoUrl' && exercise.videoUrl) {
+      this.uploadService.cleanupFile(exercise.videoUrl);
+      exercise.videoUrl = filePath;
+    } else {
+      exercise[type] = filePath;
+    }
+    return await this.exerciseService.save(exercise);
+  }
 
   async createExercise(
     workoutId: string,
     createExerciseDto: CreateExerciseDto,
     user: User,
-    filePath?: string,
-  ): Promise<Exercise> {
-    const workout = await this.workoutService.findOneWorkout(workoutId, user);
-    const { thumbnail, ...dataExerciseDto } = createExerciseDto;
+  ) {
     const newExercise = this.exerciseService.create({
-      ...dataExerciseDto,
-      thumbnail: filePath,
+      ...createExerciseDto,
       workoutId: workoutId,
-      workoutPlan: workout,
       user,
     });
     const savedExercise = await this.exerciseService.save(newExercise);
-    await this.workoutplanService.syncNumExercises(workoutId);
+    await this.workoutService.syncNumExercises(workoutId);
     return savedExercise;
   }
 
@@ -74,37 +88,24 @@ export class ExerciseService {
   }
 
   async deleteExerciseById(id: string, user: User): Promise<void> {
-    const result = await this.exerciseService.delete({ id, user });
-    if (result.affected === 0) {
-      throw new NotFoundException(`Exercise with id: ${id} not found`);
+    const exercise = await this.findOneExercise(id, user);
+    if (exercise.thumbnail) {
+      this.uploadService.cleanupFile(exercise.thumbnail);
     }
+    if (exercise.videoUrl) {
+      this.uploadService.cleanupFile(exercise.videoUrl);
+    }
+    await this.exerciseService.remove(exercise);
   }
 
-  async updateExercise(
-    id: string,
-    updateExerciseDto: UpdateExerciseDto,
-    user: User,
-    filePath?: string,
-  ): Promise<Exercise> {
+  async updateExercise(id: string, dto: UpdateExerciseDto, user: User) {
     const exercise = await this.findOneExercise(id, user);
-    if (filePath && exercise.thumbnail) {
-      const oldPath = `./${exercise.thumbnail}`;
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
-    }
-    const updateData: Partial<Exercise> = {};
-    Object.keys(updateExerciseDto).forEach((key) => {
-      if (key !== 'thumbnail') {
-        const value = updateExerciseDto[key];
-        if (value !== undefined) updateData[key] = value;
+    const { ...updateData } = dto;
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] !== undefined && updateData[key] !== null) {
+        exercise[key] = updateData[key];
       }
     });
-    if (filePath) {
-      updateData.thumbnail = filePath;
-    }
-    Object.assign(exercise, updateData);
-    await this.exerciseService.save(exercise);
-    return exercise;
+    return await this.exerciseService.save(exercise);
   }
 }

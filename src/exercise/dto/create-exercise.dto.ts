@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsInt, Min, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsInt,
+  Min,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { MuscleGroup } from '../exercise-musclegroup';
 import { Type } from 'class-transformer';
 
@@ -57,14 +64,6 @@ export class CreateExerciseDto {
     description: 'Total time of exercise',
   })
   duration: number;
-
-  @ApiProperty({
-    type: 'string',
-    format: 'binary',
-    required: false,
-    description: 'Ảnh minh họa cho bài tập',
-  })
-  thumbnail: any;
 
   @IsString()
   @IsNotEmpty()
