@@ -116,7 +116,7 @@ export class ExerciseController {
     @GetUser() user: User,
   ) {
     this.logger.verbose(
-      `User "${user.username}" get all workout `,
+      `User "${user.username}" create an exercises `,
       createExerciseDto,
       ExerciseController.name,
     );
@@ -135,11 +135,6 @@ export class ExerciseController {
   ): Promise<{ data: Exercise[]; totalPages: number }> {
     this.logger.verbose(
       `User "${user.username}" get all exercise`,
-      getExerciseFilter,
-      ExerciseController.name,
-    );
-    this.logger.verbose(
-      `User "${user.username}" get all workout `,
       getExerciseFilter,
       ExerciseController.name,
     );
@@ -180,7 +175,7 @@ export class ExerciseController {
     @GetUser() user: User,
   ) {
     this.logger.verbose(
-      `User "${user.username}" get all workout `,
+      `User "${user.username}" update an exercises `,
       updateExerciseDto,
       ExerciseController.name,
     );
