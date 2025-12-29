@@ -52,13 +52,6 @@ export class UpdateExerciseDto {
   duration: number;
 
   @ApiProperty({
-    type: 'string',
-    format: 'binary',
-    required: false,
-  })
-  thumbnail: any;
-
-  @ApiProperty({
     required: false,
     description: 'Note',
   })

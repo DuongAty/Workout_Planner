@@ -38,6 +38,9 @@ export class Exercise {
   @Column({ nullable: true })
   thumbnail: string;
 
+  @Column({ nullable: true })
+  videoUrl: string;
+
   @ManyToOne(() => Workout, (plan) => plan.exercises, {
     onDelete: 'CASCADE',
   })

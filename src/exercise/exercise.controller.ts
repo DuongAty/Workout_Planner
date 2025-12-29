@@ -1,10 +1,10 @@
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -20,11 +20,16 @@ import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { AppLogger } from 'src/common/logger/app-logger.service';
 import { PaginationDto } from 'src/common/pagination/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { fileFilter, storageConfig } from 'src/common/upload/file-upload';
+import {
+  imageFileFilter,
+  storageConfig,
+  videoFileFilter,
+} from 'src/common/upload/file-upload';
+import { UploadService } from 'src/common/upload/upload.service';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
@@ -32,26 +37,86 @@ import { fileFilter, storageConfig } from 'src/common/upload/file-upload';
 export class ExerciseController {
   constructor(
     private readonly exerciseService: ExerciseService,
+    private uploadService: UploadService,
     private logger: AppLogger,
   ) {}
 
-  @Post(':workoutId/')
+  @Post(':id/upload-thumbnail')
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
   @UseInterceptors(
-    FileInterceptor('thumbnail', {
-      storage: storageConfig('thumbnails'),
-      fileFilter: fileFilter,
+    FileInterceptor('file', {
+      storage: storageConfig('exercises'),
+      fileFilter: imageFileFilter,
     }),
   )
-  @UseInterceptors(ClassSerializerInterceptor)
-  create(
-    @Param('workoutId') workoutId: string,
-    @Body() createExerciseDto: CreateExerciseDto,
+  async uploadThumbnail(
+    @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
     @GetUser() user: User,
-  ): Promise<Exercise> {
+  ) {
+    const path = this.uploadService.getFilePath(file);
+    const updated = await this.exerciseService.uploadMedia(
+      id,
+      user,
+      path,
+      'thumbnail',
+    );
+    return { link: path, data: updated };
+  }
+
+  @Post(':id/upload-video')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: storageConfig('exercises'),
+      fileFilter: videoFileFilter,
+    }),
+  )
+  async uploadVideo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser() user: User,
+  ) {
+    const path = this.uploadService.getFilePath(file);
+    const updated = await this.exerciseService.uploadMedia(
+      id,
+      user,
+      path,
+      'videoUrl',
+    );
+    return { link: path, data: updated };
+  }
+
+  @Post(':workoutId')
+  async create(
+    @Param('workoutId', ParseUUIDPipe) workoutId: string,
+    @Body() createExerciseDto: CreateExerciseDto,
+    @GetUser() user: User,
+  ) {
     this.logger.verbose(
-      `User "${user.username}" creating an exercise`,
+      `User "${user.username}" get all workout `,
       createExerciseDto,
       ExerciseController.name,
     );
@@ -59,7 +124,6 @@ export class ExerciseController {
       workoutId,
       createExerciseDto,
       user,
-      file?.path,
     );
   }
 
@@ -71,6 +135,11 @@ export class ExerciseController {
   ): Promise<{ data: Exercise[]; totalPages: number }> {
     this.logger.verbose(
       `User "${user.username}" get all exercise`,
+      getExerciseFilter,
+      ExerciseController.name,
+    );
+    this.logger.verbose(
+      `User "${user.username}" get all workout `,
       getExerciseFilter,
       ExerciseController.name,
     );
@@ -105,24 +174,16 @@ export class ExerciseController {
   }
 
   @Patch(':id')
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(
-    FileInterceptor('thumbnail', {
-      storage: storageConfig('thumbnails'),
-      fileFilter: fileFilter,
-    }),
-  )
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExerciseDto: UpdateExerciseDto,
-    @UploadedFile() file: Express.Multer.File,
     @GetUser() user: User,
   ) {
-    return this.exerciseService.updateExercise(
-      id,
+    this.logger.verbose(
+      `User "${user.username}" get all workout `,
       updateExerciseDto,
-      user,
-      file?.path,
+      ExerciseController.name,
     );
+    return this.exerciseService.updateExercise(id, updateExerciseDto, user);
   }
 }
