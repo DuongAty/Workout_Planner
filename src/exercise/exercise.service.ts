@@ -45,7 +45,7 @@ export class ExerciseService {
     paginationDto: PaginationDto,
     user: User,
   ): Promise<{ data: Exercise[]; total: number; totalPages: number }> {
-    const { search, muscleGroup } = getExerciseFilter;
+    const { search, muscleGroup, duration } = getExerciseFilter;
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
     const query = this.exerciseService.createQueryBuilder('exercies');
