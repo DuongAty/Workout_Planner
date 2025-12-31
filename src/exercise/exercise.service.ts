@@ -89,6 +89,7 @@ export class ExerciseService {
 
   async deleteExerciseById(id: string, user: User): Promise<void> {
     const exercise = await this.findOneExercise(id, user);
+    const workoutId = exercise.workoutId;
     if (exercise.thumbnail) {
       this.uploadService.cleanupFile(exercise.thumbnail);
     }
@@ -96,6 +97,7 @@ export class ExerciseService {
       this.uploadService.cleanupFile(exercise.videoUrl);
     }
     await this.exerciseService.remove(exercise);
+    await this.workoutService.syncNumExercises(workoutId);
   }
 
   async updateExercise(id: string, dto: UpdateExerciseDto, user: User) {
