@@ -1,34 +1,33 @@
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { BadRequestException } from '@nestjs/common';
+import {
+  IMAGE_MIMETYPE_REGEX,
+  VIDEO_MIMETYPE_REGEX,
+} from './file-upload.constants';
+
+export const generateFileName = (originalname: string): string => {
+  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  const ext = extname(originalname);
+  return `${uniqueSuffix}${ext}`;
+};
 
 export const storageConfig = (folder: string) =>
   diskStorage({
     destination: `./uploads/${folder}`,
     filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+      const fileName = generateFileName(file.originalname);
+      cb(null, fileName);
     },
   });
 
-export const imageFileFilter = (req, file, callback) => {
-  if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+export const mediaFileFilter = (req, file, callback) => {
+  if (
+    !file.mimetype.match(IMAGE_MIMETYPE_REGEX) &&
+    !file.mimetype.match(VIDEO_MIMETYPE_REGEX)
+  ) {
     return callback(
-      new BadRequestException(
-        'Only image formats (jpg, png, webp) are allowed!',
-      ),
-      false,
-    );
-  }
-  callback(null, true);
-};
-
-export const videoFileFilter = (req, file, callback) => {
-  if (!file.mimetype.match(/\/(mp4|mov|quicktime|x-msvideo)$/)) {
-    return callback(
-      new BadRequestException(
-        'Only video formats (mp4, mov, avi) are allowed!',
-      ),
+      new BadRequestException('Only photo or video formats are allowed!'),
       false,
     );
   }

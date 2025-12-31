@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -24,12 +25,12 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { AppLogger } from 'src/common/logger/app-logger.service';
 import { PaginationDto } from 'src/common/pagination/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  imageFileFilter,
-  storageConfig,
-  videoFileFilter,
-} from 'src/common/upload/file-upload';
+import { mediaFileFilter, storageConfig } from 'src/common/upload/file-upload';
 import { UploadService } from 'src/common/upload/upload.service';
+import {
+  IMAGE_MIMETYPE_REGEX,
+  VIDEO_MIMETYPE_REGEX,
+} from 'src/common/upload/file-upload.constants';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
@@ -41,72 +42,62 @@ export class ExerciseController {
     private logger: AppLogger,
   ) {}
 
-  @Post(':id/upload-thumbnail')
+  @Post(':id/upload')
+  @ApiBearerAuth('accessToken')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        file: {
+        fileType: {
           type: 'string',
-          format: 'binary',
+          enum: ['thumbnail', 'video'],
+          description: 'Select the file type to upload',
         },
+        file: { type: 'string', format: 'binary' },
       },
+      required: ['file', 'fileType'],
     },
   })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: storageConfig('exercises'),
-      fileFilter: imageFileFilter,
+      fileFilter: mediaFileFilter,
     }),
   )
-  async uploadThumbnail(
+  async uploadMedia(
     @Param('id') id: string,
+    @Body('fileType') fileType: 'thumbnail' | 'video',
     @UploadedFile() file: Express.Multer.File,
     @GetUser() user: User,
   ) {
-    const path = this.uploadService.getFilePath(file);
-    const updated = await this.exerciseService.uploadMedia(
-      id,
-      user,
-      path,
-      'thumbnail',
-    );
-    return { link: path, data: updated };
-  }
+    if (!file) throw new BadRequestException('File cannot be empty');
+    const isImage = file.mimetype.match(IMAGE_MIMETYPE_REGEX);
+    const isVideo = file.mimetype.match(VIDEO_MIMETYPE_REGEX);
+    if (fileType === 'thumbnail' && !isImage) {
+      throw new BadRequestException(
+        'Thumbnail must be an image format (jpg, jpeg, png, gif, webp...)',
+      );
+    }
+    if (fileType === 'video' && !isVideo) {
+      throw new BadRequestException(
+        'Video must be in video format (mp4, mov, avi...)',
+      );
+    }
 
-  @Post(':id/upload-video')
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: storageConfig('exercises'),
-      fileFilter: videoFileFilter,
-    }),
-  )
-  async uploadVideo(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-    @GetUser() user: User,
-  ) {
+    const dbField: 'thumbnail' | 'videoUrl' =
+      fileType === 'thumbnail' ? 'thumbnail' : 'videoUrl';
     const path = this.uploadService.getFilePath(file);
-    const updated = await this.exerciseService.uploadMedia(
+    const updatedExercise = await this.exerciseService.uploadMedia(
       id,
       user,
       path,
-      'videoUrl',
+      dbField,
     );
-    return { link: path, data: updated };
+    return {
+      link: path,
+      data: updatedExercise,
+    };
   }
 
   @Post(':workoutId')
