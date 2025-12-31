@@ -10,8 +10,10 @@ import {
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AccessTokenPayload } from './type/accessToken.type';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { UserProfileDto } from 'src/auth/dto/user.profile.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -19,8 +21,8 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/register')
-  signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<void> {
-    return this.authService.signUp(authCredentialsDto);
+  signUp(@Body() createUserDto: CreateUserDto): Promise<void> {
+    return this.authService.signUp(createUserDto);
   }
 
   @Post('/login')
@@ -29,10 +31,15 @@ export class AuthController {
   ): Promise<AccessTokenPayload> {
     return this.authService.signIn(authCredentialsDto);
   }
+
   @Get('/me')
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
-  getMe(@Req() req) {
-    return { username: req.user.username };
+  getMe(@Req() req): UserProfileDto {
+    const { fullname, username } = req.user;
+    return {
+      fullname,
+      username,
+    };
   }
 }
