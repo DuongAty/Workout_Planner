@@ -35,11 +35,7 @@ export class AuthController {
   @Get('/me')
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
-  getMe(@Req() req): UserProfileDto {
-    const { fullname, username } = req.user;
-    return {
-      fullname,
-      username,
-    };
+  getMe(@Req() req) {
+    return { username: req.user.username };
   }
 }

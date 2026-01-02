@@ -58,6 +58,7 @@ describe('ExerciseService', () => {
       muscleGroup: MuscleGroup.Chest,
       sets: 4,
       reps: 10,
+      druration: 500,
       restTime: 90,
       note: 'Focus on slow negative',
     };
@@ -70,9 +71,11 @@ describe('ExerciseService', () => {
     };
 
     it('should successfully create and save a new exercise', async () => {
+      const workoutService: WorkoutplanService;
       findOneWorkoutSpy.mockResolvedValue(mockFoundWorkout);
       mockExerciseService.create.mockReturnValue(createdExerciseEntity);
       mockExerciseService.save.mockResolvedValue(createdExerciseEntity);
+      workoutService.syncNumExercises = jest.fn().mockResolvedValue(true);
       const result = await exerciseService.createExercise(
         workoutId,
         createExerciseDto,
@@ -96,11 +99,9 @@ describe('ExerciseService', () => {
       findOneWorkoutSpy.mockRejectedValueOnce(
         new NotFoundException('Workout not found'),
       );
-
       await expect(
         exerciseService.createExercise(workoutId, createExerciseDto, mockUser),
       ).rejects.toThrow(NotFoundException);
-
       expect(mockExerciseService.create).not.toHaveBeenCalledWith();
       expect(mockExerciseService.save).not.toHaveBeenCalledWith();
     });
@@ -118,6 +119,7 @@ describe('ExerciseService', () => {
       mockExerciseService.createQueryBuilder = jest.fn(() => filter);
       const result = await exerciseService.getAllExercies(
         { search: '' },
+        { duration: 500 },
         { page: 1, limit: 10 },
         mockUser,
       );

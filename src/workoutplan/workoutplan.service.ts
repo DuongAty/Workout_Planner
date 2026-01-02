@@ -1,9 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { PaginationDto } from '../common/pagination/pagination.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
@@ -11,13 +10,22 @@ import { PaginationDto } from '../common/pagination/pagination.dto';
 
 @Injectable()
 export class WorkoutplanService {
-  private logger = new Logger();
   constructor(
     @InjectRepository(Workout)
     private workoutPlanService: Repository<Workout>,
     @InjectRepository(Exercise)
     private exerciseService: Repository<Exercise>,
   ) {}
+
+  async syncNumExercises(workoutId: string): Promise<void> {
+    const count = await this.exerciseService
+      .createQueryBuilder('exercise')
+      .where('exercise.workoutId = :workoutId', { workoutId })
+      .getCount();
+    await this.workoutPlanService.update(workoutId, {
+      numExercises: count,
+    });
+  }
 
   async createWorkout(
     createWorkoutDto: CreateWorkoutDto,
@@ -37,7 +45,7 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search } = getWorkoutFilter;
+    const { search, numExercises } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
@@ -45,6 +53,9 @@ export class WorkoutplanService {
       query.andWhere('workout.name ILIKE :search', {
         search: `%${search}%`,
       });
+    }
+    if (numExercises !== undefined && numExercises !== null) {
+      query.andWhere('workout.numExercises = :numExercises', { numExercises });
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
@@ -90,6 +101,7 @@ export class WorkoutplanService {
     const newWorkout = this.workoutPlanService.create({
       name: original.name + ' (Clone)',
       user,
+      numExercises: original.exercises.length,
     });
     await this.workoutPlanService.save(newWorkout);
     const newExercises = original.exercises.map((ex) =>
@@ -98,6 +110,7 @@ export class WorkoutplanService {
         muscleGroup: ex.muscleGroup,
         numberOfSets: ex.numberOfSets,
         repetitions: ex.repetitions,
+        duration: ex.duration,
         restTime: ex.restTime,
         note: ex.note,
         workoutId: newWorkout.id,
@@ -105,6 +118,8 @@ export class WorkoutplanService {
       }),
     );
     await this.exerciseService.save(newExercises);
+    newWorkout.numExercises = newExercises.length;
+    await this.workoutPlanService.save(newWorkout);
     newWorkout.exercises = newExercises;
     return newWorkout;
   }
