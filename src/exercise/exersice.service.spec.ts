@@ -13,7 +13,7 @@ const mockUser = { id: 'id', username: 'duong', password: '123' };
 const mockExerciseService = {
   create: jest.fn(),
   save: jest.fn(),
-  findOne: jest.fn().mockResolvedValue(''),
+  findOneByOrFail: jest.fn().mockResolvedValue(''),
   delete: jest.fn(),
 };
 const mockExersise = {
@@ -133,15 +133,18 @@ describe('ExerciseService', () => {
 
   describe('getExerciseById', () => {
     it('returns Exercise when found', async () => {
-      mockExerciseService.findOne.mockResolvedValue(mockExersise);
+      mockExerciseService.findOneByOrFail.mockResolvedValue(mockExersise);
       const result = await exerciseService.findOneExercise('id', mockUser);
-      expect(mockExerciseService.findOne).toHaveBeenCalledWith({
-        where: { id: 'id', user: mockUser },
+      expect(mockExerciseService.findOneByOrFail).toHaveBeenCalledWith({
+        id: 'id',
+        user: mockUser,
       });
       expect(result).toEqual(mockExersise);
     });
     it('throws NotFoundException when Exercise not found', async () => {
-      mockExerciseService.findOne.mockResolvedValue(null);
+      mockExerciseService.findOneByOrFail.mockRejectedValue(
+        new Error('Entity not found'),
+      );
       await expect(
         exerciseService.findOneExercise('id', mockUser),
       ).rejects.toThrow(NotFoundException);
@@ -209,7 +212,9 @@ describe('ExerciseService', () => {
       expect(result).toEqual(expectedResult);
     });
     it('throws NotFoundException when Exercise not found', async () => {
-      mockExerciseService.findOne.mockResolvedValue(null);
+      mockExerciseService.findOneByOrFail.mockRejectedValue(
+        new Error('Entity not found'),
+      );
       await expect(
         exerciseService.updateExercise('id', updateDto, mockUser),
       ).rejects.toThrow(NotFoundException);
