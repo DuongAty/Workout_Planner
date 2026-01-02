@@ -3,15 +3,15 @@ import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
-import { WorkoutplanService } from '../workoutplan/workoutplan.service';
-import { PaginationDto } from '../common/pagination/pagination.dto';
+import { WorkoutplanService } from 'src/workoutplan/workoutplan.service';
 @Injectable()
 export class ExerciseService {
   constructor(
-    private readonly workoutService: WorkoutplanService,
+    private workoutService: WorkoutplanService,
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
   ) {}

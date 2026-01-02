@@ -6,7 +6,7 @@ import { Exercise } from '../exercise/exercise.entity';
 import { NotFoundException } from '@nestjs/common';
 import { ExerciseService } from '../exercise/exercise.service';
 import { PassportModule } from '@nestjs/passport';
-import { AppLogger } from '../common/helper/app-logger.service';
+import { AppLogger } from '../common/logger/app-logger.service';
 
 const mockUser = { id: 'id', username: 'duong', password: '123' };
 

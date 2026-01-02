@@ -14,14 +14,14 @@ import {
 import { ExerciseService } from './exercise.service';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { PaginationDto } from '../common/untils/pagination.dto';
-import { AppLogger } from 'src/common/logger/app-logger.service';
+import { AppLogger } from '../common/logger/app-logger.service';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())

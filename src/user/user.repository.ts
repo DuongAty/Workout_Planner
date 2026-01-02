@@ -15,7 +15,8 @@ import {
   PASSWORD_INCORRECT_MESSAGE,
   USERNAME_NOT_FOUND_MESSAGE,
 } from '../auth/auth-constants';
-import { AccessTokenPayload } from 'src/auth/type/accessToken.type';
+import { AccessTokenPayload } from '../auth/type/accessToken.type';
+import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -24,8 +25,8 @@ export class UsersRepository {
     private jwtService: JwtService,
   ) {}
 
-  async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {
-    const { username, password } = authCredentialsDto;
+  async createUser(createUserDto: CreateUserDto): Promise<void> {
+    const { fullname, username, password } = createUserDto;
     const existingUser = await this.userRepository.findOneBy({ username });
     if (existingUser) {
       throw new ConflictException('Username already exits');
@@ -33,6 +34,7 @@ export class UsersRepository {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
     const user = this.userRepository.create({
+      fullname,
       username,
       password: hashedPassword,
     });
