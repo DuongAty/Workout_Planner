@@ -117,7 +117,7 @@ export class WorkoutplanController {
     return this.workoutService.cloneWorkout(id, user);
   }
   @Get('/:id/exercises')
-  getExercisesByWorkoutId(
+  getExercisesById(
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
