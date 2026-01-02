@@ -123,6 +123,7 @@ export class WorkoutplanService {
         muscleGroup: ex.muscleGroup,
         numberOfSets: ex.numberOfSets,
         repetitions: ex.repetitions,
+        duration: ex.duration,
         restTime: ex.restTime,
         duration: ex.duration,
         note: ex.note,
