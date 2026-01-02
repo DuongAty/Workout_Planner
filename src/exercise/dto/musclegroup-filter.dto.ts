@@ -19,4 +19,11 @@ export class GetExerciseFilter {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Total time of exercise',
+  })
+  @IsOptional()
+  duration?: string;
 }
