@@ -5,9 +5,10 @@ describe('Create Exercise Dto', () => {
   const mockExersisedto = {
     name: 'Dumbbell Bench Press',
     muscleGroup: MuscleGroup.Chest,
-    sets: 4,
-    reps: 10,
+    numberOfSets: 4,
+    repetitions: 10,
     restTime: 90,
+    duration: 500,
     note: 'Focus on slow negative',
   };
   it('Validation should be passed when the data is valid.', async () => {

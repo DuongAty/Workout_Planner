@@ -7,6 +7,7 @@ import { NotFoundException } from '@nestjs/common';
 import { ExerciseService } from '../exercise/exercise.service';
 import { PassportModule } from '@nestjs/passport';
 import { AppLogger } from '../common/logger/app-logger.service';
+import { UploadService } from '../common/upload/upload.service';
 
 const mockUser = { id: 'id', username: 'duong', password: '123' };
 const workoutRepoMock = {
@@ -33,6 +34,7 @@ describe('WorkoutplanService', () => {
         AppLogger,
         WorkoutplanService,
         ExerciseService,
+        UploadService,
         {
           provide: getRepositoryToken(Workout),
           useValue: workoutRepoMock,
@@ -41,10 +43,17 @@ describe('WorkoutplanService', () => {
           provide: getRepositoryToken(Exercise),
           useValue: mockExerciseService,
         },
+        {
+          provide: UploadService,
+          useValue: {
+            cleanupFile: jest.fn().mockResolvedValue(undefined),
+            cloneFile: jest.fn((file) => `cloned-${file}`),
+          },
+        },
       ],
     }).compile();
     serviceWorkPlanService = module.get<WorkoutplanService>(WorkoutplanService);
-    serviceExerciseService = module.get<ExerciseService>(ExerciseService);
+    uploadService = module.get<UploadService>(UploadService);
   });
   describe('Sync Number', () => {
     it('Should update the exact number of exercises', async () => {
