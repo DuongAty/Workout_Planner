@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
+import { PassportModule } from '@nestjs/passport';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -16,6 +17,7 @@ describe('AuthController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [AuthController],
       providers: [
         {

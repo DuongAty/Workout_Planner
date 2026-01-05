@@ -14,7 +14,7 @@ const mockUser = { id: 'id', username: 'duong', password: '123' };
 const mockExerciseService = {
   create: jest.fn(),
   save: jest.fn(),
-  findOneByOrFail: jest.fn().mockResolvedValue(''),
+  findOneOrFail: jest.fn().mockResolvedValue(''),
   delete: jest.fn(),
   remove: jest.fn(),
   uploadMedia: jest.fn(),
@@ -190,24 +190,25 @@ describe('ExerciseService', () => {
     };
 
     it('should successfully create and save a new exercise', async () => {
-      const workoutService: WorkoutplanService;
-      findOneWorkoutSpy.mockResolvedValue(mockFoundWorkout);
+      workoutPlanService.findOneWorkout.mockResolvedValue(mockFoundWorkout);
       mockExerciseService.create.mockReturnValue(createdExerciseEntity);
       mockExerciseService.save.mockResolvedValue(createdExerciseEntity);
-      workoutService.syncNumExercises = jest.fn().mockResolvedValue(true);
+      workoutPlanService.syncNumExercises = jest.fn().mockResolvedValue(true);
       const result = await exerciseService.createExercise(
         workoutId,
         createExerciseDto as any,
         mockUser,
       );
-      expect(mockExerciseService.save).toHaveBeenCalledWith(mockNewExercise);
+      expect(mockExerciseService.save).toHaveBeenCalledWith(
+        createdExerciseEntity,
+      );
       expect(workoutPlanService.syncNumExercises).toHaveBeenCalledWith(
         workoutId,
       );
-      expect(result).toEqual(mockSavedExercise);
+      expect(result).toEqual(createdExerciseEntity);
     });
     it('should throw NotFoundException if findOneWorkout fails', async () => {
-      findOneWorkoutSpy.mockRejectedValueOnce(
+      workoutPlanService.findOneWorkout.mockRejectedValueOnce(
         new NotFoundException('Workout not found'),
       );
       await expect(
@@ -220,6 +221,8 @@ describe('ExerciseService', () => {
 
   describe('getAllExercise', () => {
     it('returns data, total and totalPages', async () => {
+      const filterDto = { search: '', muscleGroup: undefined, duration: 500 };
+      const paginationDto = { page: 1, limit: 10 };
       const filter = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -227,11 +230,12 @@ describe('ExerciseService', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([['data'], 1]),
       };
-      mockExerciseService.createQueryBuilder = jest.fn(() => filter);
+      mockExerciseService.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(filter);
       const result = await exerciseService.getAllExercies(
-        { search: '' },
-        { duration: 500 },
-        { page: 1, limit: 10 },
+        filterDto,
+        paginationDto,
         mockUser,
       );
       expect(result).toEqual({
@@ -242,27 +246,78 @@ describe('ExerciseService', () => {
     });
   });
 
-  describe('getExerciseById', () => {
-    it('returns Exercise when found', async () => {
-      mockExerciseService.findOneByOrFail.mockResolvedValue(mockExersise);
-      const result = await exerciseService.findOneExercise('id', mockUser);
-      expect(mockExerciseService.findOneByOrFail).toHaveBeenCalledWith({
-        id: 'id',
+  describe('findOneExercise', () => {
+    it('should return exercise when found', async () => {
+      const exerciseId = 'exercise-123';
+      const mockExercise = {
+        id: exerciseId,
+        name: 'Push up',
+        duration: 300,
         user: mockUser,
+      } as Exercise;
+
+      mockExerciseService.findOneOrFail.mockResolvedValue(mockExercise);
+
+      const result = await exerciseService.findOneExercise(
+        exerciseId,
+        mockUser,
+      );
+
+      expect(mockExerciseService.findOneOrFail).toHaveBeenCalledWith({
+        where: { id: exerciseId, user: mockUser },
       });
       expect(result).toEqual(mockExercise);
     });
-    it('throws NotFoundException when Exercise not found', async () => {
-      mockExerciseService.findOneByOrFail.mockRejectedValue(
-        new Error('Entity not found'),
-      );
+
+    it('should throw NotFoundException when exercise not found', async () => {
+      const exerciseId = 'non-existent-id';
+      const error = new Error('Could not find any entity');
+      error.name = 'EntityNotFoundError';
+
+      mockExerciseService.findOneOrFail.mockRejectedValue(error);
+
       await expect(
         exerciseService.findOneExercise(exerciseId, mockUser),
       ).rejects.toThrow(NotFoundException);
 
       await expect(
         exerciseService.findOneExercise(exerciseId, mockUser),
-      ).rejects.toThrow(`Exercise with ID "${exerciseId}" not found`);
+      ).rejects.toThrow(`Exercise with ID ${exerciseId} not found`);
+
+      expect(mockExerciseService.findOneOrFail).toHaveBeenCalledWith({
+        where: { id: exerciseId, user: mockUser },
+      });
+    });
+
+    it('should throw NotFoundException when exercise belongs to different user', async () => {
+      const exerciseId = 'exercise-123';
+      const error = new Error('Could not find any entity');
+      error.name = 'EntityNotFoundError';
+
+      mockExerciseService.findOneOrFail.mockRejectedValue(error);
+
+      await expect(
+        exerciseService.findOneExercise(exerciseId, mockUser),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockExerciseService.findOneOrFail).toHaveBeenCalledWith({
+        where: { id: exerciseId, user: mockUser },
+      });
+    });
+
+    it('should handle database errors properly', async () => {
+      const exerciseId = 'exercise-123';
+      const dbError = new Error('Database connection failed');
+
+      mockExerciseService.findOneOrFail.mockRejectedValue(dbError);
+
+      await expect(
+        exerciseService.findOneExercise(exerciseId, mockUser),
+      ).rejects.toThrow(NotFoundException);
+
+      await expect(
+        exerciseService.findOneExercise(exerciseId, mockUser),
+      ).rejects.toThrow(`Exercise with ID ${exerciseId} not found`);
     });
   });
 
@@ -346,7 +401,7 @@ describe('ExerciseService', () => {
     });
 
     it('throws NotFoundException when Exercise not found', async () => {
-      mockExerciseService.findOneByOrFail.mockRejectedValue(
+      mockExerciseService.findOneOrFail.mockRejectedValue(
         new Error('Entity not found'),
       );
       await expect(

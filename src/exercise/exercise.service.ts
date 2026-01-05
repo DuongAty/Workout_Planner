@@ -85,7 +85,7 @@ export class ExerciseService {
     try {
       return await this.exerciseService.findOneOrFail({ where: { id, user } });
     } catch (error) {
-      throw new NotFoundException(`Exercise with ID "${id}" not found`);
+      throw new NotFoundException(`Exercise with ID ${id} not found`);
     }
   }
 
