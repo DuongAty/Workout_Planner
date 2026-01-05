@@ -7,7 +7,7 @@ import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
-import { UploadService } from 'src/common/upload/upload.service';
+import { UploadService } from '../common/upload/upload.service';
 
 @Injectable()
 export class WorkoutplanService {

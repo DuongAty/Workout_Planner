@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
-import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../common/upload/upload.service';
 @Injectable()
@@ -42,9 +42,11 @@ export class ExerciseService {
     createExerciseDto: CreateExerciseDto,
     user: User,
   ) {
+    const workout = await this.workoutService.findOneWorkout(workoutId, user);
     const newExercise = this.exerciseService.create({
       ...createExerciseDto,
       workoutId: workoutId,
+      workoutPlan: workout,
       user,
     });
     const savedExercise = await this.exerciseService.save(newExercise);

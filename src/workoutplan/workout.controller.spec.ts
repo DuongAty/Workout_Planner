@@ -17,7 +17,6 @@ const mockWorkoutService = {
 const mockWorkout = { id: 'id', name: 'Ngực' };
 describe('Workoutplancontroller', () => {
   let controller: WorkoutplanController;
-  let service: WorkoutplanService;
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -35,27 +34,22 @@ describe('Workoutplancontroller', () => {
       ],
     }).compile();
     controller = module.get<WorkoutplanController>(WorkoutplanController);
-    service = module.get<WorkoutplanService>(WorkoutplanService);
   });
 
   describe('createWWork', () => {
     const mockCreateWorkoutDto = { name: 'Ngực' };
     it('You should call service.createWorkout with the correct DTO and User.', async () => {
-      service.createWorkout.mockResolvedValue(mockWorkoutService, mockUser);
-      await controller.createWorkout(mockCreateWorkoutDto, mockUser);
-
-      expect(service.createWorkout).toHaveBeenCalledTimes(1);
-      expect(service.createWorkout).toHaveBeenCalledWith(
+      mockWorkoutService.createWorkout.mockResolvedValue(mockCreateWorkoutDto);
+      await controller.create(mockCreateWorkoutDto, mockUser);
+      expect(mockWorkoutService.createWorkout).toHaveBeenCalledTimes(1);
+      expect(mockWorkoutService.createWorkout).toHaveBeenCalledWith(
         mockCreateWorkoutDto,
         mockUser,
       );
     });
     it('It should return the result that the service returned.', async () => {
-      service.createWorkout.mockResolvedValue(mockWorkoutService);
-      const result = await controller.createWorkout(
-        mockCreateWorkoutDto,
-        mockUser,
-      );
+      mockWorkoutService.createWorkout.mockResolvedValue(mockWorkoutService);
+      const result = await controller.create(mockCreateWorkoutDto, mockUser);
       expect(result).toEqual(mockWorkoutService);
     });
   });
@@ -70,18 +64,18 @@ describe('Workoutplancontroller', () => {
     };
     const mockPagination = { page: 1, limit: 10 };
     it('You should call workoutService.getAllWorkout with the correct parameters.', async () => {
-      service.getAllWorkout.mockResolvedValue(mockWorkoutService, mockUser);
-      await controller.getWorkout(mockFilter, mockPagination, mockUser);
-      expect(service.getAllWorkout).toHaveBeenCalledWith(
+      mockWorkoutService.getAllWorkout.mockResolvedValue(mockWorkoutService);
+      await controller.getAll(mockFilter, mockPagination, mockUser);
+      expect(mockWorkoutService.getAllWorkout).toHaveBeenCalledWith(
         mockFilter,
         mockPagination,
         mockUser,
       );
-      expect(service.getAllWorkout).toHaveBeenCalledTimes(1);
+      expect(mockWorkoutService.getAllWorkout).toHaveBeenCalledTimes(1);
     });
     it('It should return the result that the service returned.', async () => {
-      service.getAllWorkout.mockResolvedValue(mockWorkout);
-      const result = await controller.getWorkout(
+      mockWorkoutService.getAllWorkout.mockResolvedValue(mockWorkout);
+      const result = await controller.getAll(
         mockFilter,
         mockPagination,
         mockUser,
@@ -93,39 +87,42 @@ describe('Workoutplancontroller', () => {
   describe('findOneWorkout', () => {
     const workoutId = mockWorkout.id;
     it('It should return the result that the service returned.', async () => {
-      service.findOneWorkout.mockResolvedValue(mockWorkout);
-      const result = await controller.getWorkoutbyId(workoutId, mockUser);
-      expect(service.findOneWorkout).toHaveBeenCalledWith(workoutId, mockUser);
-      expect(result).toEqual(mockWorkout);
-    });
-    it('throws NotFoundException when workout not found', async () => {
-      service.findOneWorkout.mockRejectedValue(
-        new NotFoundException(`Workout with ID ${workoutId} not found`),
-      );
-      await expect(
-        controller.getWorkoutbyId(workoutId, mockUser),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('deleteWorkout', () => {
-    const workoutId = mockWorkout.id;
-    it('It should return the result that the service returned.', async () => {
-      service.deleteWorkoutById.mockResolvedValue(mockWorkout);
-      const result = await controller.deleteWorkoutByid(workoutId, mockUser);
-      expect(service.deleteWorkoutById).toHaveBeenCalledWith(
+      mockWorkoutService.findOneWorkout.mockResolvedValue(mockWorkout);
+      const result = await controller.getOne(workoutId, mockUser);
+      expect(mockWorkoutService.findOneWorkout).toHaveBeenCalledWith(
         workoutId,
         mockUser,
       );
       expect(result).toEqual(mockWorkout);
     });
     it('throws NotFoundException when workout not found', async () => {
-      service.deleteWorkoutById.mockRejectedValue(
+      mockWorkoutService.findOneWorkout.mockRejectedValue(
         new NotFoundException(`Workout with ID ${workoutId} not found`),
       );
-      await expect(
-        controller.deleteWorkoutByid(workoutId, mockUser),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.getOne(workoutId, mockUser)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('deleteWorkout', () => {
+    const workoutId = mockWorkout.id;
+    it('It should return the result that the service returned.', async () => {
+      mockWorkoutService.deleteWorkoutById.mockResolvedValue(mockWorkout);
+      const result = await controller.delete(workoutId, mockUser);
+      expect(mockWorkoutService.deleteWorkoutById).toHaveBeenCalledWith(
+        workoutId,
+        mockUser,
+      );
+      expect(result).toEqual(mockWorkout);
+    });
+    it('throws NotFoundException when workout not found', async () => {
+      mockWorkoutService.deleteWorkoutById.mockRejectedValue(
+        new NotFoundException(`Workout with ID ${workoutId} not found`),
+      );
+      await expect(controller.delete(workoutId, mockUser)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -138,13 +135,15 @@ describe('Workoutplancontroller', () => {
       user: mockUser,
     };
     it('It should return the result that the service returned.', async () => {
-      service.updateNameWorkout.mockResolvedValue(mockUpdatedWorkout);
-      const result = await controller.updateNameWorkout(
+      mockWorkoutService.updateNameWorkout.mockResolvedValue(
+        mockUpdatedWorkout,
+      );
+      const result = await controller.update(
         workoutId,
         mockUpdateWorkoutDto,
         mockUser,
       );
-      expect(service.updateNameWorkout).toHaveBeenCalledWith(
+      expect(mockWorkoutService.updateNameWorkout).toHaveBeenCalledWith(
         workoutId,
         mockUpdateWorkoutDto.name,
         mockUser,
@@ -152,33 +151,32 @@ describe('Workoutplancontroller', () => {
       expect(result).toEqual(mockUpdatedWorkout);
     });
     it('throws NotFoundException when workout not found', async () => {
-      service.updateNameWorkout.mockRejectedValue(
+      mockWorkoutService.updateNameWorkout.mockRejectedValue(
         new NotFoundException(`Workout with ID ${workoutId} not found`),
       );
       await expect(
-        controller.updateNameWorkout(
-          workoutId,
-          mockUpdateWorkoutDto.name,
-          mockUser,
-        ),
+        controller.update(workoutId, mockUpdateWorkoutDto.name, mockUser),
       ).rejects.toThrow(NotFoundException);
     });
   });
   describe('cloneWorkout', () => {
     const workoutId = mockWorkout.id;
     it('It should return the result that the service returned.', async () => {
-      service.cloneWorkout.mockResolvedValue(mockWorkout);
-      const result = await controller.cloneWorkout(workoutId, mockUser);
-      expect(service.cloneWorkout).toHaveBeenCalledWith(workoutId, mockUser);
+      mockWorkoutService.cloneWorkout.mockResolvedValue(mockWorkout);
+      const result = await controller.clone(workoutId, mockUser);
+      expect(mockWorkoutService.cloneWorkout).toHaveBeenCalledWith(
+        workoutId,
+        mockUser,
+      );
       expect(result).toEqual(mockWorkout);
     });
     it('throws NotFoundException when workout not found', async () => {
-      service.cloneWorkout.mockRejectedValue(
+      mockWorkoutService.cloneWorkout.mockRejectedValue(
         new NotFoundException(`Workout with ID ${workoutId} not found`),
       );
-      await expect(
-        controller.cloneWorkout(workoutId, mockUser),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.clone(workoutId, mockUser)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

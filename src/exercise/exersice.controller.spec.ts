@@ -3,10 +3,25 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExerciseController } from './exercise.controller';
 import { ExerciseService } from './exercise.service';
 import { MuscleGroup } from './exercise-musclegroup';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AppLogger } from '../common/logger/app-logger.service';
+import { UploadService } from '../common/upload/upload.service';
 
 const mockUser = { id: 'id', username: 'duong', password: '123' };
+const mockFile = {
+  fieldname: 'file',
+  originalname: 'test.jpg',
+  mimetype: 'image/jpeg',
+  path: 'uploads/exercises/test.jpg',
+  buffer: Buffer.from(''),
+  size: 1024,
+} as Express.Multer.File;
+
+const mockUpdatedExercise = {
+  id: 'exercise-id',
+  thumbnail: 'uploads/exercises/test.jpg',
+  videoUrl: null,
+};
 const mockExersise = {
   id: 'id',
   name: 'Dumbbell Bench Press',
@@ -16,13 +31,18 @@ const mockExersise = {
   restTime: 90,
   note: 'Focus on slow negative',
 };
-const mockExersiceService = {
+const mockExerciseService = {
   createExercise: jest.fn(),
   getAllExercies: jest.fn().mockResolvedValue('value'),
   findOneExercise: jest.fn().mockResolvedValue(''),
   deleteExerciseById: jest.fn(),
   updateExercise: jest.fn(),
+  uploadMedia: jest.fn(),
 };
+const mockUploadService = {
+  getFilePath: jest.fn(),
+};
+
 const workoutID = 'id';
 describe('ExerciseController', () => {
   let controller: ExerciseController;
@@ -32,9 +52,10 @@ describe('ExerciseController', () => {
       controllers: [ExerciseController],
       providers: [
         AppLogger,
+        UploadService,
         {
           provide: ExerciseService,
-          useValue: mockExersiceService,
+          useValue: mockExerciseService,
         },
         {
           provide: 'Logger',
@@ -43,6 +64,82 @@ describe('ExerciseController', () => {
       ],
     }).compile();
     controller = module.get<ExerciseController>(ExerciseController);
+  });
+
+  describe('uploadMedia', () => {
+    const exerciseId = 'test-id';
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+    it('The thumbnail upload should be successful if the file is valid.', async () => {
+      const path = 'uploads/exercises/test.jpg';
+      mockUploadService.getFilePath.mockReturnValue(path);
+      mockExerciseService.uploadMedia.mockResolvedValue(mockUpdatedExercise);
+      const result = await controller.uploadMedia(
+        exerciseId,
+        'thumbnail',
+        { ...mockFile, mimetype: 'image/jpeg' },
+        mockUser,
+      );
+      expect(mockExerciseService.uploadMedia).toHaveBeenCalledWith(
+        exerciseId,
+        mockUser,
+        path,
+        'thumbnail',
+      );
+      expect(result.link).toBe(path);
+      expect(result.data).toEqual(mockUpdatedExercise);
+    });
+    it('video upload should be successful.', async () => {
+      const videoPath = 'uploads/exercises/test.mp4';
+      const mockVideoFile = {
+        ...mockFile,
+        path: videoPath,
+        mimetype: 'video/mp4',
+      };
+      mockUploadService.getFilePath.mockReturnValue(videoPath);
+      await controller.uploadMedia(
+        exerciseId,
+        'video',
+        mockVideoFile,
+        mockUser,
+      );
+      expect(mockExerciseService.uploadMedia).toHaveBeenCalledWith(
+        exerciseId,
+        mockUser,
+        videoPath,
+        'videoUrl',
+      );
+    });
+    it('It should throw a BadRequestException if the file is missing.', async () => {
+      await expect(
+        controller.uploadMedia(exerciseId, 'thumbnail', null, mockUser),
+      ).rejects.toThrow(new BadRequestException('File cannot be empty'));
+    });
+
+    it('It should throw an error if the fileType is thumbnail but sending a video.', async () => {
+      const videoFile = { ...mockFile, mimetype: 'video/mp4' };
+
+      await expect(
+        controller.uploadMedia(exerciseId, 'thumbnail', videoFile, mockUser),
+      ).rejects.toThrow(
+        new BadRequestException(
+          'Thumbnail must be an image format (jpg, jpeg, png, gif, webp...)',
+        ),
+      );
+    });
+    it('It should throw an error if the file type is video but you send an image.', async () => {
+      const imageFile = { ...mockFile, mimetype: 'image/png' };
+
+      await expect(
+        controller.uploadMedia(exerciseId, 'video', imageFile, mockUser),
+      ).rejects.toThrow(
+        new BadRequestException(
+          'Video must be in video format (mp4, mov, avi...)',
+        ),
+      );
+    });
   });
 
   describe('createExercise', () => {
@@ -60,13 +157,13 @@ describe('ExerciseController', () => {
       mockUser,
     };
     it('You should call service.createExercise with the correct DTO and User.', async () => {
-      mockExersiceService.createExercise.mockResolvedValue(exersiceCreated);
-      const result = await controller.createExercise(
+      mockExerciseService.createExercise.mockResolvedValue(exersiceCreated);
+      const result = await controller.create(
         workoutID,
         createExerciseDto,
         mockUser,
       );
-      expect(mockExersiceService.createExercise).toHaveBeenCalledWith(
+      expect(mockExerciseService.createExercise).toHaveBeenCalledWith(
         workoutID,
         createExerciseDto,
         mockUser,
@@ -74,12 +171,12 @@ describe('ExerciseController', () => {
       expect(result).toEqual(exersiceCreated);
     });
     it('It should return the result that the service returned', async () => {
-      mockExersiceService.createExercise.mockResolvedValue(
-        mockExersiceService,
+      mockExerciseService.createExercise.mockResolvedValue(
+        mockExerciseService,
         mockUser,
       );
-      await controller.createExercise(workoutID, createExerciseDto, mockUser);
-      expect(mockExersiceService.createExercise).toHaveBeenCalledWith(
+      await controller.create(workoutID, createExerciseDto, mockUser);
+      expect(mockExerciseService.createExercise).toHaveBeenCalledWith(
         workoutID,
         createExerciseDto,
         mockUser,
@@ -88,11 +185,11 @@ describe('ExerciseController', () => {
     it('should throw error if service fails', async () => {
       jest.clearAllMocks();
       const mockError = new NotFoundException('Workout not found');
-      mockExersiceService.createExercise.mockRejectedValue(mockError);
+      mockExerciseService.createExercise.mockRejectedValue(mockError);
       await expect(
-        controller.createExercise(workoutID, createExerciseDto, mockUser),
+        controller.create(workoutID, createExerciseDto, mockUser),
       ).rejects.toThrow(NotFoundException);
-      expect(mockExersiceService.createExercise).toHaveBeenCalledTimes(1);
+      expect(mockExerciseService.createExercise).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -106,21 +203,21 @@ describe('ExerciseController', () => {
     };
     const mockPagination = { page: 1, limit: 10 };
     it('You should call exerciseService.getAllExercises with the correct parameters.', async () => {
-      mockExersiceService.getAllExercies.mockResolvedValue(
-        mockExersiceService,
+      mockExerciseService.getAllExercies.mockResolvedValue(
+        mockExerciseService,
         mockUser,
       );
-      await controller.getExersices(mockFilter, mockPagination, mockUser);
-      expect(mockExersiceService.getAllExercies).toHaveBeenCalledWith(
+      await controller.getAll(mockFilter, mockPagination, mockUser);
+      expect(mockExerciseService.getAllExercies).toHaveBeenCalledWith(
         mockFilter,
         mockPagination,
         mockUser,
       );
-      expect(mockExersiceService.getAllExercies).toHaveBeenCalledTimes(1);
+      expect(mockExerciseService.getAllExercies).toHaveBeenCalledTimes(1);
     });
     it('It should return the result that the service returned.', async () => {
-      mockExersiceService.getAllExercies.mockResolvedValue(mockExersise);
-      const result = await controller.getExersices(
+      mockExerciseService.getAllExercies.mockResolvedValue(mockExersise);
+      const result = await controller.getAll(
         mockFilter,
         mockPagination,
         mockUser,
@@ -132,42 +229,42 @@ describe('ExerciseController', () => {
   describe('findOneExercise', () => {
     const exerciseId = mockExersise.id;
     it('It should return the result that the service returned.', async () => {
-      mockExersiceService.findOneExercise.mockResolvedValue(mockExersise);
-      const result = await controller.getExercisebyId(exerciseId, mockUser);
-      expect(mockExersiceService.findOneExercise).toHaveBeenCalledWith(
+      mockExerciseService.findOneExercise.mockResolvedValue(mockExersise);
+      const result = await controller.getOne(exerciseId, mockUser);
+      expect(mockExerciseService.findOneExercise).toHaveBeenCalledWith(
         exerciseId,
         mockUser,
       );
       expect(result).toEqual(mockExersise);
     });
     it('throws NotFoundException when Exercise not found', async () => {
-      mockExersiceService.findOneExercise.mockRejectedValue(
+      mockExerciseService.findOneExercise.mockRejectedValue(
         new NotFoundException(`Exercise with ID ${exerciseId} not found`),
       );
-      await expect(
-        controller.getExercisebyId(exerciseId, mockUser),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.getOne(exerciseId, mockUser)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('deleteExercise', () => {
     const exerciseId = mockExersise.id;
     it('It should return the result that the service returned.', async () => {
-      mockExersiceService.deleteExerciseById.mockResolvedValue(mockExersise);
-      const result = await controller.deleteExerciseByid(exerciseId, mockUser);
-      expect(mockExersiceService.deleteExerciseById).toHaveBeenCalledWith(
+      mockExerciseService.deleteExerciseById.mockResolvedValue(mockExersise);
+      const result = await controller.delete(exerciseId, mockUser);
+      expect(mockExerciseService.deleteExerciseById).toHaveBeenCalledWith(
         exerciseId,
         mockUser,
       );
       expect(result).toEqual(mockExersise);
     });
     it('throws NotFoundException when exercise not found', async () => {
-      mockExersiceService.deleteExerciseById.mockRejectedValue(
+      mockExerciseService.deleteExerciseById.mockRejectedValue(
         new NotFoundException(`Workout with ID ${exerciseId} not found`),
       );
-      await expect(
-        controller.deleteExerciseByid(exerciseId, mockUser),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.delete(exerciseId, mockUser)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -183,13 +280,9 @@ describe('ExerciseController', () => {
     };
     const mockResult = { id: exerciseId, ...updateDto, user: mockUser };
     it('should call exerciseService.updateExercise and return the result', async () => {
-      mockExersiceService.updateExercise.mockResolvedValue(mockResult);
-      const result = await controller.updateExercise(
-        exerciseId,
-        updateDto,
-        mockUser,
-      );
-      expect(mockExersiceService.updateExercise).toHaveBeenCalledWith(
+      mockExerciseService.updateExercise.mockResolvedValue(mockResult);
+      const result = await controller.update(exerciseId, updateDto, mockUser);
+      expect(mockExerciseService.updateExercise).toHaveBeenCalledWith(
         exerciseId,
         updateDto,
         mockUser,
@@ -197,11 +290,11 @@ describe('ExerciseController', () => {
       expect(result).toEqual(mockResult);
     });
     it('throws NotFoundException when exercise not found', async () => {
-      mockExersiceService.updateExercise.mockRejectedValue(
+      mockExerciseService.updateExercise.mockRejectedValue(
         new NotFoundException(`Exercise with ID ${exerciseId} not found`),
       );
       await expect(
-        controller.updateExercise(exerciseId, updateDto, mockUser),
+        controller.update(exerciseId, updateDto, mockUser),
       ).rejects.toThrow(NotFoundException);
     });
   });

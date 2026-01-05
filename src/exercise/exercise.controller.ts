@@ -22,15 +22,15 @@ import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import { AppLogger } from 'src/common/logger/app-logger.service';
-import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { AppLogger } from '../common/logger/app-logger.service';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { mediaFileFilter, storageConfig } from 'src/common/upload/file-upload';
-import { UploadService } from 'src/common/upload/upload.service';
+import { mediaFileFilter, storageConfig } from '../common/upload/file-upload';
+import { UploadService } from '../common/upload/upload.service';
 import {
   IMAGE_MIMETYPE_REGEX,
   VIDEO_MIMETYPE_REGEX,
-} from 'src/common/upload/file-upload.constants';
+} from '../common/upload/file-upload.constants';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
@@ -84,7 +84,6 @@ export class ExerciseController {
         'Video must be in video format (mp4, mov, avi...)',
       );
     }
-
     const dbField: 'thumbnail' | 'videoUrl' =
       fileType === 'thumbnail' ? 'thumbnail' : 'videoUrl';
     const path = this.uploadService.getFilePath(file);
