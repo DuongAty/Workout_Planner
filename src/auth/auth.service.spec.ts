@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { UsersRepository } from '../user/user.repository';
+import { CreateUserDto } from './dto/create-user.dto';
 
 const mockUsersRepository = {
   createUser: jest.fn().mockReturnValue(''),
@@ -23,16 +24,17 @@ describe('AuthService', () => {
 
   describe('signUp', () => {
     it('You should call usersRepository.createUser and return the result.', async () => {
-      const authCredentialsDto: AuthCredentialsDto = {
+      const createUserDto: CreateUserDto = {
+        fullname: 'duong',
         username: 'testuser',
         password: 'password123',
       };
-      mockUsersRepository.createUser.mockResolvedValue(authCredentialsDto);
-      const result = await authService.signUp(authCredentialsDto);
+      mockUsersRepository.createUser.mockResolvedValue(createUserDto);
+      const result = await authService.signUp(createUserDto);
       expect(mockUsersRepository.createUser).toHaveBeenCalledWith(
-        authCredentialsDto,
+        createUserDto,
       );
-      expect(result).toBe(authCredentialsDto);
+      expect(result).toBe(createUserDto);
     });
   });
 

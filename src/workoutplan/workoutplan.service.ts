@@ -125,7 +125,6 @@ export class WorkoutplanService {
         repetitions: ex.repetitions,
         duration: ex.duration,
         restTime: ex.restTime,
-        duration: ex.duration,
         note: ex.note,
         thumbnail: clonedThumb,
         videoUrl: clonedVideo,
