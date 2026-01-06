@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { ConflictException, HttpStatus, HttpException } from '@nestjs/common';
+import { ConflictException, HttpStatus, HttpException, UnauthorizedException } from '@nestjs/common';
 import {
   PASSWORD_INCORRECT_MESSAGE,
   USERNAME_NOT_FOUND_MESSAGE,
@@ -89,12 +89,16 @@ describe('UsersRepository', () => {
     it('should throw Unauthorized if the user is not found', async () => {
       userRepository.findOneBy.mockResolvedValue(null);
 
+      await expect(repository.signIn(authCredentialsDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+
       try {
         await repository.signIn(authCredentialsDto);
       } catch (error) {
-        expect(error).toBeInstanceOf(HttpException);
-        expect(error.getResponse().message).toBe(USERNAME_NOT_FOUND_MESSAGE);
-        expect(error.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+        const response = error.getResponse();
+        expect(error.getStatus()).toBe(401);
+        expect(response.error).toBe(USERNAME_NOT_FOUND_MESSAGE);
       }
     });
 

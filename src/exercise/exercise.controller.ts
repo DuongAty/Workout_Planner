@@ -1,13 +1,15 @@
 import {
+  BadRequestException,
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,9 +21,16 @@ import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { AppLogger } from 'src/common/logger/app-logger.service';
-import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { AppLogger } from '../common/logger/app-logger.service';
+import { PaginationDto } from '../common/pagination/pagination.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { mediaFileFilter, storageConfig } from '../common/upload/file-upload';
+import { UploadService } from '../common/upload/upload.service';
+import {
+  IMAGE_MIMETYPE_REGEX,
+  VIDEO_MIMETYPE_REGEX,
+} from '../common/upload/file-upload.constants';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
@@ -29,18 +38,75 @@ import { PaginationDto } from 'src/common/pagination/pagination.dto';
 export class ExerciseController {
   constructor(
     private readonly exerciseService: ExerciseService,
+    private uploadService: UploadService,
     private logger: AppLogger,
   ) {}
 
-  @Post(':workoutId/')
-  @UseInterceptors(ClassSerializerInterceptor)
-  create(
-    @Param('workoutId') workoutId: string,
+  @Post(':id/upload')
+  @ApiBearerAuth('accessToken')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fileType: {
+          type: 'string',
+          enum: ['thumbnail', 'video'],
+          description: 'Select the file type to upload',
+        },
+        file: { type: 'string', format: 'binary' },
+      },
+      required: ['file', 'fileType'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: storageConfig('exercises'),
+      fileFilter: mediaFileFilter,
+    }),
+  )
+  async uploadMedia(
+    @Param('id') id: string,
+    @Body('fileType') fileType: 'thumbnail' | 'video',
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser() user: User,
+  ) {
+    if (!file) throw new BadRequestException('File cannot be empty');
+    const isImage = file.mimetype.match(IMAGE_MIMETYPE_REGEX);
+    const isVideo = file.mimetype.match(VIDEO_MIMETYPE_REGEX);
+    if (fileType === 'thumbnail' && !isImage) {
+      throw new BadRequestException(
+        'Thumbnail must be an image format (jpg, jpeg, png, gif, webp...)',
+      );
+    }
+    if (fileType === 'video' && !isVideo) {
+      throw new BadRequestException(
+        'Video must be in video format (mp4, mov, avi...)',
+      );
+    }
+    const dbField: 'thumbnail' | 'videoUrl' =
+      fileType === 'thumbnail' ? 'thumbnail' : 'videoUrl';
+    const path = this.uploadService.getFilePath(file);
+    const updatedExercise = await this.exerciseService.uploadMedia(
+      id,
+      user,
+      path,
+      dbField,
+    );
+    return {
+      link: path,
+      data: updatedExercise,
+    };
+  }
+
+  @Post(':workoutId')
+  async create(
+    @Param('workoutId', ParseUUIDPipe) workoutId: string,
     @Body() createExerciseDto: CreateExerciseDto,
     @GetUser() user: User,
-  ): Promise<Exercise> {
+  ) {
     this.logger.verbose(
-      `User "${user.username}" creating an exercise`,
+      `User "${user.username}" create an exercises `,
       createExerciseDto,
       ExerciseController.name,
     );
@@ -92,14 +158,14 @@ export class ExerciseController {
     return this.exerciseService.deleteExerciseById(id, user);
   }
 
-  @Patch('/:id')
-  update(
-    @Param('id') id: string,
+  @Patch(':id')
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExerciseDto: UpdateExerciseDto,
     @GetUser() user: User,
-  ): Promise<Exercise> {
+  ) {
     this.logger.verbose(
-      `User "${user.username}" update an exercise with data`,
+      `User "${user.username}" update an exercises `,
       updateExerciseDto,
       ExerciseController.name,
     );

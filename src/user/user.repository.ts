@@ -25,7 +25,7 @@ export class UsersRepository {
     private jwtService: JwtService,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto): Promise<void> {
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
     const { fullname, username, password } = createUserDto;
     const existingUser = await this.userRepository.findOneBy({ username });
     if (existingUser) {
@@ -39,7 +39,7 @@ export class UsersRepository {
       password: hashedPassword,
     });
     try {
-      await this.userRepository.save(user);
+      return await this.userRepository.save(user);
     } catch (error) {
       throw new InternalServerErrorException();
     }

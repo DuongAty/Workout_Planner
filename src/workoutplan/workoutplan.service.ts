@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
+import { UploadService } from '../common/upload/upload.service';
 
 @Injectable()
 export class WorkoutplanService {
@@ -15,6 +16,7 @@ export class WorkoutplanService {
     private workoutPlanService: Repository<Workout>,
     @InjectRepository(Exercise)
     private exerciseService: Repository<Exercise>,
+    private uploadService: UploadService,
   ) {}
 
   async syncNumExercises(workoutId: string): Promise<void> {
@@ -74,15 +76,23 @@ export class WorkoutplanService {
         relations,
       });
     } catch (error) {
-      throw new NotFoundException(`Workout with ID "${id}" not found`);
+      throw new NotFoundException(`Workout with ID ${id} not found`);
     }
   }
 
   async deleteWorkoutById(id: string, user: User): Promise<void> {
-    const result = await this.workoutPlanService.delete({ id, user });
-    if (result.affected === 0) {
-      throw new NotFoundException(`Workout with id: ${id} not found`);
+    const workoutPlan = await this.findOneWorkout(id, user, ['exercises']);
+    if (workoutPlan.exercises && workoutPlan.exercises.length > 0) {
+      for (const exercise of workoutPlan.exercises) {
+        if (exercise.thumbnail) {
+          this.uploadService.cleanupFile(exercise.thumbnail);
+        }
+        if (exercise.videoUrl) {
+          this.uploadService.cleanupFile(exercise.videoUrl);
+        }
+      }
     }
+    await this.workoutPlanService.remove(workoutPlan);
   }
 
   async updateNameWorkout(
@@ -104,8 +114,11 @@ export class WorkoutplanService {
       numExercises: original.exercises.length,
     });
     await this.workoutPlanService.save(newWorkout);
-    const newExercises = original.exercises.map((ex) =>
-      this.exerciseService.create({
+    const newExercises = original.exercises.map((ex) => {
+      const clonedThumb = this.uploadService.cloneFile(ex.thumbnail);
+      const clonedVideo = this.uploadService.cloneFile(ex.videoUrl);
+
+      return this.exerciseService.create({
         name: ex.name,
         muscleGroup: ex.muscleGroup,
         numberOfSets: ex.numberOfSets,
@@ -113,10 +126,12 @@ export class WorkoutplanService {
         duration: ex.duration,
         restTime: ex.restTime,
         note: ex.note,
+        thumbnail: clonedThumb,
+        videoUrl: clonedVideo,
         workoutId: newWorkout.id,
         user,
-      }),
-    );
+      } as DeepPartial<Exercise>);
+    });
     await this.exerciseService.save(newExercises);
     newWorkout.numExercises = newExercises.length;
     await this.workoutPlanService.save(newWorkout);
