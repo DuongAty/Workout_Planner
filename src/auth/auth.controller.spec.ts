@@ -47,4 +47,24 @@ describe('AuthController', () => {
       expect(result).toEqual(mockResult);
     });
   });
+  describe('getMe', () => {
+    it('It should return the full name and username of the current user.', () => {
+      const mockUser = {
+        fullname: 'Duong Van A',
+        username: 'duongva',
+        password: 'hashed_password',
+        id: 'user-uuid',
+      };
+      const mockRequest = {
+        user: mockUser,
+      };
+      const result = controller.getMe(mockRequest as any);
+      expect(result).toEqual({
+        fullname: mockUser.fullname,
+        username: mockUser.username,
+      });
+      expect(result).not.toHaveProperty('password');
+      expect(result).not.toHaveProperty('id');
+    });
+  });
 });
