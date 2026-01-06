@@ -28,7 +28,6 @@ const mockExerciseService = {
   save: jest.fn(),
 };
 let workPlanService: WorkoutplanService;
-let serviceExerciseService: ExerciseService;
 describe('WorkoutplanService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -62,7 +61,7 @@ describe('WorkoutplanService', () => {
     beforeEach(() => {
       jest.clearAllMocks();
     });
-    it('nên cập nhật numExercises bằng số lượng exercise trong workout', async () => {
+    it('You should update numExercises with the number of exercises in the workout.', async () => {
       const workoutId = 'w1';
       const queryBuilderMock = {
         where: jest.fn().mockReturnThis(),
@@ -71,7 +70,6 @@ describe('WorkoutplanService', () => {
       mockExerciseService.createQueryBuilder = jest
         .fn()
         .mockReturnValue(queryBuilderMock);
-
       await workPlanService.syncNumExercises(workoutId);
       expect(mockExerciseService.createQueryBuilder).toHaveBeenCalledWith(
         'exercise',
@@ -84,7 +82,7 @@ describe('WorkoutplanService', () => {
         numExercises: 3,
       });
     });
-    it('nên cập nhật numExercises = 0 khi không có exercise', async () => {
+    it('You should update numExercises to 0 when there are no exercises.', async () => {
       const workoutId = 'w2';
       mockExerciseService.createQueryBuilder = jest.fn().mockReturnValue({
         where: jest.fn().mockReturnThis(),
@@ -156,7 +154,7 @@ describe('WorkoutplanService', () => {
   });
 
   describe('findOneWorkout', () => {
-    it('nên trả về một workout nếu tìm thấy', async () => {
+    it('It should return a workout if found.', async () => {
       workoutRepoMock.findOneOrFail.mockResolvedValue(mockWorkout);
       const result = await workPlanService.findOneWorkout(
         'workout-123',
@@ -168,7 +166,7 @@ describe('WorkoutplanService', () => {
       });
       expect(result).toEqual(mockWorkout);
     });
-    it('nên ném lỗi NotFoundException nếu không tìm thấy workout', async () => {
+    it('You should throw a NotFoundException if the workout is not found.', async () => {
       workoutRepoMock.findOneOrFail.mockRejectedValue(new Error());
       const workoutId = 'wrong-id';
       await expect(
@@ -176,9 +174,9 @@ describe('WorkoutplanService', () => {
       ).rejects.toThrow(NotFoundException);
       await expect(
         workPlanService.findOneWorkout(workoutId, mockUser),
-      ).rejects.toThrow(`Workout with ID "${workoutId}" not found`);
+      ).rejects.toThrow(`Workout with ID ${workoutId} not found`);
     });
-    it('nên gọi đúng relations nếu được truyền vào', async () => {
+    it('Therefore, call the correct relations if they are passed in.', async () => {
       workoutRepoMock.findOneOrFail.mockResolvedValue(mockWorkout);
       const relations = ['exercises'];
       await workPlanService.findOneWorkout('workout-123', mockUser, relations);
@@ -302,7 +300,6 @@ describe('WorkoutplanService', () => {
       workoutId: newId,
       user: mockUser,
     }));
-    let findOneWorkoutSpy: jest.SpyInstance;
     beforeEach(() => {
       findOneWorkoutSpy = jest.spyOn(workPlanService, 'findOneWorkout');
       jest.clearAllMocks();
@@ -345,6 +342,15 @@ describe('WorkoutplanService', () => {
       expect(result.id).toBe(newId);
       expect(result.name).toBe('Full Body A (Clone)');
       expect(result.exercises.length).toBe(originalExercises.length);
+    });
+    it('should throw NotFoundException if findOneWorkout throws it', async () => {
+      const notFoundError = new NotFoundException('Workout not found');
+      workoutRepoMock.findOneOrFail.mockRejectedValue(notFoundError);
+      await expect(
+        workPlanService.cloneWorkout(workoutId, mockUser),
+      ).rejects.toThrow(NotFoundException);
+      expect(workoutRepoMock.save).not.toHaveBeenCalled();
+      expect(workoutRepoMock.findOneOrFail).toHaveBeenCalledTimes(1);
     });
   });
 });

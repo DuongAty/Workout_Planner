@@ -76,7 +76,7 @@ export class WorkoutplanService {
         relations,
       });
     } catch (error) {
-      throw new NotFoundException(`Workout with ID "${id}" not found`);
+      throw new NotFoundException(`Workout with ID ${id} not found`);
     }
   }
 
