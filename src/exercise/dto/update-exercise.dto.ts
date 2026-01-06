@@ -1,9 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MuscleGroup } from '../exercise-musclegroup';
 import { IsEnum, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateExerciseDto {
   @ApiProperty({
+    required: false,
     description: 'Exercise Name',
   })
   name: string;
@@ -20,23 +22,37 @@ export class UpdateExerciseDto {
   muscleGroup?: MuscleGroup;
 
   @ApiProperty({
+    required: false,
     description: 'Groups of repetitions',
     example: 3,
   })
+  @Type(() => Number)
   numberOfSets: number;
 
   @ApiProperty({
+    required: false,
     description: 'Number of repetitions of the movement',
     example: 12,
   })
+  @Type(() => Number)
   repetitions: number;
 
   @ApiProperty({
+    required: false,
     description: 'Rest time ',
   })
+  @Type(() => Number)
   restTime: number;
 
   @ApiProperty({
+    required: false,
+    description: 'Total time of exercise ',
+  })
+  @Type(() => Number)
+  duration: number;
+
+  @ApiProperty({
+    required: false,
     description: 'Note',
   })
   note: string;

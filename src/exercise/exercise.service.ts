@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,23 +6,42 @@ import { Repository } from 'typeorm';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { GetExerciseFilter } from './dto/musclegroup-filter.dto';
 import { User } from '../user/user.entity';
-import { PaginationDto } from 'src/common/pagination/pagination.dto';
+import { PaginationDto } from '../common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
+import { UploadService } from '../common/upload/upload.service';
 @Injectable()
 export class ExerciseService {
   constructor(
     private workoutService: WorkoutplanService,
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
-    @Inject(forwardRef(() => WorkoutplanService))
-    private readonly workoutplanService: WorkoutplanService,
+    private uploadService: UploadService,
   ) {}
+
+  async uploadMedia(
+    id: string,
+    user: User,
+    filePath: string,
+    type: 'thumbnail' | 'videoUrl',
+  ): Promise<Exercise> {
+    const exercise = await this.findOneExercise(id, user);
+    if (type === 'thumbnail' && exercise.thumbnail) {
+      this.uploadService.cleanupFile(exercise.thumbnail);
+      exercise.thumbnail = filePath;
+    } else if (type === 'videoUrl' && exercise.videoUrl) {
+      this.uploadService.cleanupFile(exercise.videoUrl);
+      exercise.videoUrl = filePath;
+    } else {
+      exercise[type] = filePath;
+    }
+    return await this.exerciseService.save(exercise);
+  }
 
   async createExercise(
     workoutId: string,
     createExerciseDto: CreateExerciseDto,
     user: User,
-  ): Promise<Exercise> {
+  ) {
     const workout = await this.workoutService.findOneWorkout(workoutId, user);
     const newExercise = this.exerciseService.create({
       ...createExerciseDto,
@@ -36,7 +50,7 @@ export class ExerciseService {
       user,
     });
     const savedExercise = await this.exerciseService.save(newExercise);
-    await this.workoutplanService.syncNumExercises(workoutId);
+    await this.workoutService.syncNumExercises(workoutId);
     return savedExercise;
   }
 
@@ -48,13 +62,16 @@ export class ExerciseService {
     const { search, muscleGroup, duration } = getExerciseFilter;
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
-    const query = this.exerciseService.createQueryBuilder('exercies');
+    const query = this.exerciseService.createQueryBuilder('exercises');
     query.where({ user });
     if (muscleGroup) {
-      query.andWhere('exercies.muscleGroup = :muscleGroup', { muscleGroup });
+      query.andWhere('exercsies.muscleGroup = :muscleGroup', { muscleGroup });
+    }
+    if (duration) {
+      query.andWhere('exercises.duration = :duration', { duration });
     }
     if (search) {
-      query.andWhere('exercies.name ILIKE :search', {
+      query.andWhere('exercises.name ILIKE :search', {
         search: `%${search}%`,
       });
     }
@@ -68,30 +85,31 @@ export class ExerciseService {
     try {
       return await this.exerciseService.findOneOrFail({ where: { id, user } });
     } catch (error) {
-      throw new NotFoundException(`Exercise with ID "${id}" not found`);
+      throw new NotFoundException(`Exercise with ID ${id} not found`);
     }
   }
 
   async deleteExerciseById(id: string, user: User): Promise<void> {
-    const result = await this.exerciseService.delete({ id, user });
-    if (result.affected === 0) {
-      throw new NotFoundException(`Exercise with id: ${id} not found`);
+    const exercise = await this.findOneExercise(id, user);
+    const workoutId = exercise.workoutId;
+    if (exercise.thumbnail) {
+      this.uploadService.cleanupFile(exercise.thumbnail);
     }
+    if (exercise.videoUrl) {
+      this.uploadService.cleanupFile(exercise.videoUrl);
+    }
+    await this.exerciseService.remove(exercise);
+    await this.workoutService.syncNumExercises(workoutId);
   }
 
-  async updateExercise(
-    id: string,
-    updateExerciseDto: UpdateExerciseDto,
-    user: User,
-  ): Promise<Exercise> {
+  async updateExercise(id: string, dto: UpdateExerciseDto, user: User) {
     const exercise = await this.findOneExercise(id, user);
-    const updateData: Partial<Exercise> = {};
-    Object.keys(updateExerciseDto).forEach((key) => {
-      const value = updateExerciseDto[key];
-      if (value !== undefined) updateData[key] = value;
+    const { ...updateData } = dto;
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] !== undefined && updateData[key] !== null) {
+        exercise[key] = updateData[key];
+      }
     });
-    Object.assign(exercise, updateData);
-    await this.exerciseService.save(exercise);
-    return exercise;
+    return await this.exerciseService.save(exercise);
   }
 }

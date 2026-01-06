@@ -10,10 +10,10 @@ import {
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AccessTokenPayload } from './type/accessToken.type';
-import { ApiBearerAuth, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { UserProfileDto } from 'src/auth/dto/user.profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { User } from 'src/user/user.entity';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -21,7 +21,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/register')
-  signUp(@Body() createUserDto: CreateUserDto): Promise<void> {
+  signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.authService.signUp(createUserDto);
   }
 
@@ -36,6 +36,7 @@ export class AuthController {
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
   getMe(@Req() req) {
-    return { username: req.user.username };
+    const { fullname, username } = req.user;
+    return { fullname, username };
   }
 }
