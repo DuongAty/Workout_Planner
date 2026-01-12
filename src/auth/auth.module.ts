@@ -9,6 +9,7 @@ import { UsersRepository } from '../user/user.repository';
 import { JwtStrategy } from '../user/jwt-strategy';
 import { User } from '../user/user.entity';
 import { JWT_STRATEGY, JWT_EXPIRES_IN, ConfigKey } from './auth-constants';
+import { RedisService } from 'src/redis/redis.service';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { JWT_STRATEGY, JWT_EXPIRES_IN, ConfigKey } from './auth-constants';
     }),
     TypeOrmModule.forFeature([User]),
   ],
-  providers: [AuthService, UsersRepository, JwtStrategy],
+  providers: [AuthService, UsersRepository, JwtStrategy, RedisService],
   controllers: [AuthController],
   exports: [JwtStrategy, PassportModule],
 })

@@ -7,6 +7,7 @@ import {
   Column,
   JoinColumn,
   ManyToOne,
+  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity('exercises')
@@ -40,6 +41,9 @@ export class Exercise {
 
   @Column({ nullable: true })
   videoUrl: string;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   @ManyToOne(() => Workout, (plan) => plan.exercises, {
     onDelete: 'CASCADE',
