@@ -9,11 +9,12 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
-import { AccessTokenPayload } from './type/accessToken.type';
+import { TokenPayload } from './type/accessToken.type';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'src/user/user.entity';
+import { AuthThrottle } from 'src/common/decorators/throttle.decorator';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -21,14 +22,16 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/register')
+  @AuthThrottle()
   signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.authService.signUp(createUserDto);
   }
 
   @Post('/login')
+  @AuthThrottle()
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
-  ): Promise<AccessTokenPayload> {
+  ): Promise<TokenPayload> {
     return this.authService.signIn(authCredentialsDto);
   }
 
@@ -38,5 +41,24 @@ export class AuthController {
   getMe(@Req() req) {
     const { fullname, username } = req.user;
     return { fullname, username };
+  }
+
+  @UseGuards(AuthGuard())
+  @Post('/logout')
+  async logout(@Req() req: any) {
+    const userId = req.user.id;
+    const accessToken = req.get('Authorization').replace('Bearer ', '');
+    return this.authService.signOut(userId, accessToken);
+  }
+
+  @Post('/refresh')
+  async refresh(
+    @Body('userId') userId: string,
+    @Body('refreshToken') refreshToken: string,
+    @Req() req: any,
+  ) {
+    const oldAccessToken =
+      req.get('Authorization')?.replace('Bearer ', '') || '';
+    return this.authService.refreshTokens(userId, refreshToken, oldAccessToken);
   }
 }

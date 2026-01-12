@@ -98,7 +98,7 @@ export class ExerciseService {
     if (exercise.videoUrl) {
       this.uploadService.cleanupFile(exercise.videoUrl);
     }
-    await this.exerciseService.remove(exercise);
+    await this.exerciseService.softDelete(exercise);
     await this.workoutService.syncNumExercises(workoutId);
   }
 
