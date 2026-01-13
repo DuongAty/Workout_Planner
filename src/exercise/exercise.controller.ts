@@ -31,7 +31,6 @@ import {
   IMAGE_MIMETYPE_REGEX,
   VIDEO_MIMETYPE_REGEX,
 } from '../common/upload/file-upload.constants';
-import { WEThrottle } from 'src/common/decorators/throttle.decorator';
 
 @Controller({ path: 'exercises', version: '1' })
 @UseGuards(AuthGuard())
@@ -44,7 +43,6 @@ export class ExerciseController {
   ) {}
 
   @Post(':id/upload')
-  @WEThrottle()
   @ApiBearerAuth('accessToken')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -102,7 +100,6 @@ export class ExerciseController {
   }
 
   @Post(':workoutId')
-  @WEThrottle()
   async create(
     @Param('workoutId', ParseUUIDPipe) workoutId: string,
     @Body() createExerciseDto: CreateExerciseDto,
@@ -121,7 +118,6 @@ export class ExerciseController {
   }
 
   @Get()
-  @WEThrottle()
   getAll(
     @Query() getExerciseFilter: GetExerciseFilter,
     @Query() paginationDto: PaginationDto,
@@ -140,7 +136,6 @@ export class ExerciseController {
   }
 
   @Get('/:id')
-  @WEThrottle()
   getOne(
     @Param('id') id: string,
     @GetUser() user: User,
@@ -154,7 +149,6 @@ export class ExerciseController {
   }
 
   @Delete('/:id')
-  @WEThrottle()
   delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
     this.logger.verbose(
       `User "${user.username}" delete an exercise`,
@@ -165,7 +159,6 @@ export class ExerciseController {
   }
 
   @Patch(':id')
-  @WEThrottle()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExerciseDto: UpdateExerciseDto,

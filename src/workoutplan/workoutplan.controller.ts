@@ -22,7 +22,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
-import { WEThrottle } from 'src/common/decorators/throttle.decorator';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -34,7 +33,6 @@ export class WorkoutplanController {
   ) {}
 
   @Post()
-  @WEThrottle()
   @UseInterceptors(ClassSerializerInterceptor)
   create(
     @Body() createWorkoutDto: CreateWorkoutDto,
@@ -49,7 +47,6 @@ export class WorkoutplanController {
   }
 
   @Get()
-  @WEThrottle()
   getAll(
     @Query() getWorkoutFilter: GetWorkoutFilter,
     @Query() paginationDto: PaginationDto,
@@ -68,7 +65,6 @@ export class WorkoutplanController {
   }
 
   @Get('/:id')
-  @WEThrottle()
   getOne(
     @Param('id') id: string,
     @GetUser() user: User,
@@ -82,7 +78,6 @@ export class WorkoutplanController {
   }
 
   @Delete('/:id')
-  @WEThrottle()
   delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
     this.logger.warn(
       `User "${user.username}" delete a workout `,
@@ -93,7 +88,6 @@ export class WorkoutplanController {
   }
 
   @Patch('/:id')
-  @WEThrottle()
   update(
     @Param('id') id: string,
     @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
@@ -112,7 +106,6 @@ export class WorkoutplanController {
   }
 
   @Post(':id/clone')
-  @WEThrottle()
   @UseInterceptors(ClassSerializerInterceptor)
   clone(@Param('id') id: string, @GetUser() user: User) {
     this.logger.verbose(
@@ -124,7 +117,6 @@ export class WorkoutplanController {
   }
 
   @Get('/:id/exercises')
-  @WEThrottle()
   getExercisesById(
     @Param('id') id: string,
     @GetUser() user: User,

@@ -6,6 +6,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './document-builder';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -21,7 +22,6 @@ async function bootstrap() {
   app.enableCors();
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
-
   const config = DocumentConfig();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);

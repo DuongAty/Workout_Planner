@@ -42,7 +42,6 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
       useFactory: (configService: ConfigService) => ({
         throttlers: [
           {
-            name: 'default',
             ttl: 60000,
             limit: 10,
           },
