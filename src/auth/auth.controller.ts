@@ -14,7 +14,6 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'src/user/user.entity';
-import { AuthThrottle } from 'src/common/decorators/throttle.decorator';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -22,13 +21,11 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/register')
-  @AuthThrottle()
   signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.authService.signUp(createUserDto);
   }
 
   @Post('/login')
-  @AuthThrottle()
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
   ): Promise<TokenPayload> {
