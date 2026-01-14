@@ -8,6 +8,7 @@ import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { UploadService } from '../common/upload/upload.service';
+import { WorkoutStatus } from './workout-status';
 
 @Injectable()
 export class WorkoutplanService {
@@ -33,7 +34,7 @@ export class WorkoutplanService {
     const workout = this.workoutPlanService.create({
       ...dto,
       user,
-      status: 'planned',
+      status: WorkoutStatus.Planned,
     });
     return await this.workoutPlanService.save(workout);
   }
@@ -48,7 +49,11 @@ export class WorkoutplanService {
     return await this.workoutPlanService.save(workout);
   }
 
-  async updateStatus(id: string, user: User, status: string): Promise<Workout> {
+  async updateStatus(
+    id: string,
+    user: User,
+    status: WorkoutStatus,
+  ): Promise<Workout> {
     const workout = await this.findOneWorkout(id, user);
     workout.status = status;
     return await this.workoutPlanService.save(workout);
@@ -69,9 +74,14 @@ export class WorkoutplanService {
   async getWorkoutWithAutoCheck(id: string, user: User): Promise<Workout> {
     const workout = await this.findOneWorkout(id, user);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const end = new Date(workout.endDate);
-    if (today > end && workout.status === 'planned') {
-      workout.status = 'missed';
+    end.setHours(0, 0, 0, 0);
+    if (
+      today.getTime() > end.getTime() &&
+      workout.status === WorkoutStatus.Planned
+    ) {
+      workout.status = WorkoutStatus.Missed;
       await this.workoutPlanService.save(workout);
     }
     return workout;
@@ -83,7 +93,7 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search, numExercises } = getWorkoutFilter;
+    const { search, numExercises, status } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
@@ -94,6 +104,9 @@ export class WorkoutplanService {
     }
     if (numExercises !== undefined && numExercises !== null) {
       query.andWhere('workout.numExercises = :numExercises', { numExercises });
+    }
+    if (status) {
+      query.andWhere('workout.status = :status', { status });
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();

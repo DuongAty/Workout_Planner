@@ -6,6 +6,7 @@ import {
   Get,
   UseGuards,
   Req,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
@@ -14,11 +15,15 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'src/user/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   private logger = new Logger('AuthController');
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   @Post('/register')
   signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
@@ -36,8 +41,8 @@ export class AuthController {
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
   getMe(@Req() req) {
-    const { id, fullname, username } = req.user;
-    return { id, fullname, username };
+    const { id, fullname, username, avatar, email } = req.user;
+    return { id, fullname, username, avatar, email };
   }
 
   @UseGuards(AuthGuard())
@@ -57,5 +62,30 @@ export class AuthController {
     const oldAccessToken =
       req.get('Authorization')?.replace('Bearer ', '') || '';
     return this.authService.refreshTokens(userId, refreshToken, oldAccessToken);
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(@Req() req) {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthRedirect(@Req() req, @Res() res) {
+    const user = req.user;
+
+    if (!user) {
+      return res.redirect(
+        `${this.configService.get('FRONTEND_URL')}/login?error=no_user`,
+      );
+    }
+
+    const { accessToken, refreshToken } =
+      await this.authService.googleLogin(user);
+
+    const clientUrl = this.configService.get<string>('FRONTEND_URL');
+
+    return res.redirect(
+      `${clientUrl}/auth/google/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`,
+    );
   }
 }

@@ -27,6 +27,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
+import { SkipThrottle } from '@nestjs/throttler';
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -42,8 +43,9 @@ export class WorkoutplanController {
     return this.workoutService.createWorkout(dto, user);
   }
 
-  @Get(':id')
-  get(@Param('id') id: string, @GetUser() user: User) {
+  @Patch(':id/auto-missed')
+  @SkipThrottle()
+  getAutoMiss(@Param('id') id: string, @GetUser() user: User) {
     return this.workoutService.getWorkoutWithAutoCheck(id, user);
   }
 
