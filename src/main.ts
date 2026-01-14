@@ -6,7 +6,6 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './document-builder';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { ThrottlerGuard } from '@nestjs/throttler';
 
 async function bootstrap() {
   const logger = new Logger();

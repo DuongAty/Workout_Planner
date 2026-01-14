@@ -36,8 +36,8 @@ export class AuthController {
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
   getMe(@Req() req) {
-    const { fullname, username } = req.user;
-    return { fullname, username };
+    const { id, fullname, username } = req.user;
+    return { id, fullname, username };
   }
 
   @UseGuards(AuthGuard())

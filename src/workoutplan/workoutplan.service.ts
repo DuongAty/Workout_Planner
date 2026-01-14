@@ -29,16 +29,52 @@ export class WorkoutplanService {
     });
   }
 
-  async createWorkout(
-    createWorkoutDto: CreateWorkoutDto,
-    user: User,
-  ): Promise<Workout> {
-    const { name } = createWorkoutDto;
+  async createWorkout(dto: CreateWorkoutDto, user: User): Promise<Workout> {
     const workout = this.workoutPlanService.create({
-      name,
+      ...dto,
       user,
+      status: 'planned',
     });
     return await this.workoutPlanService.save(workout);
+  }
+
+  async updateDaysOfWeek(
+    id: string,
+    user: User,
+    daysOfWeek: number[],
+  ): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    workout.daysOfWeek = daysOfWeek;
+    return await this.workoutPlanService.save(workout);
+  }
+
+  async updateStatus(id: string, user: User, status: string): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    workout.status = status;
+    return await this.workoutPlanService.save(workout);
+  }
+
+  async updateSchedule(
+    id: string,
+    user: User,
+    updateDto: { startDate?: string; endDate?: string },
+  ): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    if (updateDto.startDate) workout.startDate = updateDto.startDate;
+    if (updateDto.endDate) workout.endDate = updateDto.endDate;
+    workout.status = 'planned';
+    return await this.workoutPlanService.save(workout);
+  }
+
+  async getWorkoutWithAutoCheck(id: string, user: User): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    const today = new Date();
+    const end = new Date(workout.endDate);
+    if (today > end && workout.status === 'planned') {
+      workout.status = 'missed';
+      await this.workoutPlanService.save(workout);
+    }
+    return workout;
   }
 
   async getAllWorkout(
@@ -72,7 +108,7 @@ export class WorkoutplanService {
   ): Promise<Workout> {
     try {
       return await this.workoutPlanService.findOneOrFail({
-        where: { id, user },
+        where: { id, user: { id: user.id } },
         relations,
       });
     } catch (error) {
@@ -92,7 +128,7 @@ export class WorkoutplanService {
         }
       }
     }
-    await this.workoutPlanService.softRemove(workoutPlan);
+    await this.workoutPlanService.remove(workoutPlan);
   }
 
   async updateNameWorkout(
