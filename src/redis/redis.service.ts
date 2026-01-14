@@ -1,22 +1,27 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, RedisClientType } from 'redis';
+import { createClient } from 'redis';
+import { USER_CACHE_TTL } from 'src/common/constants/constants';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client: RedisClientType;
+  private client: ReturnType<typeof createClient>;
 
   constructor(private configService: ConfigService) {}
 
-  async onModuleInit() {
-    this.client = createClient({
+  private createRedisClient() {
+    return createClient({
       socket: {
-        host: this.configService.get('REDIS_HOST'),
-        port: this.configService.get('REDIS_PORT'),
+        host: this.configService.get<string>('REDIS_HOST'),
+        port: this.configService.get<number>('REDIS_PORT'),
       },
-      password: this.configService.get('REDIS_PASSWORD') || undefined,
+      password: this.configService.get<string>('REDIS_PASSWORD') ?? undefined,
     });
-    this.client.on('error', (err) => console.error('Redis Client Error', err));
+  }
+
+  async onModuleInit(): Promise<void> {
+    this.client = this.createRedisClient();
+    this.client.on('error', (err) => console.error('[Redis]', err));
     await this.client.connect();
   }
 
@@ -29,11 +34,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async set(key: string, value: string, ttl?: number): Promise<void> {
-    if (ttl) {
-      await this.client.setEx(key, ttl, value);
-    } else {
+    if (ttl === undefined) {
       await this.client.set(key, value);
+      return;
     }
+    await this.client.setEx(key, ttl, value);
   }
 
   async del(key: string): Promise<void> {
@@ -41,8 +46,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async exists(key: string): Promise<boolean> {
-    const result = await this.client.exists(key);
-    return result === 1;
+    const count = await this.client.exists(key);
+    return Boolean(count);
   }
 
   async blacklistToken(token: string, expiresIn: number): Promise<void> {
@@ -53,20 +58,29 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return await this.exists(`blacklist:${token}`);
   }
 
-  async cacheUser(
-    userId: string,
-    userData: any,
-    ttl: number = 3600,
-  ): Promise<void> {
-    await this.set(`user:${userId}`, JSON.stringify(userData), ttl);
+  private userCacheKey(userId: string): string {
+    return `user:${userId}`;
   }
 
-  async getCachedUser(userId: string): Promise<any | null> {
-    const data = await this.get(`user:${userId}`);
-    return data ? JSON.parse(data) : null;
+  async cacheUser<T>(
+    userId: string,
+    userData: T,
+    ttl: number = USER_CACHE_TTL,
+  ): Promise<void> {
+    await this.set(this.userCacheKey(userId), JSON.stringify(userData), ttl);
+  }
+
+  async getCachedUser<T>(userId: string): Promise<T | null> {
+    const data = await this.get(this.userCacheKey(userId));
+    if (!data) return null;
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
   }
 
   async invalidateUserCache(userId: string): Promise<void> {
-    await this.del(`user:${userId}`);
+    await this.del(this.userCacheKey(userId));
   }
 }

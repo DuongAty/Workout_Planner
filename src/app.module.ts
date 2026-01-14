@@ -8,10 +8,11 @@ import { ExerciseModule } from './exercise/exercise.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.stage.${process.env.STAGE}`],
+      envFilePath: [`.env.${process.env.STAGE}`],
       validationSchema: configValidationSchema,
       isGlobal: true,
     }),
@@ -42,8 +43,8 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
       useFactory: (configService: ConfigService) => ({
         throttlers: [
           {
-            ttl: 60000,
-            limit: 10,
+            ttl: THROTTLER_TTL,
+            limit: THROTTLER_LIMIT,
           },
         ],
         storage: new ThrottlerStorageRedisService({
