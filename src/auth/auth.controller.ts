@@ -14,11 +14,19 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'src/user/user.entity';
+import { Request } from 'express';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   private logger = new Logger('AuthController');
   constructor(private authService: AuthService) {}
+
+  private extractToken(req: Request): string | null {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return null;
+    const [type, token] = authHeader.split(' ');
+    return type === 'Bearer' ? token : null;
+  }
 
   @Post('/register')
   signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
@@ -44,7 +52,7 @@ export class AuthController {
   @Post('/logout')
   async logout(@Req() req: any) {
     const userId = req.user.id;
-    const accessToken = req.get('Authorization').replace('Bearer ', '');
+    const accessToken = this.extractToken(req) || '';
     return this.authService.signOut(userId, accessToken);
   }
 
@@ -54,8 +62,7 @@ export class AuthController {
     @Body('refreshToken') refreshToken: string,
     @Req() req: any,
   ) {
-    const oldAccessToken =
-      req.get('Authorization')?.replace('Bearer ', '') || '';
+    const oldAccessToken = this.extractToken(req) || '';
     return this.authService.refreshTokens(userId, refreshToken, oldAccessToken);
   }
 }

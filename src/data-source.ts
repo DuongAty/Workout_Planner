@@ -2,8 +2,10 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+const stage = process.env.STAGE || 'dev';
+
 dotenv.config({
-  path: path.resolve(process.cwd(), '.env.stage.dev'),
+  path: path.resolve(process.cwd(), `.env.${stage}`),
 });
 
 export const AppDataSource = new DataSource({
