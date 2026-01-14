@@ -11,7 +11,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.stage.${process.env.STAGE}`],
+      envFilePath: [`.env.${process.env.STAGE}`],
       validationSchema: configValidationSchema,
       isGlobal: true,
     }),

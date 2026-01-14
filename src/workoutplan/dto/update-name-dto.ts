@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
 } from 'class-validator';
+import { WorkoutStatus } from '../workout-status';
 
 export class UpdateNameWorkoutDto {
   @IsNotEmpty()
@@ -18,9 +19,9 @@ export class UpdateNameWorkoutDto {
 }
 
 export class UpdateStatusDto {
-  @ApiProperty({ enum: ['planned', 'completed', 'missed'] })
-  @IsEnum(['planned', 'completed', 'missed'])
-  status: string;
+  @ApiProperty()
+  @IsEnum(WorkoutStatus)
+  status: WorkoutStatus;
 }
 
 export class UpdateScheduleDto {

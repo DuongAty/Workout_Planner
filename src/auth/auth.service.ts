@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { UsersRepository } from '../user/user.repository';
 import { TokenPayload } from './type/accessToken.type';
@@ -29,5 +29,12 @@ export class AuthService {
 
   async signOut(userId: string, accessToken: string): Promise<void> {
     await this.usersRepository.logout(userId, accessToken);
+  }
+
+  async googleLogin(user: any) {
+    if (!user) {
+      throw new BadRequestException('No user from google');
+    }
+    return await this.usersRepository.findOrCreateGoogleUser(user);
   }
 }
