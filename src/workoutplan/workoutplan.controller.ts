@@ -28,6 +28,8 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { SkipThrottle } from '@nestjs/throttler';
+import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
+import { get } from 'http';
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -146,16 +148,16 @@ export class WorkoutplanController {
     return this.workoutService.cloneWorkout(id, user);
   }
 
-  @Get('/:id/exercises')
-  getExercisesById(
+  @Get(':id/exercises')
+  async getExercises(
     @Param('id') id: string,
+    @Query() getExerciseFilter: GetExerciseFilter,
     @GetUser() user: User,
-  ): Promise<Workout | null> {
-    this.logger.verbose(
-      `User "${user.username}" get a workout with exercise `,
-      id,
-      WorkoutplanController.name,
-    );
-    return this.workoutService.getExercisesByWorkoutId(id, user);
+  ) {
+    return this.workoutService.getExercisesByWorkoutId(id, user, {
+      muscleGroup: getExerciseFilter.muscleGroup,
+      search: getExerciseFilter.search,
+      duration: getExerciseFilter.duration,
+    });
   }
 }

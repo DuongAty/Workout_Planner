@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
@@ -9,6 +14,8 @@ import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { UploadService } from '../common/upload/upload.service';
 import { WorkoutStatus } from './workout-status';
+import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
+import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
 
 @Injectable()
 export class WorkoutplanService {
@@ -188,7 +195,23 @@ export class WorkoutplanService {
     return newWorkout;
   }
 
-  async getExercisesByWorkoutId(id: string, user: User): Promise<Workout> {
-    return await this.findOneWorkout(id, user, ['exercises']);
+  async getExercisesByWorkoutId(
+    id: string,
+    user: User,
+    filters: GetExerciseFilter,
+  ): Promise<Workout> {
+    const workout = await this.workoutPlanService.findOne({
+      where: { id, user: { id: user.id } },
+    });
+
+    if (!workout) {
+      throw new NotFoundException(`Workout plan not found`);
+    }
+    const query = this.exerciseService
+      .createQueryBuilder('exercise')
+      .where('exercise.workoutId = :id', { id });
+    applyExerciseFilters(query, filters, 'exercise');
+    workout.exercises = await query.getMany();
+    return workout;
   }
 }

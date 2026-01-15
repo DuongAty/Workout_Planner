@@ -9,6 +9,8 @@ import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../common/upload/upload.service';
+import { SelectQueryBuilder } from 'typeorm/browser';
+import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -59,25 +61,15 @@ export class ExerciseService {
     paginationDto: PaginationDto,
     user: User,
   ): Promise<{ data: Exercise[]; total: number; totalPages: number }> {
-    const { search, muscleGroup, duration } = getExerciseFilter;
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
     const query = this.exerciseService.createQueryBuilder('exercises');
     query.where({ user });
-    if (muscleGroup) {
-      query.andWhere('exercsies.muscleGroup = :muscleGroup', { muscleGroup });
-    }
-    if (duration) {
-      query.andWhere('exercises.duration = :duration', { duration });
-    }
-    if (search) {
-      query.andWhere('exercises.name ILIKE :search', {
-        search: `%${search}%`,
-      });
-    }
+    applyExerciseFilters(query, getExerciseFilter, 'exercises');
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
     const totalPages = Math.ceil(total / limit);
+
     return { data, total, totalPages };
   }
 
@@ -100,7 +92,7 @@ export class ExerciseService {
     if (exercise.videoUrl) {
       this.uploadService.cleanupFile(exercise.videoUrl);
     }
-    await this.exerciseService.softDelete(exercise);
+    await this.exerciseService.softRemove(exercise);
     await this.workoutService.syncNumExercises(workoutId);
   }
 
