@@ -1,3 +1,4 @@
-export type AccessTokenPayload = {
+export type TokenPayload = {
   accessToken: string;
+  refreshToken: string;
 };

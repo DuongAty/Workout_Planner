@@ -5,3 +5,9 @@ export const PASSWORD_INCORRECT_MESSAGE = 'Password is incorrect';
 export enum ConfigKey {
   JWT_SECRET = 'JWT_SECRET',
 }
+export const USER_CACHE_TTL = 3600;
+export const ACCESS_TOKEN_TTL = '15m';
+export const REFRESH_TOKEN_TTL = '7d';
+export const ACCESS_TOKEN_BLACKLIST_TTL = 15 * 60;
+export const THROTTLER_TTL = 60000;
+export const THROTTLER_LIMIT = 10;
