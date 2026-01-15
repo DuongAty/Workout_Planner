@@ -12,7 +12,7 @@ import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.${process.env.STAGE}`],
+      envFilePath: [`.env.${process.env.NODE_ENV}`],
       validationSchema: configValidationSchema,
       isGlobal: true,
     }),
@@ -30,9 +30,9 @@ import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
-        ssl: configService.get('STAGE') === 'prod',
+        ssl: configService.get('NODE_ENV') === 'prod',
         extra:
-          configService.get('STAGE') === 'prod'
+          configService.get('NODE_ENV') === 'prod'
             ? { ssl: { rejectUnauthorized: false } }
             : {},
       }),

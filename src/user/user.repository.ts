@@ -12,11 +12,8 @@ import { AuthCredentialsDto } from '../auth/dto/auth-credentials.dto';
 import { User } from './user.entity';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { RedisService } from 'src/redis/redis.service';
-import {
-  ACCESS_TOKEN_BLACKLIST_TTL,
-  ACCESS_TOKEN_TTL,
-  REFRESH_TOKEN_TTL,
-} from 'src/common/constants/constants';
+import { TokenPayload } from 'src/auth/type/accessToken.type';
+import { ACCESS_TOKEN_BLACKLIST_TTL, ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from 'src/common/constants/constants';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -105,6 +102,27 @@ export class UsersRepository {
     await this.redisService.blacklistToken(oldAccessToken, 900);
     const tokens = await this.getTokens(user.id, user.username);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
+  }
+
+  async findOrCreateGoogleUser(googleUser: any) {
+    const { email, firstName, lastName, picture } = googleUser;
+    let user = await this.userRepository.findOneBy({ email });
+
+    if (!user) {
+      user = this.userRepository.create({
+        email,
+        fullname: `${firstName || ''} ${lastName || ''}`.trim(),
+        username: email.split('@')[0],
+        avatar: picture,
+      });
+      await this.userRepository.save(user);
+    }
+
+    // Tạo token của hệ thống bạn
+    const tokens = await this.getTokens(user.id, user.username);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+
     return tokens;
   }
 }

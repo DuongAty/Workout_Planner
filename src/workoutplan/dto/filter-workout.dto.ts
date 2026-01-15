@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { WorkoutStatus } from '../workout-status';
 
 export class GetWorkoutFilter {
   @ApiProperty({
@@ -16,4 +17,13 @@ export class GetWorkoutFilter {
   })
   @IsOptional()
   numExercises?: string;
+
+  @ApiProperty({
+    enum: WorkoutStatus,
+    required: false,
+    description: 'Workout Status',
+  })
+  @IsOptional()
+  @IsEnum(WorkoutStatus)
+  status?: WorkoutStatus;
 }

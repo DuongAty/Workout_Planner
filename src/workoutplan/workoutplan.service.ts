@@ -8,6 +8,7 @@ import { Exercise } from '../exercise/exercise.entity';
 import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { UploadService } from '../common/upload/upload.service';
+import { WorkoutStatus } from './workout-status';
 
 @Injectable()
 export class WorkoutplanService {
@@ -29,16 +30,61 @@ export class WorkoutplanService {
     });
   }
 
-  async createWorkout(
-    createWorkoutDto: CreateWorkoutDto,
-    user: User,
-  ): Promise<Workout> {
-    const { name } = createWorkoutDto;
+  async createWorkout(dto: CreateWorkoutDto, user: User): Promise<Workout> {
     const workout = this.workoutPlanService.create({
-      name,
+      ...dto,
       user,
+      status: WorkoutStatus.Planned,
     });
     return await this.workoutPlanService.save(workout);
+  }
+
+  async updateDaysOfWeek(
+    id: string,
+    user: User,
+    daysOfWeek: number[],
+  ): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    workout.daysOfWeek = daysOfWeek;
+    return await this.workoutPlanService.save(workout);
+  }
+
+  async updateStatus(
+    id: string,
+    user: User,
+    status: WorkoutStatus,
+  ): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    workout.status = status;
+    return await this.workoutPlanService.save(workout);
+  }
+
+  async updateSchedule(
+    id: string,
+    user: User,
+    updateDto: { startDate?: string; endDate?: string },
+  ): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    if (updateDto.startDate) workout.startDate = updateDto.startDate;
+    if (updateDto.endDate) workout.endDate = updateDto.endDate;
+    workout.status = 'planned';
+    return await this.workoutPlanService.save(workout);
+  }
+
+  async getWorkoutWithAutoCheck(id: string, user: User): Promise<Workout> {
+    const workout = await this.findOneWorkout(id, user);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(workout.endDate);
+    end.setHours(0, 0, 0, 0);
+    if (
+      today.getTime() > end.getTime() &&
+      workout.status === WorkoutStatus.Planned
+    ) {
+      workout.status = WorkoutStatus.Missed;
+      await this.workoutPlanService.save(workout);
+    }
+    return workout;
   }
 
   async getAllWorkout(
@@ -47,7 +93,7 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search, numExercises } = getWorkoutFilter;
+    const { search, numExercises, status } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
@@ -58,6 +104,9 @@ export class WorkoutplanService {
     }
     if (numExercises !== undefined && numExercises !== null) {
       query.andWhere('workout.numExercises = :numExercises', { numExercises });
+    }
+    if (status) {
+      query.andWhere('workout.status = :status', { status });
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
@@ -72,7 +121,7 @@ export class WorkoutplanService {
   ): Promise<Workout> {
     try {
       return await this.workoutPlanService.findOneOrFail({
-        where: { id, user },
+        where: { id, user: { id: user.id } },
         relations,
       });
     } catch (error) {
@@ -92,7 +141,7 @@ export class WorkoutplanService {
         }
       }
     }
-    await this.workoutPlanService.softRemove(workoutPlan);
+    await this.workoutPlanService.remove(workoutPlan);
   }
 
   async updateNameWorkout(
