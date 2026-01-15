@@ -7,6 +7,7 @@ import { Exercise } from '../exercise/exercise.entity';
 import { AuthModule } from '../auth/auth.module';
 import { LoggerModule } from '../common/logger/logger.module';
 import { UploadService } from '../common/upload/upload.service';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Workout, Exercise]),
