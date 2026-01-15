@@ -55,12 +55,10 @@ export class UsersRepository {
   }
 
   async getTokens(userId: string, username: string) {
+    const payload = { sub: userId, username };
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { sub: userId, username },
-        { expiresIn: '15m' },
-      ),
-      this.jwtService.signAsync({ sub: userId, username }, { expiresIn: '7d' }),
+      this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
+      this.jwtService.signAsync(payload, { expiresIn: REFRESH_TOKEN_TTL }),
     ]);
     return { accessToken, refreshToken };
   }
@@ -77,7 +75,10 @@ export class UsersRepository {
     await this.userRepository.update(userId, {
       refreshToken: null,
     });
-    await this.redisService.blacklistToken(accessToken, 900);
+    await this.redisService.blacklistToken(
+      accessToken,
+      ACCESS_TOKEN_BLACKLIST_TTL,
+    );
   }
 
   async refreshTokens(
