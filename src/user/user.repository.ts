@@ -13,6 +13,7 @@ import { User } from './user.entity';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { TokenPayload } from 'src/auth/type/accessToken.type';
+import { ACCESS_TOKEN_BLACKLIST_TTL, ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from 'src/common/constants/constants';
 @Injectable()
 export class UsersRepository {
   constructor(
