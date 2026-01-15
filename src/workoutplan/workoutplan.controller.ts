@@ -14,7 +14,12 @@ import {
 import { WorkoutplanService } from './workoutplan.service';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { UpdateNameWorkoutDto } from './dto/update-name-dto';
+import {
+  UpdateDaysOfWeekDto,
+  UpdateNameWorkoutDto,
+  UpdateScheduleDto,
+  UpdateStatusDto,
+} from './dto/update-name-dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
@@ -22,7 +27,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
-
+import { SkipThrottle } from '@nestjs/throttler';
+import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
+import { get } from 'http';
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -34,16 +41,41 @@ export class WorkoutplanController {
 
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
-  create(
-    @Body() createWorkoutDto: CreateWorkoutDto,
+  create(@Body() dto: CreateWorkoutDto, @GetUser() user: User) {
+    return this.workoutService.createWorkout(dto, user);
+  }
+
+  @Patch(':id/auto-missed')
+  @SkipThrottle()
+  getAutoMiss(@Param('id') id: string, @GetUser() user: User) {
+    return this.workoutService.getWorkoutWithAutoCheck(id, user);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
     @GetUser() user: User,
-  ): Promise<Workout> {
-    this.logger.verbose(
-      `User "${user.username}" creating a workout`,
-      createWorkoutDto,
-      WorkoutplanController.name,
-    );
-    return this.workoutService.createWorkout(createWorkoutDto, user);
+    @Body() dto: UpdateStatusDto,
+  ) {
+    return this.workoutService.updateStatus(id, user, dto.status);
+  }
+
+  @Patch(':id/days-of-week')
+  updateDaysOfWeek(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body() dto: UpdateDaysOfWeekDto,
+  ) {
+    return this.workoutService.updateDaysOfWeek(id, user, dto.daysOfWeek);
+  }
+
+  @Patch(':id/schedule')
+  updateSchedule(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body() dto: UpdateScheduleDto,
+  ) {
+    return this.workoutService.updateSchedule(id, user, dto);
   }
 
   @Get()
@@ -116,16 +148,16 @@ export class WorkoutplanController {
     return this.workoutService.cloneWorkout(id, user);
   }
 
-  @Get('/:id/exercises')
-  getExercisesById(
+  @Get(':id/exercises')
+  async getExercises(
     @Param('id') id: string,
+    @Query() getExerciseFilter: GetExerciseFilter,
     @GetUser() user: User,
-  ): Promise<Workout | null> {
-    this.logger.verbose(
-      `User "${user.username}" get a workout with exercise `,
-      id,
-      WorkoutplanController.name,
-    );
-    return this.workoutService.getExercisesByWorkoutId(id, user);
+  ) {
+    return this.workoutService.getExercisesByWorkoutId(id, user, {
+      muscleGroup: getExerciseFilter.muscleGroup,
+      search: getExerciseFilter.search,
+      duration: getExerciseFilter.duration,
+    });
   }
 }

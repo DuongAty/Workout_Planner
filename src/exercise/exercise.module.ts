@@ -9,15 +9,23 @@ import { LoggerModule } from '../common/logger/logger.module';
 import { WorkoutplanModule } from '../workoutplan/workoutplan.module';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../common/upload/upload.service';
+import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
+import { ExerciseTrackingService } from './exersiceTracking/exersciseTracking.service';
+import { ExerciseTrackingController } from './exersiceTracking/exerciseTracking.controller';
 
 @Module({
   imports: [
     forwardRef(() => WorkoutplanModule),
-    TypeOrmModule.forFeature([Exercise, Workout]),
+    TypeOrmModule.forFeature([Exercise, Workout, ExerciseSet]),
     AuthModule,
     LoggerModule,
   ],
-  providers: [ExerciseService, WorkoutplanService, UploadService],
-  controllers: [ExerciseController],
+  providers: [
+    ExerciseService,
+    WorkoutplanService,
+    UploadService,
+    ExerciseTrackingService,
+  ],
+  controllers: [ExerciseController, ExerciseTrackingController],
 })
 export class ExerciseModule {}
