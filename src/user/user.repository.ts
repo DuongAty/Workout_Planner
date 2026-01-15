@@ -9,20 +9,21 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentialsDto } from '../auth/dto/auth-credentials.dto';
-import { JwtPayload } from './jwt-payload.interface';
 import { User } from './user.entity';
-import {
-  PASSWORD_INCORRECT_MESSAGE,
-  USERNAME_NOT_FOUND_MESSAGE,
-} from '../auth/auth-constants';
-import { AccessTokenPayload } from '../auth/type/accessToken.type';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
+import { RedisService } from 'src/redis/redis.service';
+import {
+  ACCESS_TOKEN_BLACKLIST_TTL,
+  ACCESS_TOKEN_TTL,
+  REFRESH_TOKEN_TTL,
+} from 'src/common/constants/constants';
 @Injectable()
 export class UsersRepository {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private redisService: RedisService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -45,26 +46,65 @@ export class UsersRepository {
     }
   }
 
-  async signIn(
-    authCredentialsDto: AuthCredentialsDto,
-  ): Promise<AccessTokenPayload> {
+  async signIn(authCredentialsDto: AuthCredentialsDto) {
     const { username, password } = authCredentialsDto;
     const user = await this.userRepository.findOneBy({ username });
-    if (!user) {
-      throw new UnauthorizedException({
-        status: 401,
-        error: USERNAME_NOT_FOUND_MESSAGE,
-      });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const tokens = await this.getTokens(user.id, user.username);
+      await this.updateRefreshToken(user.id, tokens.refreshToken);
+      return tokens;
+    } else {
+      throw new UnauthorizedException('Invalid credentials');
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException({
-        status: 401,
-        error: PASSWORD_INCORRECT_MESSAGE,
-      });
+  }
+
+  async getTokens(userId: string, username: string) {
+    const payload = { sub: userId, username };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
+      this.jwtService.signAsync(payload, { expiresIn: REFRESH_TOKEN_TTL }),
+    ]);
+    return { accessToken, refreshToken };
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const salt = await bcrypt.genSalt();
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, salt);
+    await this.userRepository.update(userId, {
+      refreshToken: hashedRefreshToken,
+    });
+  }
+
+  async logout(userId: string, accessToken: string) {
+    await this.userRepository.update(userId, {
+      refreshToken: null,
+    });
+    await this.redisService.blacklistToken(
+      accessToken,
+      ACCESS_TOKEN_BLACKLIST_TTL,
+    );
+  }
+
+  async refreshTokens(
+    userId: string,
+    refreshToken: string,
+    oldAccessToken: string,
+  ) {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Access Denied');
     }
-    const payload: JwtPayload = { username };
-    const accessToken: string = this.jwtService.sign(payload);
-    return { accessToken };
+    const refreshTokenMatches = await bcrypt.compare(
+      refreshToken,
+      user.refreshToken,
+    );
+    if (!refreshTokenMatches) {
+      await this.logout(userId, oldAccessToken);
+      throw new UnauthorizedException('Token detected as reused/invalid');
+    }
+    await this.redisService.blacklistToken(oldAccessToken, 900);
+    const tokens = await this.getTokens(user.id, user.username);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 }

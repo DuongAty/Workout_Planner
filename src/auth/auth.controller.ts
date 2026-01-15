@@ -9,16 +9,24 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
-import { AccessTokenPayload } from './type/accessToken.type';
+import { TokenPayload } from './type/accessToken.type';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'src/user/user.entity';
+import { Request } from 'express';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   private logger = new Logger('AuthController');
   constructor(private authService: AuthService) {}
+
+  private extractToken(req: Request): string | null {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return null;
+    const [type, token] = authHeader.split(' ');
+    return type === 'Bearer' ? token : null;
+  }
 
   @Post('/register')
   signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
@@ -28,7 +36,7 @@ export class AuthController {
   @Post('/login')
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
-  ): Promise<AccessTokenPayload> {
+  ): Promise<TokenPayload> {
     return this.authService.signIn(authCredentialsDto);
   }
 
@@ -38,5 +46,23 @@ export class AuthController {
   getMe(@Req() req) {
     const { fullname, username } = req.user;
     return { fullname, username };
+  }
+
+  @UseGuards(AuthGuard())
+  @Post('/logout')
+  async logout(@Req() req: any) {
+    const userId = req.user.id;
+    const accessToken = this.extractToken(req) || '';
+    return this.authService.signOut(userId, accessToken);
+  }
+
+  @Post('/refresh')
+  async refresh(
+    @Body('userId') userId: string,
+    @Body('refreshToken') refreshToken: string,
+    @Req() req: any,
+  ) {
+    const oldAccessToken = this.extractToken(req) || '';
+    return this.authService.refreshTokens(userId, refreshToken, oldAccessToken);
   }
 }

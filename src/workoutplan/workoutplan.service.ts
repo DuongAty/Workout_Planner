@@ -92,7 +92,7 @@ export class WorkoutplanService {
         }
       }
     }
-    await this.workoutPlanService.remove(workoutPlan);
+    await this.workoutPlanService.softRemove(workoutPlan);
   }
 
   async updateNameWorkout(

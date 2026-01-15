@@ -5,55 +5,62 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { configValidationSchema } from './config.schema';
 import { WorkoutplanModule } from './workoutplan/workoutplan.module';
 import { ExerciseModule } from './exercise/exercise.module';
-
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.stage.${process.env.STAGE}`],
+      envFilePath: [`.env.${process.env.STAGE}`],
       validationSchema: configValidationSchema,
+      isGlobal: true,
     }),
     WorkoutplanModule,
     ExerciseModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const isProduction = configService.get('STAGE') === 'prod';
-        let sslConfig = {};
-        let extraConfig = {};
-
-        if (isProduction) {
-          sslConfig = {
-            ssl: true,
-          };
-          extraConfig = {
-            extra: {
-              ssl: {
-                rejectUnauthorized: false,
-              },
-            },
-          };
-        }
-        return {
-          ssl: isProduction,
-          extra: {
-            ssl: isProduction ? { rejectUnauthoried: false } : null,
-          },
-          type: 'postgres',
-          ...sslConfig,
-          ...extraConfig,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true,
-          host: configService.get('DB_HOST'),
-          port: configService.get('DB_PORT'),
-          username: configService.get('DB_USERNAME'),
-          password: configService.get('DB_PASSWORD'),
-          database: configService.get('DB_DATABASE'),
-        };
-      },
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_DATABASE'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,
+        ssl: configService.get('STAGE') === 'prod',
+        extra:
+          configService.get('STAGE') === 'prod'
+            ? { ssl: { rejectUnauthorized: false } }
+            : {},
+      }),
     }),
-
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: THROTTLER_TTL,
+            limit: THROTTLER_LIMIT,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService({
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+          password: configService.get('REDIS_PASSWORD'),
+        }),
+      }),
+    }),
     AuthModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

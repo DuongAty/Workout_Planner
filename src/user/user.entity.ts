@@ -13,8 +13,17 @@ export class User {
   @Column({ unique: true })
   username: string;
 
-  @Column()
+  @Column({ nullable: true })
   password: string;
+
+  @Column({ unique: true, nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
+  avatar: string;
+
+  @Column({ type: 'text', nullable: true })
+  refreshToken?: string | null;
 
   @OneToMany((_type) => Workout, (workout) => workout.user, { eager: true })
   workout: Workout[];
