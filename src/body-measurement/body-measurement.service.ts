@@ -5,6 +5,11 @@ import { BodyMeasurement } from './body-measurement.entity';
 import { MuscleGroup } from '../exercise/exercise-musclegroup';
 import { User } from 'src/user/user.entity';
 import { CreateMeasurementDto } from './dto/measurement.dto';
+import {
+  GOOD_PROGRESS,
+  NEED_TRY,
+  NO_ENOUGH_DATA,
+} from 'src/common/constants/constants';
 
 @Injectable()
 export class BodyMeasurementService {
@@ -24,8 +29,7 @@ export class BodyMeasurementService {
       order: { createdAt: 'DESC' },
       take: 2,
     });
-    if (data.length < 2)
-      return { message: 'Cần thêm dữ liệu', current: data[0] };
+    if (data.length < 2) return { message: NO_ENOUGH_DATA, current: data[0] };
     const [latest, prev] = data;
     const diff = latest.value - prev.value;
     const isGoodProgress = key === MuscleGroup.Abs ? diff < 0 : diff > 0;
@@ -33,7 +37,7 @@ export class BodyMeasurementService {
       muscleGroup: key,
       current: latest.value,
       diff: parseFloat(diff.toFixed(2)),
-      status: isGoodProgress ? 'Tiến bộ' : 'Cần cố gắng',
+      status: isGoodProgress ? GOOD_PROGRESS : NEED_TRY,
       measuredAt: latest.createdAt,
     };
   }

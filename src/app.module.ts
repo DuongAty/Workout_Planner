@@ -11,6 +11,8 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,6 +38,13 @@ import { MailerModule } from '@nestjs-modules/mailer';
         },
         defaults: {
           from: `"Workout Planner" <${configService.get('MAIL_USER')}>`,
+        },
+        template: {
+          dir: join(process.cwd(), 'src', 'templates'),
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
         },
       }),
     }),

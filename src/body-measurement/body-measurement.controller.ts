@@ -8,7 +8,6 @@ import {
 } from './dto/measurement.dto';
 import { MuscleGroup } from 'src/exercise/exercise-musclegroup';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('body-measurements')
 @UseGuards(AuthGuard())
@@ -22,13 +21,11 @@ export class BodyMeasurementController {
   }
 
   @Get('chart')
-  @SkipThrottle()
   getChartData(@GetUser() user, @Query() query: GetMeasurementsQueryDto) {
     return this.service.findAllForChart(user, query.key);
   }
 
   @Get('progress')
-  @SkipThrottle()
   getProgress(@GetUser() user, @Query('key') key: MuscleGroup) {
     return this.service.getProgress(user, key);
   }

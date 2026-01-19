@@ -10,4 +10,8 @@ export const ACCESS_TOKEN_TTL = '15m';
 export const REFRESH_TOKEN_TTL = '7d';
 export const ACCESS_TOKEN_BLACKLIST_TTL = 15 * 60;
 export const THROTTLER_TTL = 60000;
-export const THROTTLER_LIMIT = 10;
+export const THROTTLER_LIMIT = 20;
+
+export const NEED_TRY = 'Needs to try harder.';
+export const GOOD_PROGRESS = 'Good progress';
+export const NO_ENOUGH_DATA = 'Not enough data';
