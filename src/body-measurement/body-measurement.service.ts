@@ -24,17 +24,11 @@ export class BodyMeasurementService {
       order: { createdAt: 'DESC' },
       take: 2,
     });
-
     if (data.length < 2)
       return { message: 'Cần thêm dữ liệu', current: data[0] };
-
     const [latest, prev] = data;
     const diff = latest.value - prev.value;
-
-    // Logic tiến bộ dựa trên Enum
-    // Bụng (Abs) giảm là tốt, các nhóm cơ khác tăng là tốt
     const isGoodProgress = key === MuscleGroup.Abs ? diff < 0 : diff > 0;
-
     return {
       muscleGroup: key,
       current: latest.value,
@@ -48,11 +42,8 @@ export class BodyMeasurementService {
     const query = this.repo
       .createQueryBuilder('m')
       .where('m.userId = :userId', { userId: user.id });
-
     if (key) query.andWhere('m.key = :key', { key });
-
     const results = await query.orderBy('m.createdAt', 'ASC').getMany();
-
     return results.map((item) => ({
       date: item.createdAt,
       value: item.value,
