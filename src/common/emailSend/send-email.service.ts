@@ -8,28 +8,22 @@ import { Workout } from 'src/workoutplan/workoutplan.entity';
 @Injectable()
 export class WorkoutReminderService {
   private readonly logger = new Logger(WorkoutReminderService.name);
-
   constructor(
     @InjectRepository(Workout)
     private readonly workoutRepo: Repository<Workout>,
     private readonly mailerService: MailerService,
   ) {}
 
-  @Cron('0 5 * * *', { timeZone: 'Asia/Ho_Chi_Minh' }) // Chạy lúc 5h sáng
+  @Cron('0 5 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
   async sendDailyReminders() {
-    // 1. Fix định dạng ngày khớp với Database: YYYY-MM-DD
     const today = new Date();
     const todayString = today.toISOString().split('T')[0];
-
     const workouts = await this.workoutRepo.find({ relations: ['user'] });
-
     for (const workout of workouts) {
-      // So sánh chính xác với chuỗi 'planned' trong JSON
       const hasWorkoutToday = workout.scheduleItems?.find(
         (item) =>
           item.date === todayString && item.status.toLowerCase() === 'planned',
       );
-
       if (hasWorkoutToday && workout.user?.email) {
         try {
           await this.mailerService.sendMail({
@@ -47,9 +41,8 @@ export class WorkoutReminderService {
     }
   }
 
-  // Hàm tạo template HTML chuyên nghiệp
   private generateEmailTemplate(workout: any, date: string): string {
-    const primaryColor = '#4F46E5'; // Màu tím xanh hiện đại
+    const primaryColor = '#4F46E5';
     return `
       <div style="background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
