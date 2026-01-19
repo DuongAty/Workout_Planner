@@ -16,6 +16,8 @@ import { UploadService } from '../common/upload/upload.service';
 import { WorkoutStatus } from './workout-status';
 import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
 import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
+import { UpdateWorkoutDto } from './dto/update-name-dto';
+import { TransactionService } from 'src/common/transaction/transaction';
 
 @Injectable()
 export class WorkoutplanService {
@@ -25,6 +27,7 @@ export class WorkoutplanService {
     @InjectRepository(Exercise)
     private exerciseService: Repository<Exercise>,
     private uploadService: UploadService,
+    private transactionService: TransactionService,
   ) {}
 
   async syncNumExercises(workoutId: string): Promise<void> {
@@ -37,61 +40,121 @@ export class WorkoutplanService {
     });
   }
 
-  async createWorkout(dto: CreateWorkoutDto, user: User): Promise<Workout> {
-    const workout = this.workoutPlanService.create({
-      ...dto,
-      user,
-      status: WorkoutStatus.Planned,
+  async createRecurringWorkout(
+    dto: CreateWorkoutDto,
+    user: User,
+  ): Promise<Workout> {
+    return await this.transactionService.run<Workout>(async () => {
+      const { name, startDate, endDate, daysOfWeek } = dto;
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const scheduleItems: { date: string; status: string }[] = [];
+      const current = new Date(start);
+      while (current <= end) {
+        if (daysOfWeek.includes(current.getDay())) {
+          scheduleItems.push({
+            date: current.toISOString().split('T')[0],
+            status: WorkoutStatus.Planned,
+          });
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      const workout = this.workoutPlanService.create({
+        name,
+        startDate,
+        endDate,
+        daysOfWeek,
+        scheduleItems,
+        user,
+      });
+      return await this.workoutPlanService.save(workout);
     });
-    return await this.workoutPlanService.save(workout);
   }
 
-  async updateDaysOfWeek(
+  async updateItemStatus(
     id: string,
     user: User,
-    daysOfWeek: number[],
+    itemDate: string,
+    newStatus: WorkoutStatus,
   ): Promise<Workout> {
-    const workout = await this.findOneWorkout(id, user);
-    workout.daysOfWeek = daysOfWeek;
-    return await this.workoutPlanService.save(workout);
-  }
-
-  async updateStatus(
-    id: string,
-    user: User,
-    status: WorkoutStatus,
-  ): Promise<Workout> {
-    const workout = await this.findOneWorkout(id, user);
-    workout.status = status;
-    return await this.workoutPlanService.save(workout);
+    return await this.transactionService.run<Workout>(async () => {
+      const workout = await this.findOneWorkout(id, user, ['exercises']);
+      if (workout.scheduleItems && workout.scheduleItems.length > 0) {
+        let itemFound = false;
+        workout.scheduleItems = workout.scheduleItems.map((item) => {
+          if (item.date === itemDate) {
+            itemFound = true;
+            return { ...item, status: newStatus };
+          }
+          return item;
+        });
+        if (!itemFound) {
+          throw new NotFoundException(
+            `Không tìm thấy ngày tập ${itemDate} trong lịch trình`,
+          );
+        }
+      }
+      return await this.workoutPlanService.save(workout);
+    });
   }
 
   async updateSchedule(
     id: string,
     user: User,
-    updateDto: { startDate?: string; endDate?: string },
+    updateDto: {
+      oldDate?: string;
+      newDate?: string;
+      startDate?: string;
+      endDate?: string;
+    },
   ): Promise<Workout> {
-    const workout = await this.findOneWorkout(id, user);
-    if (updateDto.startDate) workout.startDate = updateDto.startDate;
-    if (updateDto.endDate) workout.endDate = updateDto.endDate;
-    workout.status = 'planned';
-    return await this.workoutPlanService.save(workout);
+    return await this.transactionService.run<Workout>(async () => {
+      const workout = await this.findOneWorkout(id, user, ['exercises']);
+      if (updateDto.oldDate && updateDto.newDate) {
+        workout.scheduleItems = workout.scheduleItems.map((item) => {
+          if (item.date === updateDto.oldDate) {
+            return {
+              ...item,
+              date: updateDto.newDate as string,
+              status: WorkoutStatus.Planned,
+            };
+          }
+          return item;
+        });
+        workout.scheduleItems.sort((a, b) => a.date.localeCompare(b.date));
+        return await this.workoutPlanService.save(workout);
+      }
+      if (updateDto.startDate || updateDto.endDate) {
+        workout.startDate = updateDto.startDate || workout.startDate;
+        workout.endDate = updateDto.endDate || workout.endDate;
+      }
+
+      return await this.workoutPlanService.save(workout);
+    });
   }
 
-  async getWorkoutWithAutoCheck(id: string, user: User): Promise<Workout> {
-    const workout = await this.findOneWorkout(id, user);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const end = new Date(workout.endDate);
-    end.setHours(0, 0, 0, 0);
-    if (
-      today.getTime() > end.getTime() &&
-      workout.status === WorkoutStatus.Planned
-    ) {
-      workout.status = WorkoutStatus.Missed;
-      await this.workoutPlanService.save(workout);
-    }
-    return workout;
+  async checkMissedWorkouts(user: User): Promise<void> {
+    return await this.transactionService.run<void>(async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const workouts = await this.workoutPlanService.find({
+        where: { user: { id: user.id } },
+      });
+      for (const workout of workouts) {
+        let hasChanges = false;
+        if (workout.scheduleItems && workout.scheduleItems.length > 0) {
+          workout.scheduleItems = workout.scheduleItems.map((item) => {
+            if (item.date < today && item.status === 'planned') {
+              item.status = 'missed';
+              hasChanges = true;
+            }
+            return item;
+          });
+        }
+        if (hasChanges) {
+          await this.workoutPlanService.save(workout);
+        }
+      }
+    });
   }
 
   async getAllWorkout(
@@ -100,7 +163,7 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search, numExercises, status } = getWorkoutFilter;
+    const { search, numExercises } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
@@ -111,9 +174,6 @@ export class WorkoutplanService {
     }
     if (numExercises !== undefined && numExercises !== null) {
       query.andWhere('workout.numExercises = :numExercises', { numExercises });
-    }
-    if (status) {
-      query.andWhere('workout.status = :status', { status });
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
@@ -137,62 +197,113 @@ export class WorkoutplanService {
   }
 
   async deleteWorkoutById(id: string, user: User): Promise<void> {
-    const workoutPlan = await this.findOneWorkout(id, user, ['exercises']);
-    if (workoutPlan.exercises && workoutPlan.exercises.length > 0) {
-      for (const exercise of workoutPlan.exercises) {
-        if (exercise.thumbnail) {
-          this.uploadService.cleanupFile(exercise.thumbnail);
-        }
-        if (exercise.videoUrl) {
-          this.uploadService.cleanupFile(exercise.videoUrl);
+    return await this.transactionService.run<void>(async () => {
+      const workoutPlan = await this.findOneWorkout(id, user, ['exercises']);
+      if (workoutPlan.exercises && workoutPlan.exercises.length > 0) {
+        for (const exercise of workoutPlan.exercises) {
+          if (exercise.thumbnail) {
+            this.uploadService.cleanupFile(exercise.thumbnail);
+          }
+          if (exercise.videoUrl) {
+            this.uploadService.cleanupFile(exercise.videoUrl);
+          }
         }
       }
-    }
-    await this.workoutPlanService.remove(workoutPlan);
+      await this.workoutPlanService.remove(workoutPlan);
+    });
   }
 
-  async updateNameWorkout(
+  async updateWorkout(id: string, user: User, updateDto: UpdateWorkoutDto) {
+    return await this.transactionService.run(async () => {
+      const original = await this.findOneWorkout(id, user);
+      const normalizedDtoDays = updateDto.daysOfWeek
+        ? updateDto.daysOfWeek.map(Number).sort().join(',')
+        : null;
+      const normalizedOriginalDays = original.daysOfWeek
+        ? original.daysOfWeek.map(Number).sort().join(',')
+        : null;
+      const isTimeChanged =
+        (updateDto.startDate && updateDto.startDate !== original.startDate) ||
+        (updateDto.endDate && updateDto.endDate !== original.endDate) ||
+        (normalizedDtoDays !== null &&
+          normalizedDtoDays !== normalizedOriginalDays);
+      if (isTimeChanged) {
+        const cloned = await this.cloneWorkout(id, user, {
+          name: updateDto.name || original.name,
+          startDate: updateDto.startDate || original.startDate,
+          endDate: updateDto.endDate || original.endDate,
+          daysOfWeek: updateDto.daysOfWeek || original.daysOfWeek,
+        });
+        return cloned;
+      }
+      if (updateDto.name && updateDto.name !== original.name) {
+        original.name = updateDto.name;
+        return await this.workoutPlanService.save(original);
+      }
+      return original;
+    });
+  }
+
+  async cloneWorkout(
     id: string,
-    name: string,
     user: User,
+    newScheduleData: {
+      name?: string;
+      startDate: string;
+      endDate: string;
+      daysOfWeek: number[];
+    },
   ): Promise<Workout> {
-    const workout = await this.findOneWorkout(id, user);
-    workout.name = name;
-    await this.workoutPlanService.save(workout);
-    return workout;
-  }
-
-  async cloneWorkout(id: string, user: User): Promise<Workout> {
-    const original = await this.findOneWorkout(id, user, ['exercises']);
-    const newWorkout = this.workoutPlanService.create({
-      name: original.name + ' (Clone)',
-      user,
-      numExercises: original.exercises.length,
-    });
-    await this.workoutPlanService.save(newWorkout);
-    const newExercises = original.exercises.map((ex) => {
-      const clonedThumb = this.uploadService.cloneFile(ex.thumbnail);
-      const clonedVideo = this.uploadService.cloneFile(ex.videoUrl);
-
-      return this.exerciseService.create({
-        name: ex.name,
-        muscleGroup: ex.muscleGroup,
-        numberOfSets: ex.numberOfSets,
-        repetitions: ex.repetitions,
-        duration: ex.duration,
-        restTime: ex.restTime,
-        note: ex.note,
-        thumbnail: clonedThumb,
-        videoUrl: clonedVideo,
-        workoutId: newWorkout.id,
+    return await this.transactionService.run<Workout>(async () => {
+      const original = await this.findOneWorkout(id, user, ['exercises']);
+      const scheduleItems: { date: string; status: string }[] = [];
+      const start = new Date(newScheduleData.startDate);
+      const end = new Date(newScheduleData.endDate);
+      const current = new Date(start);
+      while (current <= end) {
+        if (newScheduleData.daysOfWeek.includes(current.getDay())) {
+          scheduleItems.push({
+            date: current.toISOString().split('T')[0],
+            status: WorkoutStatus.Planned,
+          });
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      const newWorkout = this.workoutPlanService.create({
+        name: newScheduleData.name || original.name,
+        startDate: newScheduleData.startDate,
+        endDate: newScheduleData.endDate,
+        daysOfWeek: newScheduleData.daysOfWeek,
+        scheduleItems,
         user,
-      } as DeepPartial<Exercise>);
+        numExercises: original.exercises.length,
+      });
+      await this.workoutPlanService.save(newWorkout);
+      const exercisePromises = original.exercises.map(async (ex) => {
+        const clonedThumb = ex.thumbnail
+          ? this.uploadService.cloneFile(ex.thumbnail)
+          : null;
+        const clonedVideo = ex.videoUrl
+          ? this.uploadService.cloneFile(ex.videoUrl)
+          : null;
+        return this.exerciseService.create({
+          name: ex.name,
+          muscleGroup: ex.muscleGroup,
+          numberOfSets: ex.numberOfSets,
+          repetitions: ex.repetitions,
+          duration: ex.duration,
+          restTime: ex.restTime,
+          note: ex.note,
+          thumbnail: clonedThumb,
+          videoUrl: clonedVideo,
+          workoutId: newWorkout.id,
+          user,
+        } as DeepPartial<Exercise>);
+      });
+      const newExercises = await Promise.all(exercisePromises);
+      await this.exerciseService.save(newExercises);
+      return newWorkout;
     });
-    await this.exerciseService.save(newExercises);
-    newWorkout.numExercises = newExercises.length;
-    await this.workoutPlanService.save(newWorkout);
-    newWorkout.exercises = newExercises;
-    return newWorkout;
   }
 
   async getExercisesByWorkoutId(
@@ -200,18 +311,14 @@ export class WorkoutplanService {
     user: User,
     filters: GetExerciseFilter,
   ): Promise<Workout> {
-    const workout = await this.workoutPlanService.findOne({
-      where: { id, user: { id: user.id } },
+    return await this.transactionService.run<Workout>(async () => {
+      const workout = await this.findOneWorkout(id, user);
+      const query = this.exerciseService
+        .createQueryBuilder('exercise')
+        .where('exercise.workoutId = :id', { id });
+      applyExerciseFilters(query, filters, 'exercise');
+      workout.exercises = await query.getMany();
+      return workout;
     });
-
-    if (!workout) {
-      throw new NotFoundException(`Workout plan not found`);
-    }
-    const query = this.exerciseService
-      .createQueryBuilder('exercise')
-      .where('exercise.workoutId = :id', { id });
-    applyExerciseFilters(query, filters, 'exercise');
-    workout.exercises = await query.getMany();
-    return workout;
   }
 }

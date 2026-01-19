@@ -1,3 +1,4 @@
+import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
@@ -30,4 +31,7 @@ export class User {
 
   @OneToMany((_type) => Exercise, (exercise) => exercise.user, { eager: true })
   exercise: Exercise[];
+
+  @OneToMany(() => BodyMeasurement, (measurement) => measurement.user)
+  measurements: BodyMeasurement[];
 }

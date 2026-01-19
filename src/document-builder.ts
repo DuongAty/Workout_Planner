@@ -10,7 +10,6 @@ export function DocumentConfig(): Omit<OpenAPIObject, 'paths'> {
     .addTag('Auth')
     .addTag('Workoutplan')
     .addTag('Exercise')
-    .addTag('Schedules')
     .addBearerAuth(
       {
         bearerFormat: 'JWT',
