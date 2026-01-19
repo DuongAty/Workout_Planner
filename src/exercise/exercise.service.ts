@@ -50,7 +50,7 @@ export class ExerciseService {
         workoutId,
       });
       const savedExercise = await manager.save(exercise);
-      await this.workoutService.syncNumExercises(workoutId);
+      await this.workoutService.syncNumExercises(workoutId, manager);
       return savedExercise;
     });
   }
@@ -86,7 +86,7 @@ export class ExerciseService {
     return this.transactionService.run(async (manager) => {
       const exercise = await this.findOneExercise(id, user);
       await manager.softRemove(exercise);
-      await this.workoutService.syncNumExercises(exercise.workoutId);
+      await this.workoutService.syncNumExercises(exercise.workoutId, manager);
       if (exercise.thumbnail)
         this.uploadService.cleanupFile(exercise.thumbnail);
       if (exercise.videoUrl) this.uploadService.cleanupFile(exercise.videoUrl);

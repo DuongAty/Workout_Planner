@@ -1,11 +1,9 @@
 import {
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, EntityManager, Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
@@ -29,15 +27,17 @@ export class WorkoutplanService {
     private uploadService: UploadService,
     private transactionService: TransactionService,
   ) {}
-
-  async syncNumExercises(workoutId: string): Promise<void> {
-    const count = await this.exerciseService
-      .createQueryBuilder('exercise')
-      .where('exercise.workoutId = :workoutId', { workoutId })
-      .getCount();
-    await this.workoutPlanService.update(workoutId, {
-      numExercises: count,
+  async syncNumExercises(workoutId: string, manager?: EntityManager) {
+    const exerciseRepo = manager
+      ? manager.getRepository(Exercise)
+      : this.exerciseService;
+    const workoutRepo = manager
+      ? manager.getRepository(Workout)
+      : this.workoutPlanService;
+    const count = await exerciseRepo.count({
+      where: { workoutId: workoutId },
     });
+    await workoutRepo.update(workoutId, { numExercises: count });
   }
 
   async createRecurringWorkout(
@@ -90,7 +90,7 @@ export class WorkoutplanService {
         });
         if (!itemFound) {
           throw new NotFoundException(
-            `Không tìm thấy ngày tập ${itemDate} trong lịch trình`,
+            `Training date ${itemDate} was not found in the schedule.`,
           );
         }
       }

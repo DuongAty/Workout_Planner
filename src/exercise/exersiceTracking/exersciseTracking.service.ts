@@ -20,9 +20,7 @@ export class ExerciseTrackingService {
       id: exerciseId,
     });
     if (!exercise) {
-      throw new NotFoundException(
-        `Exercise với ID ${exerciseId} không tồn tại`,
-      );
+      throw new NotFoundException(`Exercise with ID ${exerciseId} not found`);
     }
     const newSet = this.setRepository.create({
       ...dto,
@@ -64,6 +62,12 @@ export class ExerciseTrackingService {
     const { startDate, endDate } = query;
     const localDateSql =
       "DATE(set.createdAt AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')";
+    const prRecord = await this.setRepository
+      .createQueryBuilder('set')
+      .select('MAX(set.weight)', 'maxWeight')
+      .where('set.exerciseId = :exerciseId', { exerciseId })
+      .getRawOne();
+    const allTimeMaxWeight = parseFloat(prRecord.maxWeight || 0);
     const queryBuilder = this.setRepository
       .createQueryBuilder('set')
       .select(localDateSql, 'date')
@@ -71,8 +75,6 @@ export class ExerciseTrackingService {
       .addSelect('SUM(set.weight * set.reps)', 'totalVolume')
       .addSelect('MAX(set.weight)', 'maxWeight')
       .where('set.exerciseId = :exerciseId', { exerciseId });
-
-    // 2. Xử lý khoảng thời gian lọc
     if (startDate && endDate) {
       const endOfDay = new Date(endDate);
       endOfDay.setHours(23, 59, 59, 999);
@@ -85,11 +87,16 @@ export class ExerciseTrackingService {
       .groupBy(localDateSql)
       .orderBy('date', 'ASC')
       .getRawMany();
-    return stats.map((s) => ({
-      date: s.date,
-      max1RM: parseFloat(parseFloat(s.max1RM).toFixed(2)),
-      totalVolume: parseFloat(parseFloat(s.totalVolume).toFixed(2)),
-      maxWeight: parseFloat(s.maxWeight),
-    }));
+    return stats.map((s) => {
+      const currentMaxWeight = parseFloat(s.maxWeight);
+      return {
+        date: s.date,
+        max1RM: parseFloat(parseFloat(s.max1RM).toFixed(2)),
+        totalVolume: parseFloat(parseFloat(s.totalVolume).toFixed(2)),
+        maxWeight: currentMaxWeight,
+        personalRecord: allTimeMaxWeight,
+        isPRDay: currentMaxWeight >= allTimeMaxWeight,
+      };
+    });
   }
 }

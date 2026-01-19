@@ -118,8 +118,6 @@ export class UsersRepository {
       });
       await this.userRepository.save(user);
     }
-
-    // Tạo token của hệ thống bạn
     const tokens = await this.getTokens(user.id, user.username);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 

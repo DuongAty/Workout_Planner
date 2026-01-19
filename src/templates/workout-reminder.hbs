@@ -1,0 +1,37 @@
+<style>
+  .container { background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+  .header { background-color: #4F46E5; padding: 30px; text-align: center; }
+  .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px; }
+  .content { padding: 30px; color: #1f2937; }
+  .workout-info { background-color: #f9fafb; border-left: 4px solid #4F46E5; padding: 20px; margin: 25px 0; }
+  .button-wrapper { text-align: center; margin-top: 35px; }
+  .button { background-color: #4F46E5; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+  .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
+</style>
+
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h1>WORKOUT PLANNER</h1>
+    </div>
+    <div class="content">
+      <h2>Chào {{fullname}}, 💪</h2>
+      <p>Hôm nay (<b>{{date}}</b>), bạn có một lộ trình tập luyện đã được lên lịch sẵn.</p>
+      
+      <div class="workout-info">
+        <p style="margin: 0; font-size: 18px;"><b>Chủ đề:</b> {{workoutName}}</p>
+        <p style="margin: 5px 0 0 0; color: #6b7280;">Số lượng bài tập: {{numExercises}} bài</p>
+      </div>
+
+      <p>Việc duy trì kỷ luật là chìa khóa của thành công. Đừng để những nỗ lực trước đó lãng phí!</p>
+
+      <div class="button-wrapper">
+        <a href="{{url}}" class="button">XEM CHI TIẾT LỊCH TẬP</a>
+      </div>
+    </div>
+    <div class="footer">
+      © 2026 Workout Planner App. Mọi quyền được bảo lưu.
+    </div>
+  </div>
+</div>
