@@ -14,12 +14,7 @@ import {
 import { WorkoutplanService } from './workoutplan.service';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import {
-  UpdateDaysOfWeekDto,
-  UpdateNameWorkoutDto,
-  UpdateScheduleDto,
-  UpdateStatusDto,
-} from './dto/update-name-dto';
+import { UpdateWorkoutDto, UpdateScheduleDto } from './dto/update-name-dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
@@ -29,7 +24,7 @@ import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { SkipThrottle } from '@nestjs/throttler';
 import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
-import { get } from 'http';
+import { WorkoutStatus } from './workout-status';
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -42,40 +37,39 @@ export class WorkoutplanController {
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
   create(@Body() dto: CreateWorkoutDto, @GetUser() user: User) {
-    return this.workoutService.createWorkout(dto, user);
+    return this.workoutService.createRecurringWorkout(dto, user);
   }
 
   @Patch(':id/auto-missed')
   @SkipThrottle()
   getAutoMiss(@Param('id') id: string, @GetUser() user: User) {
-    return this.workoutService.getWorkoutWithAutoCheck(id, user);
+    return this.workoutService.checkMissedWorkouts(user);
   }
 
-  @Patch(':id/status')
-  updateStatus(
+  @Patch(':id/item-status')
+  async updateItemStatus(
     @Param('id') id: string,
     @GetUser() user: User,
-    @Body() dto: UpdateStatusDto,
+    @Body() body: { date: string; status: WorkoutStatus },
   ) {
-    return this.workoutService.updateStatus(id, user, dto.status);
+    return await this.workoutService.updateItemStatus(
+      id,
+      user,
+      body.date,
+      body.status,
+    );
   }
 
-  @Patch(':id/days-of-week')
-  updateDaysOfWeek(
-    @Param('id') id: string,
-    @GetUser() user: User,
-    @Body() dto: UpdateDaysOfWeekDto,
-  ) {
-    return this.workoutService.updateDaysOfWeek(id, user, dto.daysOfWeek);
-  }
-
-  @Patch(':id/schedule')
-  updateSchedule(
+  @Patch(':id/reschedule-item')
+  async rescheduleItem(
     @Param('id') id: string,
     @GetUser() user: User,
     @Body() dto: UpdateScheduleDto,
   ) {
-    return this.workoutService.updateSchedule(id, user, dto);
+    return this.workoutService.updateSchedule(id, user, {
+      oldDate: dto.oldDate,
+      newDate: dto.newDate,
+    });
   }
 
   @Get()
@@ -122,30 +116,36 @@ export class WorkoutplanController {
   @Patch('/:id')
   update(
     @Param('id') id: string,
-    @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
+    @Body() updateWorkoutDto: UpdateWorkoutDto,
     @GetUser() user: User,
-  ): Promise<Workout> {
+  ) {
     this.logger.verbose(
-      `User "${user.username}" update name workout `,
-      updateNameWorkoutDto,
+      `User "${user.username}" update workout `,
+      updateWorkoutDto,
       WorkoutplanController.name,
     );
-    return this.workoutService.updateNameWorkout(
-      id,
-      updateNameWorkoutDto.name,
-      user,
-    );
+    return this.workoutService.updateWorkout(id, user, updateWorkoutDto);
   }
 
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
-  clone(@Param('id') id: string, @GetUser() user: User) {
+  clone(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body()
+    cloneScheduleData: {
+      name?: string;
+      startDate: string;
+      endDate: string;
+      daysOfWeek: number[];
+    },
+  ) {
     this.logger.verbose(
       `User "${user.username}" clone a workout `,
       id,
       WorkoutplanController.name,
     );
-    return this.workoutService.cloneWorkout(id, user);
+    return this.workoutService.cloneWorkout(id, user, cloneScheduleData);
   }
 
   @Get(':id/exercises')

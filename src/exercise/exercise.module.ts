@@ -12,6 +12,7 @@ import { UploadService } from '../common/upload/upload.service';
 import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
 import { ExerciseTrackingService } from './exersiceTracking/exersciseTracking.service';
 import { ExerciseTrackingController } from './exersiceTracking/exerciseTracking.controller';
+import { TransactionService } from 'src/common/transaction/transaction';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ExerciseTrackingController } from './exersiceTracking/exerciseTracking.
     WorkoutplanService,
     UploadService,
     ExerciseTrackingService,
+    TransactionService,
   ],
   controllers: [ExerciseController, ExerciseTrackingController],
 })

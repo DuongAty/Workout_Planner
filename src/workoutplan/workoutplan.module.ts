@@ -7,14 +7,25 @@ import { Exercise } from '../exercise/exercise.entity';
 import { AuthModule } from '../auth/auth.module';
 import { LoggerModule } from '../common/logger/logger.module';
 import { UploadService } from '../common/upload/upload.service';
+import { TransactionService } from 'src/common/transaction/transaction';
+import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
+import { BodyMeasurementController } from 'src/body-measurement/body-measurement.controller';
+import { BodyMeasurementService } from 'src/body-measurement/body-measurement.service';
+import { WorkoutReminderService } from 'src/common/emailSend/send-email.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Workout, Exercise]),
+    TypeOrmModule.forFeature([Workout, Exercise, BodyMeasurement]),
     AuthModule,
     LoggerModule,
   ],
-  controllers: [WorkoutplanController],
-  providers: [WorkoutplanService, UploadService],
+  controllers: [WorkoutplanController, BodyMeasurementController],
+  providers: [
+    WorkoutplanService,
+    UploadService,
+    TransactionService,
+    BodyMeasurementService,
+    WorkoutReminderService,
+  ],
 })
 export class WorkoutplanModule {}

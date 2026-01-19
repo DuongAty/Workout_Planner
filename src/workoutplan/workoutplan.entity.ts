@@ -31,15 +31,11 @@ export class Workout {
   @Column({ type: 'date', nullable: true })
   endDate: string;
 
-  @Column({
-    type: 'enum',
-    enum: ['planned', 'completed', 'missed'],
-    default: 'planned',
-  })
-  status: string;
-
   @Column({ type: 'simple-array', nullable: true })
   daysOfWeek: number[];
+
+  @Column({ type: 'simple-json', nullable: true })
+  scheduleItems: { date: string; status: string }[];
 
   @DeleteDateColumn()
   deletedAt: Date;

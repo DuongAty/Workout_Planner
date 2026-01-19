@@ -9,13 +9,33 @@ import {
 } from 'class-validator';
 import { WorkoutStatus } from '../workout-status';
 
-export class UpdateNameWorkoutDto {
+export class UpdateWorkoutDto {
   @IsNotEmpty()
   @IsOptional()
   @ApiProperty({
     description: 'Name',
   })
-  name: string;
+  name?: string;
+
+  @ApiProperty({ example: '2026-01-05' })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @ApiProperty({ example: '2026-01-12' })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiProperty({
+    example: [1, 3, 5],
+    description: 'Thứ trong tuần (1: T2, 3: T4, 5: T6)',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  daysOfWeek?: number[];
 }
 
 export class UpdateStatusDto {
@@ -25,15 +45,15 @@ export class UpdateStatusDto {
 }
 
 export class UpdateScheduleDto {
-  @ApiProperty({ example: '2026-01-10', required: false })
+  @ApiProperty({ example: '2026-02-20' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  oldDate?: string;
 
-  @ApiProperty({ example: '2026-01-20', required: false })
+  @ApiProperty({ example: '2026-02-20' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  newDate?: string;
 }
 
 export class UpdateDaysOfWeekDto {
