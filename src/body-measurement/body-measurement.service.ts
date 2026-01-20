@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { BodyMeasurement } from './body-measurement.entity';
 import { MuscleGroup } from '../exercise/exercise-musclegroup';
 import { User } from 'src/user/user.entity';
-import { CreateMeasurementDto } from './dto/measurement.dto';
+import {
+  CreateMeasurementDto,
+  GetMeasurementsQueryDto,
+} from './dto/measurement.dto';
 import {
   GOOD_PROGRESS,
   NEED_TRY,
@@ -42,11 +45,24 @@ export class BodyMeasurementService {
     };
   }
 
-  async findAllForChart(user: User, key?: MuscleGroup) {
+  async findAllForChart(user: User, dto: GetMeasurementsQueryDto) {
+    const { key, startDate, endDate } = dto;
     const query = this.repo
       .createQueryBuilder('m')
       .where('m.userId = :userId', { userId: user.id });
-    if (key) query.andWhere('m.key = :key', { key });
+    if (key) {
+      query.andWhere('m.key = :key', { key });
+    }
+    if (startDate) {
+      query.andWhere('m.createdAt >= :startDate', {
+        startDate: new Date(startDate),
+      });
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.andWhere('m.createdAt <= :endDate', { endDate: end });
+    }
     const results = await query.orderBy('m.createdAt', 'ASC').getMany();
     return results.map((item) => ({
       date: item.createdAt,
