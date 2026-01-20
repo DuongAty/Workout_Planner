@@ -19,11 +19,18 @@ export class GetWorkoutFilter {
   numExercises?: string;
 
   @ApiProperty({
-    enum: WorkoutStatus,
     required: false,
-    description: 'Workout Status',
+    description: 'Filter by start date (YYYY-MM-DD)',
   })
   @IsOptional()
-  @IsEnum(WorkoutStatus)
-  status?: WorkoutStatus;
+  @IsString()
+  startDate?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Filter by end date (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 }

@@ -136,20 +136,26 @@ export class WorkoutplanService {
       const workouts = await this.workoutPlanService.find({
         where: { user: { id: user.id } },
       });
+      const updatedWorkouts: Workout[] = [];
       for (const workout of workouts) {
         let hasChanges = false;
+
         if (workout.scheduleItems && workout.scheduleItems.length > 0) {
-          workout.scheduleItems = workout.scheduleItems.map((item) => {
-            if (item.date < today && item.status === 'planned') {
-              item.status = 'missed';
+          const newScheduleItems = workout.scheduleItems.map((item) => {
+            if (item.date < today && item.status === WorkoutStatus.Planned) {
               hasChanges = true;
+              return { ...item, status: WorkoutStatus.Missed };
             }
             return item;
           });
+          if (hasChanges) {
+            workout.scheduleItems = newScheduleItems;
+            updatedWorkouts.push(workout);
+          }
         }
-        if (hasChanges) {
-          await this.workoutPlanService.save(workout);
-        }
+      }
+      if (updatedWorkouts.length > 0) {
+        await this.workoutPlanService.save(updatedWorkouts);
       }
     });
   }
@@ -160,7 +166,7 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search, numExercises } = getWorkoutFilter;
+    const { search, numExercises, startDate, endDate } = getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.where({ user });
@@ -171,6 +177,12 @@ export class WorkoutplanService {
     }
     if (numExercises !== undefined && numExercises !== null) {
       query.andWhere('workout.numExercises = :numExercises', { numExercises });
+    }
+    if (startDate) {
+      query.andWhere('workout.startDate >= :startDate', { startDate });
+    }
+    if (endDate) {
+      query.andWhere('workout.endDate <= :endDate', { endDate });
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();

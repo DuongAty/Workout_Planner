@@ -22,7 +22,7 @@ export class BodyMeasurementController {
 
   @Get('chart')
   getChartData(@GetUser() user, @Query() query: GetMeasurementsQueryDto) {
-    return this.service.findAllForChart(user, query.key);
+    return this.service.findAllForChart(user, query);
   }
 
   @Get('progress')

@@ -22,4 +22,12 @@ export class GetMeasurementsQueryDto {
   @ApiProperty({ enum: MuscleGroup, required: false })
   @IsEnum(MuscleGroup)
   key?: MuscleGroup;
+
+  @IsOptional()
+  @ApiProperty({ required: false })
+  startDate?: string;
+
+  @IsOptional()
+  @ApiProperty({ required: false })
+  endDate?: string;
 }
