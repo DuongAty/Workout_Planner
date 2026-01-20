@@ -1,5 +1,6 @@
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import * as fs from 'fs';
 import { BadRequestException } from '@nestjs/common';
 import {
   IMAGE_MIMETYPE_REGEX,
@@ -14,7 +15,14 @@ export const generateFileName = (originalname: string): string => {
 
 export const storageConfig = (folder: string) =>
   diskStorage({
-    destination: `./uploads/${folder}`,
+    destination: (req, file, cb) => {
+      const exerciseId = req.params.id;
+      const path = `./uploads/${folder}/${exerciseId}`;
+      if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
+      }
+      cb(null, path);
+    },
     filename: (req, file, cb) => {
       const fileName = generateFileName(file.originalname);
       cb(null, fileName);
