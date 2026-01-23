@@ -22,7 +22,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
-import { SkipThrottle } from '@nestjs/throttler';
 import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
 @Controller({ path: 'workoutplans', version: '1' })
@@ -40,10 +39,9 @@ export class WorkoutplanController {
     return this.workoutService.createRecurringWorkout(dto, user);
   }
 
-  @Patch(':id/auto-missed')
-  @SkipThrottle()
-  getAutoMiss(@Param('id') id: string, @GetUser() user: User) {
-    return this.workoutService.checkMissedWorkouts(user);
+  @Patch('check-missed-all')
+  async checkAllMissedWorkouts(@GetUser() user: User) {
+    return await this.workoutService.checkMissedWorkouts(user);
   }
 
   @Patch(':id/item-status')
