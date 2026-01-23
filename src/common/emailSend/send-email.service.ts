@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,10 +16,10 @@ export class WorkoutReminderService {
     private configService: ConfigService,
   ) {}
 
-  @Cron('0 5 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
-  async sendDailyReminders() {
+  async processDailyReminders() {
     const todayString = new Date().toISOString().split('T')[0];
     const todayDisplayString = todayString.split('-').reverse().join('/');
+
     const workouts = await this.workoutRepo
       .createQueryBuilder('workout')
       .innerJoinAndSelect('workout.user', 'user')
@@ -31,32 +30,37 @@ export class WorkoutReminderService {
         { today: todayString, status: 'planned' },
       )
       .getMany();
+
     if (workouts.length === 0) {
       this.logger.log('🔔 Không có lịch tập nào cần nhắc nhở hôm nay.');
       return;
     }
+
     for (const workout of workouts) {
       if (!workout.user?.email) continue;
+      await this.sendEmail(workout, todayDisplayString);
+    }
+  }
 
-      try {
-        await this.mailerService.sendMail({
-          to: workout.user.email,
-          subject: `🚀 SẴN SÀNG CHƯA? Lịch tập ${workout.name.toUpperCase()} hôm nay!`,
-          template: 'workout-reminder',
-          context: {
-            fullname: workout.user.fullname || 'Gymer',
-            date: todayDisplayString,
-            workoutName: workout.name,
-            numExercises: workout.numExercises,
-            url: this.configService.get('FRONTEND_URL') + '/dashboard',
-          },
-        });
-        this.logger.log(`✅ Đã gửi mail cho: ${workout.user.email}`);
-      } catch (error) {
-        this.logger.error(
-          `❌ Lỗi gửi mail cho ${workout.user.email}: ${error.message}`,
-        );
-      }
+  private async sendEmail(workout: Workout, date: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: workout.user.email,
+        subject: `🚀 SẴN SÀNG CHƯA? Lịch tập ${workout.name.toUpperCase()} hôm nay!`,
+        template: 'workout-reminder',
+        context: {
+          fullname: workout.user.fullname || 'Gymer',
+          date,
+          workoutName: workout.name,
+          numExercises: workout.numExercises,
+          url: this.configService.get('FRONTEND_URL') + '/dashboard',
+        },
+      });
+      this.logger.log(`✅ Đã gửi mail cho: ${workout.user.email}`);
+    } catch (error) {
+      this.logger.error(
+        `❌ Lỗi gửi mail cho ${workout.user.email}: ${error.message}`,
+      );
     }
   }
 }

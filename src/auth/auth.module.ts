@@ -15,6 +15,7 @@ import {
 } from './../common/constants/constants';
 import { RedisService } from 'src/redis/redis.service';
 import { GoogleStrategy } from 'src/user/google.strategy';
+import { Workout } from 'src/workoutplan/workoutplan.entity';
 
 @Module({
   imports: [

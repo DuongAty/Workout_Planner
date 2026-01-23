@@ -4,7 +4,7 @@ import { IsNumber, IsInt, IsOptional, Min, Max } from 'class-validator';
 export class CreateSetDto {
   @ApiProperty({
     example: 60.5,
-    description: 'Trọng lượng tạ (kg hoặc lbs)',
+    description: 'Dumbbell weight (kg or lbs)',
     type: Number,
   })
   @IsNumber()
@@ -13,15 +13,16 @@ export class CreateSetDto {
 
   @ApiProperty({
     example: 10,
-    description: 'Số lần lặp lại (reps)',
+    description: 'Number of repetitions (reps)',
   })
   @IsInt()
   @Min(1)
+  @Max(12)
   reps: number;
 
   @ApiPropertyOptional({
     example: 8.5,
-    description: 'Chỉ số nỗ lực RPE (từ 1 đến 10)',
+    description: 'RPE (Responsive Performance Index) (1 to 10)',
     type: Number,
   })
   @IsOptional()
