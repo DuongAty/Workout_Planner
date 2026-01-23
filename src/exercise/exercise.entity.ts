@@ -11,6 +11,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
+import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
 
 @Entity('exercises')
 export class Exercise {
@@ -64,4 +65,7 @@ export class Exercise {
     cascade: true,
   })
   sets: ExerciseSet[];
+
+  @OneToMany(() => StepOfExercise, (step) => step.exercise, { cascade: true })
+  steps: StepOfExercise[];
 }

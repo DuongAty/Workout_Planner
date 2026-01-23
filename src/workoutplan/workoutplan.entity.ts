@@ -9,6 +9,7 @@ import {
   ManyToOne,
   DeleteDateColumn,
 } from 'typeorm';
+import { ScheduleItem } from './schedule-items/schedule-item.entity';
 export interface IScheduleItem {
   date: string;
   status: 'planned' | 'completed' | 'missed';
@@ -34,11 +35,12 @@ export class Workout {
   @Column({ type: 'simple-array', nullable: true })
   daysOfWeek: number[];
 
-  @Column({ type: 'simple-json', nullable: true })
-  scheduleItems: { date: string; status: string }[];
-
   @DeleteDateColumn()
   deletedAt: Date;
+  @OneToMany(() => ScheduleItem, (scheduleItem) => scheduleItem.workout, {
+    cascade: true,
+  })
+  scheduleItems: ScheduleItem[];
 
   @OneToMany(() => Exercise, (exercise) => exercise.workoutPlan, {
     cascade: true,

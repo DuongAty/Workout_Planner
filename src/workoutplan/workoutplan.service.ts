@@ -13,6 +13,7 @@ import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
 import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
 import { UpdateWorkoutDto } from './dto/update-name-dto';
 import { TransactionService } from 'src/common/transaction/transaction';
+import { ScheduleItem } from './schedule-items/schedule-item.entity';
 
 @Injectable()
 export class WorkoutplanService {
@@ -37,32 +38,45 @@ export class WorkoutplanService {
     await workoutRepo.update(workoutId, { numExercises: count });
   }
 
+  private generateScheduleItems(
+    startDate: string,
+    endDate: string,
+    daysOfWeek: number[],
+  ): ScheduleItem[] {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const items: ScheduleItem[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      if (daysOfWeek.includes(current.getDay())) {
+        const item = new ScheduleItem();
+        item.date = current.toISOString().split('T')[0];
+        item.status = WorkoutStatus.Planned;
+        items.push(item);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return items;
+  }
+
   async createRecurringWorkout(
     dto: CreateWorkoutDto,
     user: User,
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async () => {
       const { name, startDate, endDate, daysOfWeek } = dto;
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const scheduleItems: { date: string; status: string }[] = [];
-      const current = new Date(start);
-      while (current <= end) {
-        if (daysOfWeek.includes(current.getDay())) {
-          scheduleItems.push({
-            date: current.toISOString().split('T')[0],
-            status: WorkoutStatus.Planned,
-          });
-        }
-        current.setDate(current.getDate() + 1);
-      }
+      const scheduleItems = this.generateScheduleItems(
+        startDate,
+        endDate,
+        daysOfWeek,
+      );
       const workout = this.workoutPlanService.create({
         name,
         startDate,
         endDate,
         daysOfWeek,
-        scheduleItems,
         user,
+        scheduleItems,
       });
       return await this.workoutPlanService.save(workout);
     });
@@ -74,24 +88,23 @@ export class WorkoutplanService {
     itemDate: string,
     newStatus: WorkoutStatus,
   ): Promise<Workout> {
-    return await this.transactionService.run<Workout>(async () => {
-      const workout = await this.findOneWorkout(id, user, ['exercises']);
-      if (workout.scheduleItems && workout.scheduleItems.length > 0) {
-        let itemFound = false;
-        workout.scheduleItems = workout.scheduleItems.map((item) => {
-          if (item.date === itemDate) {
-            itemFound = true;
-            return { ...item, status: newStatus };
-          }
-          return item;
-        });
-        if (!itemFound) {
-          throw new NotFoundException(
-            `Training date ${itemDate} was not found in the schedule.`,
-          );
-        }
+    return await this.transactionService.run<Workout>(async (manager) => {
+      const item = await manager
+        .getRepository(ScheduleItem)
+        .createQueryBuilder('item')
+        .innerJoin('item.workout', 'workout')
+        .where(
+          'workout.id = :id AND workout.userId = :userId AND item.date = :itemDate',
+          { id, userId: user.id, itemDate },
+        )
+        .getOne();
+
+      if (!item) {
+        throw new NotFoundException(`Training date ${itemDate} not found.`);
       }
-      return await this.workoutPlanService.save(workout);
+      item.status = newStatus;
+      await manager.save(item);
+      return this.findOneWorkout(id, user, ['scheduleItems']);
     });
   }
 
@@ -105,58 +118,52 @@ export class WorkoutplanService {
       endDate?: string;
     },
   ): Promise<Workout> {
-    return await this.transactionService.run<Workout>(async () => {
-      const workout = await this.findOneWorkout(id, user, ['exercises']);
+    return await this.transactionService.run<Workout>(async (manager) => {
       if (updateDto.oldDate && updateDto.newDate) {
-        workout.scheduleItems = workout.scheduleItems.map((item) => {
-          if (item.date === updateDto.oldDate) {
-            return {
-              ...item,
-              date: updateDto.newDate as string,
-              status: WorkoutStatus.Planned,
-            };
-          }
-          return item;
-        });
-        workout.scheduleItems.sort((a, b) => a.date.localeCompare(b.date));
-        return await this.workoutPlanService.save(workout);
+        const result = await manager
+          .getRepository(ScheduleItem)
+          .createQueryBuilder()
+          .update()
+          .set({ date: updateDto.newDate, status: WorkoutStatus.Planned })
+          .where('workoutId = :id AND date = :oldDate', {
+            id,
+            oldDate: updateDto.oldDate,
+          })
+          .execute();
+
+        if (result.affected === 0)
+          throw new NotFoundException('Schedule date not found');
       }
       if (updateDto.startDate || updateDto.endDate) {
-        workout.startDate = updateDto.startDate || workout.startDate;
-        workout.endDate = updateDto.endDate || workout.endDate;
+        await manager.getRepository(Workout).update(
+          { id, user: { id: user.id } },
+          {
+            ...(updateDto.startDate && { startDate: updateDto.startDate }),
+            ...(updateDto.endDate && { endDate: updateDto.endDate }),
+          },
+        );
       }
-
-      return await this.workoutPlanService.save(workout);
+      return this.findOneWorkout(id, user, ['scheduleItems']);
     });
   }
 
   async checkMissedWorkouts(user: User): Promise<void> {
-    return await this.transactionService.run<void>(async () => {
+    return await this.transactionService.run<void>(async (manager) => {
       const today = new Date().toISOString().split('T')[0];
-      const workouts = await this.workoutPlanService.find({
-        where: { user: { id: user.id } },
-      });
-      const updatedWorkouts: Workout[] = [];
-      for (const workout of workouts) {
-        let hasChanges = false;
-
-        if (workout.scheduleItems && workout.scheduleItems.length > 0) {
-          const newScheduleItems = workout.scheduleItems.map((item) => {
-            if (item.date < today && item.status === WorkoutStatus.Planned) {
-              hasChanges = true;
-              return { ...item, status: WorkoutStatus.Missed };
-            }
-            return item;
-          });
-          if (hasChanges) {
-            workout.scheduleItems = newScheduleItems;
-            updatedWorkouts.push(workout);
-          }
-        }
-      }
-      if (updatedWorkouts.length > 0) {
-        await this.workoutPlanService.save(updatedWorkouts);
-      }
+      const subQuery = manager
+        .getRepository(Workout)
+        .createQueryBuilder('workout')
+        .select('workout.id')
+        .where('workout.userId = :userId', { userId: user.id });
+      await manager
+        .createQueryBuilder()
+        .update(ScheduleItem)
+        .set({ status: WorkoutStatus.Missed })
+        .where('status = :planned', { planned: WorkoutStatus.Planned })
+        .andWhere('date < :today', { today })
+        .andWhere(`"workoutId" IN (${subQuery.getQuery()})`)
+        .setParameters(subQuery.getParameters())
+        .execute();
     });
   }
 
@@ -166,9 +173,11 @@ export class WorkoutplanService {
     user: User,
   ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
     const { page, limit } = paginationDto;
-    const { search, numExercises, startDate, endDate } = getWorkoutFilter;
+    const { search, numExercises, startDate, endDate, todayOnly } =
+      getWorkoutFilter;
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
+    query.leftJoinAndSelect('workout.scheduleItems', 'scheduleItems');
     query.where({ user });
     if (search) {
       query.andWhere('workout.name ILIKE :search', {
@@ -183,6 +192,15 @@ export class WorkoutplanService {
     }
     if (endDate) {
       query.andWhere('workout.endDate <= :endDate', { endDate });
+    }
+    if (todayOnly) {
+      const today = new Date().toISOString().split('T')[0];
+      query.innerJoin(
+        'workout.scheduleItems',
+        'todayItem',
+        'todayItem.date = :today',
+        { today },
+      );
     }
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();

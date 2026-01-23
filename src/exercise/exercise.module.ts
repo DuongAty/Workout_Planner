@@ -13,11 +13,14 @@ import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
 import { ExerciseTrackingService } from './exersiceTracking/exersciseTracking.service';
 import { ExerciseTrackingController } from './exersiceTracking/exerciseTracking.controller';
 import { TransactionService } from 'src/common/transaction/transaction';
+import { StepOfExerciseService } from './StepOfExercises/step-of-exercise.service';
+import { StepOfExerciseController } from './StepOfExercises/step-of-exercise.controller';
+import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
 
 @Module({
   imports: [
     forwardRef(() => WorkoutplanModule),
-    TypeOrmModule.forFeature([Exercise, Workout, ExerciseSet]),
+    TypeOrmModule.forFeature([Exercise, Workout, ExerciseSet, StepOfExercise]),
     AuthModule,
     LoggerModule,
   ],
@@ -27,7 +30,12 @@ import { TransactionService } from 'src/common/transaction/transaction';
     UploadService,
     ExerciseTrackingService,
     TransactionService,
+    StepOfExerciseService,
   ],
-  controllers: [ExerciseController, ExerciseTrackingController],
+  controllers: [
+    ExerciseController,
+    ExerciseTrackingController,
+    StepOfExerciseController,
+  ],
 })
 export class ExerciseModule {}
