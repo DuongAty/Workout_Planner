@@ -5,6 +5,9 @@ import { CreateSetDto } from './dto/create-set.dto';
 import { ExerciseSet } from './exerciseSet.entity';
 import { Exercise } from '../exercise.entity';
 import { GetProgressQueryDto } from './dto/get-progress-query.dto';
+import { SortDirection } from 'src/body-measurement/body-measurement.enum';
+import { WorkoutMath } from 'src/common/mathUtils/math.util';
+import { DateUtils } from 'src/common/dateUtils/dateUtils';
 
 @Injectable()
 export class ExerciseTrackingService {
@@ -26,24 +29,19 @@ export class ExerciseTrackingService {
       ...dto,
       exercise: exercise,
     });
-
     return await this.setRepository.save(newSet);
   }
 
   async getExerciseProgress(exerciseId: string) {
     const sets = await this.setRepository.find({
       where: { exerciseId },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: SortDirection.ASC },
     });
-    return sets.map((set) => {
-      const estimated1RM = set.weight * (1 + 0.0333 * set.reps);
-      const volume = set.weight * set.reps;
-      return {
-        ...set,
-        volume: Math.round(volume * 100) / 100,
-        estimated1RM: Math.round(estimated1RM * 100) / 100,
-      };
-    });
+    return sets.map((set) => ({
+      ...set,
+      volume: WorkoutMath.calculateVolume(set.weight, set.reps),
+      estimated1RM: WorkoutMath.calculate1RM(set.weight, set.reps),
+    }));
   }
 
   async getStats(exerciseId: string) {
@@ -62,41 +60,44 @@ export class ExerciseTrackingService {
     const { startDate, endDate } = query;
     const localDateSql =
       "DATE(set.createdAt AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')";
+    const sql1RM = WorkoutMath.get1RMSql('set.weight', 'set.reps');
+    const sqlVolume = WorkoutMath.getVolumeSql('set.weight', 'set.reps');
+
     const prRecord = await this.setRepository
       .createQueryBuilder('set')
       .select('MAX(set.weight)', 'maxWeight')
       .where('set.exerciseId = :exerciseId', { exerciseId })
       .getRawOne();
+
     const allTimeMaxWeight = parseFloat(prRecord.maxWeight || 0);
+
     const queryBuilder = this.setRepository
       .createQueryBuilder('set')
       .select(localDateSql, 'date')
-      .addSelect('MAX(set.weight * (1 + 0.0333 * set.reps))', 'max1RM')
-      .addSelect('SUM(set.weight * set.reps)', 'totalVolume')
+      .addSelect(`MAX(${sql1RM})`, 'max1RM')
+      .addSelect(`SUM(${sqlVolume})`, 'totalVolume')
       .addSelect('MAX(set.weight)', 'maxWeight')
       .where('set.exerciseId = :exerciseId', { exerciseId });
+
     if (startDate && endDate) {
-      const endOfDay = new Date(endDate);
-      endOfDay.setHours(23, 59, 59, 999);
       queryBuilder.andWhere('set.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: endOfDay,
+        startDate: DateUtils.getStartOfDay(startDate),
+        endDate: DateUtils.getEndOfDay(endDate),
       });
     }
+
     const stats = await queryBuilder
       .groupBy(localDateSql)
-      .orderBy('date', 'ASC')
+      .orderBy('date', SortDirection.ASC)
       .getRawMany();
-    return stats.map((s) => {
-      const currentMaxWeight = parseFloat(s.maxWeight);
-      return {
-        date: s.date,
-        max1RM: parseFloat(parseFloat(s.max1RM).toFixed(2)),
-        totalVolume: parseFloat(parseFloat(s.totalVolume).toFixed(2)),
-        maxWeight: currentMaxWeight,
-        personalRecord: allTimeMaxWeight,
-        isPRDay: currentMaxWeight >= allTimeMaxWeight,
-      };
-    });
+
+    return stats.map((s) => ({
+      date: s.date,
+      max1RM: WorkoutMath.round(parseFloat(s.max1RM)),
+      totalVolume: WorkoutMath.round(parseFloat(s.totalVolume)),
+      maxWeight: parseFloat(s.maxWeight),
+      personalRecord: allTimeMaxWeight,
+      isPRDay: parseFloat(s.maxWeight) >= allTimeMaxWeight,
+    }));
   }
 }

@@ -13,6 +13,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
+import { WorkoutReminderService } from './common/emailSend/send-email.service';
+import { WorkoutReminderTask } from './scheduled-tasks/workout-reminder.task';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,7 +31,7 @@ import { join } from 'path';
       useFactory: (configService: ConfigService) => ({
         transport: {
           host: configService.get('MAIL_HOST'),
-          port: 465,
+          port: configService.get('MAIL_PORT'),
           secure: true,
           auth: {
             user: configService.get('MAIL_USER'),
@@ -37,7 +39,7 @@ import { join } from 'path';
           },
         },
         defaults: {
-          from: `"Workout Planner" <${configService.get('MAIL_USER')}>`,
+          from: `${configService.get('NAME')} <${configService.get('MAIL_USER')}>`,
         },
         template: {
           dir: join(process.cwd(), 'src', 'templates'),

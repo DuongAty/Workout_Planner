@@ -50,12 +50,7 @@ export class WorkoutplanController {
     @GetUser() user: User,
     @Body() body: { date: string; status: WorkoutStatus },
   ) {
-    return await this.workoutService.updateItemStatus(
-      id,
-      user,
-      body.date,
-      body.status,
-    );
+    return await this.workoutService.updateItemStatus(id, user, body.status);
   }
 
   @Patch(':id/reschedule-item')

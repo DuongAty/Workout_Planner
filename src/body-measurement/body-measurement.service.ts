@@ -13,6 +13,8 @@ import {
   NEED_TRY,
   NO_ENOUGH_DATA,
 } from 'src/common/constants/constants';
+import { SortDirection } from './body-measurement.enum';
+import { DateUtils } from 'src/common/dateUtils/dateUtils';
 
 @Injectable()
 export class BodyMeasurementService {
@@ -26,13 +28,18 @@ export class BodyMeasurementService {
     return await this.repo.save(measurement);
   }
 
-  async getProgress(user: User, key: MuscleGroup) {
+  async getProgress(user: User, key: MuscleGroup, limit: number = 2) {
     const data = await this.repo.find({
       where: { user: { id: user.id }, key },
-      order: { createdAt: 'DESC' },
-      take: 2,
+      order: { createdAt: SortDirection.DESC },
+      take: limit,
     });
-    if (data.length < 2) return { message: NO_ENOUGH_DATA, current: data[0] };
+    if (data.length < limit) {
+      return {
+        message: NO_ENOUGH_DATA,
+        current: data[0] ?? null,
+      };
+    }
     const [latest, prev] = data;
     const diff = latest.value - prev.value;
     const isGoodProgress = key === MuscleGroup.Abs ? diff < 0 : diff > 0;
@@ -55,15 +62,17 @@ export class BodyMeasurementService {
     }
     if (startDate) {
       query.andWhere('m.createdAt >= :startDate', {
-        startDate: new Date(startDate),
+        startDate: DateUtils.getStartOfDay(startDate),
       });
     }
     if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      query.andWhere('m.createdAt <= :endDate', { endDate: end });
+      query.andWhere('m.createdAt <= :endDate', {
+        endDate: DateUtils.getEndOfDay(endDate),
+      });
     }
-    const results = await query.orderBy('m.createdAt', 'ASC').getMany();
+    const results = await query
+      .orderBy('m.createdAt', SortDirection.ASC)
+      .getMany();
     return results.map((item) => ({
       date: item.createdAt,
       value: item.value,

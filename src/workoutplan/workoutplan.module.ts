@@ -12,6 +12,7 @@ import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
 import { BodyMeasurementController } from 'src/body-measurement/body-measurement.controller';
 import { BodyMeasurementService } from 'src/body-measurement/body-measurement.service';
 import { WorkoutReminderService } from 'src/common/emailSend/send-email.service';
+import { WorkoutReminderTask } from 'src/scheduled-tasks/workout-reminder.task';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { WorkoutReminderService } from 'src/common/emailSend/send-email.service'
     TransactionService,
     BodyMeasurementService,
     WorkoutReminderService,
+    WorkoutReminderTask,
   ],
 })
 export class WorkoutplanModule {}
