@@ -9,15 +9,47 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
+import { ScheduleModule } from '@nestjs/schedule';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
+import { WorkoutReminderService } from './common/emailSend/send-email.service';
+import { WorkoutReminderTask } from './scheduled-tasks/workout-reminder.task';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.${process.env.STAGE}`],
+      envFilePath: [`.env.${process.env.NODE_ENV}`],
       validationSchema: configValidationSchema,
       isGlobal: true,
     }),
     WorkoutplanModule,
     ExerciseModule,
+    ScheduleModule.forRoot(),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get('MAIL_HOST'),
+          port: configService.get('MAIL_PORT'),
+          secure: true,
+          auth: {
+            user: configService.get('MAIL_USER'),
+            pass: configService.get('MAIL_PASS'),
+          },
+        },
+        defaults: {
+          from: `${configService.get('NAME')} <${configService.get('MAIL_USER')}>`,
+        },
+        template: {
+          dir: join(process.cwd(), 'src', 'templates'),
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
+      }),
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -30,9 +62,9 @@ import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
-        ssl: configService.get('STAGE') === 'prod',
+        ssl: configService.get('NODE_ENV') === 'prod',
         extra:
-          configService.get('STAGE') === 'prod'
+          configService.get('NODE_ENV') === 'prod'
             ? { ssl: { rejectUnauthorized: false } }
             : {},
       }),

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class GetWorkoutFilter {
   @ApiProperty({
@@ -16,4 +16,28 @@ export class GetWorkoutFilter {
   })
   @IsOptional()
   numExercises?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Filter by start date (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Filter by end date (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Filter by end date (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsString()
+  todayOnly?: string;
 }
