@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-const stage = process.env.STAGE || 'dev';
+const stage = process.env.NODE_ENV || 'dev';
 
 dotenv.config({
   path: path.resolve(process.cwd(), `.env.${stage}`),
