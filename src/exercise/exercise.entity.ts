@@ -36,7 +36,7 @@ export class Exercise {
   @Column({ default: 0 })
   duration: number;
 
-  @Column({ length: 100 })
+  @Column({ nullable: true })
   note!: string;
 
   @Column({ nullable: true })

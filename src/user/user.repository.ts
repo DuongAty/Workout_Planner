@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,11 +10,16 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentialsDto } from '../auth/dto/auth-credentials.dto';
-import { User } from './user.entity';
+import { AuthProvider, User } from './user.entity';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { TokenPayload } from 'src/auth/type/accessToken.type';
-import { ACCESS_TOKEN_BLACKLIST_TTL, ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from 'src/common/constants/constants';
+import {
+  ACCESS_TOKEN_BLACKLIST_TTL,
+  ACCESS_TOKEN_TTL,
+  REFRESH_TOKEN_TTL,
+} from 'src/common/constants/constants';
+import { UpdateUserProfileDto } from 'src/auth/dto/user.profile.dto';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -35,6 +41,7 @@ export class UsersRepository {
       fullname,
       username,
       password: hashedPassword,
+      provider: AuthProvider.LOCAL,
     });
     try {
       return await this.userRepository.save(user);
@@ -106,21 +113,41 @@ export class UsersRepository {
   }
 
   async findOrCreateGoogleUser(googleUser: any) {
-    const { email, firstName, lastName, picture } = googleUser;
+    const { email, firstName, lastName, picture, provider, providerId } = googleUser;
     let user = await this.userRepository.findOneBy({ email });
-
     if (!user) {
       user = this.userRepository.create({
         email,
         fullname: `${firstName || ''} ${lastName || ''}`.trim(),
         username: email.split('@')[0],
         avatar: picture,
+        provider: provider,
+        providerId: providerId,
       });
       await this.userRepository.save(user);
     }
     const tokens = await this.getTokens(user.id, user.username);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
-
     return tokens;
+  }
+  async findUser(userId: string) {
+    try {
+      return await this.userRepository.findOneBy({ id: userId });
+    } catch (error) {
+      throw new NotFoundException('User not found');
+    }
+  }
+  async updateUser(userId: string, updateUserDto: UpdateUserProfileDto) {
+    const user = await this.findUser(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    await this.userRepository.update(user.id, updateUserDto);
+    const updatedUser = await this.userRepository.findOneBy({ id: userId });
+    return updatedUser;
+  }
+
+  async updateAvatar(userId: string, avatarPath: string) {
+    return await this.updateUser(userId, { avatar: avatarPath });
   }
 }

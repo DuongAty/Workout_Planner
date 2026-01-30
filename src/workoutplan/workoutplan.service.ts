@@ -98,7 +98,6 @@ export class WorkoutplanService {
           userId: user.id,
         })
         .getOne();
-
       if (!item) {
         throw new NotFoundException(`Schedule item not found.`);
       }
@@ -173,7 +172,6 @@ export class WorkoutplanService {
     original?: number[],
   ): boolean {
     if (!updated) return false;
-
     return this.normalizeDays(updated) !== this.normalizeDays(original);
   }
 
@@ -290,12 +288,10 @@ export class WorkoutplanService {
           daysOfWeek: updateDto.daysOfWeek ?? original.daysOfWeek,
         });
       }
-
       if (this.hasNameChanged(original, updateDto)) {
         original.name = updateDto.name!;
         return this.workoutPlanService.save(original);
       }
-
       return original;
     });
   }

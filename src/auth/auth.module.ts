@@ -15,7 +15,7 @@ import {
 } from './../common/constants/constants';
 import { RedisService } from 'src/redis/redis.service';
 import { GoogleStrategy } from 'src/user/google.strategy';
-import { Workout } from 'src/workoutplan/workoutplan.entity';
+import { UploadService } from 'src/common/upload/upload.service';
 
 @Module({
   imports: [
@@ -39,6 +39,7 @@ import { Workout } from 'src/workoutplan/workoutplan.entity';
     JwtStrategy,
     GoogleStrategy,
     RedisService,
+    UploadService,
   ],
   controllers: [AuthController],
   exports: [JwtStrategy, PassportModule],

@@ -15,9 +15,9 @@ export const generateFileName = (originalname: string): string => {
 
 export const storageConfig = (folder: string) =>
   diskStorage({
-    destination: (req, file, cb) => {
-      const exerciseId = req.params.id;
-      const path = `./uploads/${folder}/${exerciseId}`;
+    destination: (req: any, file, cb) => {
+      const folderId = req.params.id || req.user?.id; ;
+      const path = `./uploads/${folder}/${folderId}`;
       if (!fs.existsSync(path)) {
         fs.mkdirSync(path, { recursive: true });
       }
