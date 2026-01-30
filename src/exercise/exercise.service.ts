@@ -68,7 +68,6 @@ export class ExerciseService {
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
     const totalPages = Math.ceil(total / limit);
-
     return { data, total, totalPages };
   }
 

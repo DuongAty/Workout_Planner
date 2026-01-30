@@ -2,7 +2,11 @@ import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-
+export enum AuthProvider {
+  LOCAL = 'local',
+  GOOGLE = 'google',
+  FACEBOOK = 'facebook'
+}
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -22,6 +26,22 @@ export class User {
 
   @Column({ nullable: true })
   avatar: string;
+
+  @Column({ nullable: true })
+  weight: number;
+
+  @Column({ nullable: true })
+  height: number;
+
+  @Column({
+    type: 'enum',
+    enum: AuthProvider,
+    default: AuthProvider.LOCAL,
+  })
+  provider: AuthProvider;
+
+  @Column({ nullable: true })
+  providerId: string;
 
   @Column({ type: 'text', nullable: true })
   refreshToken?: string | null;
