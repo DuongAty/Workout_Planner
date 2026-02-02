@@ -83,7 +83,9 @@ export class ExerciseService {
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {
     try {
-      return await this.exerciseService.findOneOrFail({ where: { id, user } });
+      return await this.exerciseService.findOneOrFail({
+        where: { id, user: { id: user.id } },
+      });
     } catch (error) {
       throw new NotFoundException(`Exercise with ID ${id} not found`);
     }
