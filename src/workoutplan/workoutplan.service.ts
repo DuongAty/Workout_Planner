@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, EntityManager, Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
@@ -15,6 +20,8 @@ import { UpdateWorkoutDto } from './dto/update-name-dto';
 import { TransactionService } from 'src/common/transaction/transaction';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
 import { DateUtils } from 'src/common/dateUtils/dateUtils';
+import { OpenAIService } from 'src/openai/openai.service';
+import { workoutAIPrompt } from './prompt/workout-ai.prompt';
 
 @Injectable()
 export class WorkoutplanService {
@@ -25,6 +32,7 @@ export class WorkoutplanService {
     private exerciseService: Repository<Exercise>,
     private uploadService: UploadService,
     private transactionService: TransactionService,
+    private openAIService: OpenAIService,
   ) {}
   async syncNumExercises(workoutId: string, manager?: EntityManager) {
     const exerciseRepo = manager
@@ -364,6 +372,54 @@ export class WorkoutplanService {
       const workout = await this.findOneWorkout(id, user, ['scheduleItems']);
       workout.exercises = await this.buildExerciseQuery(id, filters).getMany();
       return workout;
+    });
+  }
+
+  async generateFromChat(message: string) {
+    const prompt = workoutAIPrompt(message);
+    const data = await this.openAIService.chat(prompt);
+    if (!data) {
+      throw new BadRequestException('AI response data is incomplete');
+    }
+    return data;
+  }
+
+  async generateAndSave(message: string, userId: string) {
+    const aiData = await this.generateFromChat(message);
+    return await this.transactionService.run(async (manager: EntityManager) => {
+      try {
+        const workout = manager.create('Workout', {
+          id: aiData.id,
+          name: aiData.name,
+          numExercises: aiData.numExercises,
+          startDate: aiData.startDate,
+          endDate: aiData.endDate,
+          daysOfWeek: aiData.daysOfWeek.map(Number),
+          estimatedCalories: aiData.estimatedCalories,
+          user: { id: userId },
+        });
+        const savedWorkout = await manager.save(workout);
+        const scheduleItems = aiData.scheduleItems.map((item: any) =>
+          manager.create('ScheduleItem', {
+            id: item.id,
+            date: item.date,
+            status: WorkoutStatus.Planned,
+            workout: savedWorkout,
+          }),
+        );
+        await manager.save('ScheduleItem', scheduleItems);
+        const exercises = aiData.exercises.map((ex: any) =>
+          manager.create('Exercise', {
+            ...ex,
+            workoutPlan: savedWorkout,
+          }),
+        );
+        await manager.save('Exercise', exercises);
+        return savedWorkout;
+      } catch (err) {
+        console.error('Save Workout Error:', err);
+        throw new InternalServerErrorException('Lỗi DB: ' + err.message);
+      }
     });
   }
 }

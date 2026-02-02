@@ -2,10 +2,17 @@ import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { NutritionLog } from 'src/nutrition/nutrition-log.entity';
 export enum AuthProvider {
   LOCAL = 'local',
   GOOGLE = 'google',
-  FACEBOOK = 'facebook'
+  FACEBOOK = 'facebook',
+}
+
+export enum UserGoal {
+  LOSE_WEIGHT = 'lose_weight', // Giảm cân
+  MAINTAIN = 'maintain', // Giữ cân
+  GAIN_MUSCLE = 'gain_muscle', // Tăng cơ
 }
 @Entity('users')
 export class User {
@@ -33,6 +40,9 @@ export class User {
   @Column({ nullable: true })
   height: number;
 
+  @Column({ type: 'enum', enum: UserGoal, default: UserGoal.MAINTAIN })
+  goal: UserGoal;
+
   @Column({
     type: 'enum',
     enum: AuthProvider,
@@ -54,4 +64,7 @@ export class User {
 
   @OneToMany(() => BodyMeasurement, (measurement) => measurement.user)
   measurements: BodyMeasurement[];
+
+  @OneToMany(() => NutritionLog, (nutritionLog) => nutritionLog.user)
+  nutritionLogs: NutritionLog[];
 }

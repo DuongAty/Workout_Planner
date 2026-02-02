@@ -13,8 +13,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
-import { WorkoutReminderService } from './common/emailSend/send-email.service';
-import { WorkoutReminderTask } from './scheduled-tasks/workout-reminder.task';
+import { OpenAIModule } from './openai/openai.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +23,7 @@ import { WorkoutReminderTask } from './scheduled-tasks/workout-reminder.task';
     }),
     WorkoutplanModule,
     ExerciseModule,
+    OpenAIModule,
     ScheduleModule.forRoot(),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
