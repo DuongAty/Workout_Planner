@@ -9,9 +9,10 @@ import {
   ManyToOne,
   DeleteDateColumn,
 } from 'typeorm';
+import { WorkoutStatus } from './workout-status';
 export interface IScheduleItem {
   date: string;
-  status: 'planned' | 'completed' | 'missed';
+  status: WorkoutStatus.Planned | WorkoutStatus.Completed | WorkoutStatus.Missed;
   completedAt?: Date;
 }
 @Entity('workouts')
@@ -33,10 +34,10 @@ export class Workout {
 
   @Column({
     type: 'enum',
-    enum: ['planned', 'completed', 'missed'],
+    enum: WorkoutStatus,
     default: 'planned',
   })
-  status: string;
+  status: WorkoutStatus;
 
   @Column({ type: 'simple-array', nullable: true })
   daysOfWeek: number[];
