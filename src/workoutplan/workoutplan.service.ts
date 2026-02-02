@@ -67,7 +67,7 @@ export class WorkoutplanService {
     const workout = await this.findOneWorkout(id, user);
     if (updateDto.startDate) workout.startDate = updateDto.startDate;
     if (updateDto.endDate) workout.endDate = updateDto.endDate;
-    workout.status = 'planned';
+    workout.status = WorkoutStatus.Planned;
     return await this.workoutPlanService.save(workout);
   }
 

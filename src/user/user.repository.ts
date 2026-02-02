@@ -106,14 +106,16 @@ export class UsersRepository {
   }
 
   async findOrCreateGoogleUser(googleUser: any) {
-    const { email, firstName, lastName, picture } = googleUser;
+    const {id, email, firstName, lastName, picture } = googleUser;
     let user = await this.userRepository.findOneBy({ email });
+    const emailPrefix = email.split('@')[0];
+    const shortGoogleId = googleUser.id.slice(-4);
 
     if (!user) {
       user = this.userRepository.create({
         email,
         fullname: `${firstName || ''} ${lastName || ''}`.trim(),
-        username: email.split('@')[0],
+        username: `${emailPrefix}_${shortGoogleId}`,
         avatar: picture,
       });
       await this.userRepository.save(user);
