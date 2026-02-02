@@ -16,6 +16,7 @@ import { TransactionService } from 'src/common/transaction/transaction';
 import { StepOfExerciseService } from './StepOfExercises/step-of-exercise.service';
 import { StepOfExerciseController } from './StepOfExercises/step-of-exercise.controller';
 import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
+import { OpenAIService } from 'src/openai/openai.service';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
     ExerciseTrackingService,
     TransactionService,
     StepOfExerciseService,
+    OpenAIService,
   ],
   controllers: [
     ExerciseController,

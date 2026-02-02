@@ -24,6 +24,7 @@ import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
+import { AIWorkoutChatDto } from './dto/ai-workout.dto';
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -152,5 +153,10 @@ export class WorkoutplanController {
       search: getExerciseFilter.search,
       duration: getExerciseFilter.duration,
     });
+  }
+
+  @Post('ai')
+  async createByAI(@Body() dto: AIWorkoutChatDto, @GetUser() user: User) {
+    return this.workoutService.generateAndSave(dto.message, user.id);
   }
 }
