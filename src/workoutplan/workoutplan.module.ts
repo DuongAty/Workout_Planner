@@ -13,10 +13,15 @@ import { BodyMeasurementController } from 'src/body-measurement/body-measurement
 import { BodyMeasurementService } from 'src/body-measurement/body-measurement.service';
 import { WorkoutReminderService } from 'src/common/emailSend/send-email.service';
 import { WorkoutReminderTask } from 'src/scheduled-tasks/workout-reminder.task';
+import { BullModule } from '@nestjs/bullmq';
+import { MailProcessor } from 'src/common/emailSend/mail.processor';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Workout, Exercise, BodyMeasurement]),
+    BullModule.registerQueue({
+      name: 'mail-queue',
+    }),
     AuthModule,
     LoggerModule,
   ],
@@ -28,6 +33,7 @@ import { WorkoutReminderTask } from 'src/scheduled-tasks/workout-reminder.task';
     BodyMeasurementService,
     WorkoutReminderService,
     WorkoutReminderTask,
+    MailProcessor,
   ],
 })
 export class WorkoutplanModule {}

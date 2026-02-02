@@ -10,9 +10,13 @@ import {
   DeleteDateColumn,
 } from 'typeorm';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
+import { WorkoutStatus } from './workout-status';
 export interface IScheduleItem {
   date: string;
-  status: 'planned' | 'completed' | 'missed';
+  status:
+    | WorkoutStatus.Planned
+    | WorkoutStatus.Completed
+    | WorkoutStatus.Missed;
   completedAt?: Date;
 }
 @Entity('workouts')

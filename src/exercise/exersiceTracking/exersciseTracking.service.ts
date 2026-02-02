@@ -58,8 +58,7 @@ export class ExerciseTrackingService {
 
   async getTimelineProgress(exerciseId: string, query: GetProgressQueryDto) {
     const { startDate, endDate } = query;
-    const localDateSql =
-      "DATE(set.createdAt AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')";
+    const localDateSql = "DATE(set.createdAt AT TIME ZONE 'Asia/Ho_Chi_Minh')";
     const sql1RM = WorkoutMath.get1RMSql('set.weight', 'set.reps');
     const sqlVolume = WorkoutMath.getVolumeSql('set.weight', 'set.reps');
 

@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from 'src/workoutplan/workoutplan.entity';
-import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { WorkoutStatus } from 'src/workoutplan/workout-status';
 
 @Injectable()
 export class WorkoutReminderService {
@@ -12,55 +13,44 @@ export class WorkoutReminderService {
   constructor(
     @InjectRepository(Workout)
     private readonly workoutRepo: Repository<Workout>,
-    private readonly mailerService: MailerService,
-    private configService: ConfigService,
+    @InjectQueue('mail-queue') private readonly mailQueue: Queue,
   ) {}
 
   async processDailyReminders() {
     const todayString = new Date().toISOString().split('T')[0];
     const todayDisplayString = todayString.split('-').reverse().join('/');
-
     const workouts = await this.workoutRepo
       .createQueryBuilder('workout')
       .innerJoinAndSelect('workout.user', 'user')
       .innerJoinAndSelect(
         'workout.scheduleItems',
         'item',
-        'item.date = :today AND LOWER(item.status) = :status',
-        { today: todayString, status: 'planned' },
+        'item.date = :today AND item.status = :status',
+        { today: todayString, status: WorkoutStatus.Planned },
       )
       .getMany();
-
     if (workouts.length === 0) {
       this.logger.log('🔔 Không có lịch tập nào cần nhắc nhở hôm nay.');
       return;
     }
-
-    for (const workout of workouts) {
-      if (!workout.user?.email) continue;
-      await this.sendEmail(workout, todayDisplayString);
-    }
-  }
-
-  private async sendEmail(workout: Workout, date: string) {
-    try {
-      await this.mailerService.sendMail({
-        to: workout.user.email,
-        subject: `🚀 SẴN SÀNG CHƯA? Lịch tập ${workout.name.toUpperCase()} hôm nay!`,
-        template: 'workout-reminder',
-        context: {
-          fullname: workout.user.fullname || 'Gymer',
-          date,
+    const jobs = workouts
+      .filter((w) => w.user?.email)
+      .map((workout) => ({
+        name: 'send-reminder-email',
+        data: {
+          email: workout.user.email,
+          fullname: workout.user.fullname,
           workoutName: workout.name,
           numExercises: workout.numExercises,
-          url: this.configService.get('FRONTEND_URL') + '/dashboard',
+          date: todayDisplayString,
         },
-      });
-      this.logger.log(`✅ Đã gửi mail cho: ${workout.user.email}`);
-    } catch (error) {
-      this.logger.error(
-        `❌ Lỗi gửi mail cho ${workout.user.email}: ${error.message}`,
-      );
-    }
+        opts: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+        },
+      }));
+
+    await this.mailQueue.addBulk(jobs);
+    this.logger.log(`📥 Đã thêm ${jobs.length} yêu cầu gửi mail vào hàng đợi.`);
   }
 }

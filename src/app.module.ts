@@ -13,8 +13,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
-import { WorkoutReminderService } from './common/emailSend/send-email.service';
-import { WorkoutReminderTask } from './scheduled-tasks/workout-reminder.task';
+import { BullModule } from '@nestjs/bullmq';
+import { connect } from 'http2';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +24,15 @@ import { WorkoutReminderTask } from './scheduled-tasks/workout-reminder.task';
     }),
     WorkoutplanModule,
     ExerciseModule,
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     ScheduleModule.forRoot(),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
