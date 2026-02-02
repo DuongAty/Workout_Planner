@@ -14,6 +14,8 @@ import {
   ConfigKey,
 } from './../common/constants/constants';
 import { RedisService } from 'src/redis/redis.service';
+import { GoogleStrategy } from 'src/user/google.strategy';
+import { UploadService } from 'src/common/upload/upload.service';
 
 @Module({
   imports: [
@@ -31,7 +33,14 @@ import { RedisService } from 'src/redis/redis.service';
     }),
     TypeOrmModule.forFeature([User]),
   ],
-  providers: [AuthService, UsersRepository, JwtStrategy, RedisService],
+  providers: [
+    AuthService,
+    UsersRepository,
+    JwtStrategy,
+    GoogleStrategy,
+    RedisService,
+    UploadService,
+  ],
   controllers: [AuthController],
   exports: [JwtStrategy, PassportModule],
 })

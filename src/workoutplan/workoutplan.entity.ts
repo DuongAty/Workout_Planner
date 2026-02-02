@@ -9,7 +9,16 @@ import {
   ManyToOne,
   DeleteDateColumn,
 } from 'typeorm';
-
+import { ScheduleItem } from './schedule-items/schedule-item.entity';
+import { WorkoutStatus } from './workout-status';
+export interface IScheduleItem {
+  date: string;
+  status:
+    | WorkoutStatus.Planned
+    | WorkoutStatus.Completed
+    | WorkoutStatus.Missed;
+  completedAt?: Date;
+}
 @Entity('workouts')
 export class Workout {
   @PrimaryGeneratedColumn('uuid')
@@ -18,16 +27,29 @@ export class Workout {
   @Column({ length: 100 })
   name: string;
 
+  @Column({ default: 0 })
+  numExercises: number;
+
+  @Column({ type: 'date', nullable: true })
+  startDate: string;
+
+  @Column({ type: 'date', nullable: true })
+  endDate: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  daysOfWeek: number[];
+
+  @DeleteDateColumn()
+  deletedAt: Date;
+  @OneToMany(() => ScheduleItem, (scheduleItem) => scheduleItem.workout, {
+    cascade: true,
+  })
+  scheduleItems: ScheduleItem[];
+
   @OneToMany(() => Exercise, (exercise) => exercise.workoutPlan, {
     cascade: true,
   })
   exercises: Exercise[];
-
-  @Column({ default: 0 })
-  numExercises: number;
-
-  @DeleteDateColumn()
-  deletedAt: Date;
 
   @ManyToOne((_type) => User, (user) => user.workout, { eager: false })
   @Exclude({ toPlainOnly: true })
