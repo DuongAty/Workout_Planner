@@ -3,17 +3,7 @@ import { Exercise } from '../exercise/exercise.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { NutritionLog } from 'src/nutrition/nutrition-log.entity';
-export enum AuthProvider {
-  LOCAL = 'local',
-  GOOGLE = 'google',
-  FACEBOOK = 'facebook',
-}
-
-export enum UserGoal {
-  LOSE_WEIGHT = 'lose_weight', // Giảm cân
-  MAINTAIN = 'maintain', // Giữ cân
-  GAIN_MUSCLE = 'gain_muscle', // Tăng cơ
-}
+import { AuthProvider, Gender, UserGoal } from 'src/common/enum/user-enum';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -35,6 +25,9 @@ export class User {
   avatar: string;
 
   @Column({ nullable: true })
+  age: number;
+
+  @Column({ nullable: true })
   weight: number;
 
   @Column({ nullable: true })
@@ -42,6 +35,9 @@ export class User {
 
   @Column({ type: 'enum', enum: UserGoal, default: UserGoal.MAINTAIN })
   goal: UserGoal;
+
+  @Column({ nullable: true, type: 'enum', enum: Gender })
+  gender: Gender;
 
   @Column({
     type: 'enum',

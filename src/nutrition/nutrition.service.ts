@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { OpenAIService } from '../openai/openai.service';
-import { User, UserGoal } from '../user/user.entity';
+import { User } from '../user/user.entity';
 import { Workout } from 'src/workoutplan/workoutplan.entity';
 import { NutritionLog } from './nutrition-log.entity';
+import { Gender, UserGoal } from 'src/common/enum/user-enum';
 
 @Injectable()
 export class NutritionService {
@@ -26,6 +27,7 @@ export class NutritionService {
       protein: aiData.protein,
       carbs: aiData.carbs,
       fat: aiData.fat,
+      advice: aiData.advice,
       user: user,
     });
     await this.nutritionRepo.save(log);
@@ -58,7 +60,13 @@ export class NutritionService {
       (sum, w) => sum + w.estimatedCalories,
       0,
     );
-    const bmr = 88.36 + 13.4 * (user.weight || 70) + 4.8 * (user.height || 170);
+    let bmr: number;
+
+    if (user.gender === Gender.MALE) {
+      bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age + 5;
+    } else {
+      bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age - 161;
+    }
     const totalBurned = bmr + burnedFromWorkout;
     const balance = totalIntake - totalBurned;
     let status = '';
