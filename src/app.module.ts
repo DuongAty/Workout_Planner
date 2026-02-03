@@ -28,6 +28,7 @@ import { OpenAIModule } from './openai/openai.module';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
+
       useFactory: (configService: ConfigService) => ({
         transport: {
           host: configService.get('MAIL_HOST'),

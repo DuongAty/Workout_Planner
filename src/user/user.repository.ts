@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentialsDto } from '../auth/dto/auth-credentials.dto';
-import { AuthProvider, User } from './user.entity';
+import { User } from './user.entity';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { TokenPayload } from 'src/auth/type/accessToken.type';
@@ -20,6 +20,7 @@ import {
   REFRESH_TOKEN_TTL,
 } from 'src/common/constants/constants';
 import { UpdateUserProfileDto } from 'src/auth/dto/user.profile.dto';
+import { AuthProvider } from 'src/common/enum/user-enum';
 @Injectable()
 export class UsersRepository {
   constructor(

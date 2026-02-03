@@ -29,6 +29,9 @@ export class NutritionLog {
   @Column('int')
   fat: number;
 
+  @Column({ type: 'text', nullable: true })
+  advice: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

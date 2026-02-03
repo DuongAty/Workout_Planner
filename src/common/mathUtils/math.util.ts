@@ -1,3 +1,5 @@
+import { EPLEY_COEFFICIENT } from './number.constants';
+
 export const WorkoutMath = {
   calculate1RM(weight: number, reps: number): number {
     if (reps === 0) return 0;
@@ -16,7 +18,7 @@ export const WorkoutMath = {
   },
 
   get1RMSql(weightCol: string, repsCol: string): string {
-    return `${weightCol} * (1 + 0.0333 * ${repsCol})`;
+    return `${weightCol} * (1 + ${EPLEY_COEFFICIENT} * ${repsCol})`;
   },
 
   getVolumeSql(weightCol: string, repsCol: string): string {

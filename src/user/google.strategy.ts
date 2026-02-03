@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
-import { AuthProvider } from './user.entity';
+import { AuthProvider } from 'src/common/enum/user-enum';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -26,9 +26,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       firstName: name.givenName,
       lastName: name.familyName,
       picture: photos?.[0]?.value,
-      providerId: id,
       provider: AuthProvider.GOOGLE,
-      accessToken,
+      providerId: id,
     };
     done(null, user);
   }

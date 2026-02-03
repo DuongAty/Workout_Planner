@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsString } from 'class-validator';
+import { Gender, UserGoal } from 'src/common/enum/user-enum';
 
 export class UserProfileDto {
   @ApiProperty()
@@ -7,6 +9,11 @@ export class UserProfileDto {
   @ApiProperty()
   username: string;
 }
+
+export class VerifyCodeDto {
+  @IsString() code: string;
+}
+
 export class UpdateUserProfileDto {
   @ApiProperty({ description: 'Full Name' })
   fullname?: string;
@@ -25,4 +32,15 @@ export class UpdateUserProfileDto {
 
   @ApiProperty({ description: 'Height' })
   height?: number;
+
+  @ApiProperty({ description: 'Age' })
+  age?: number;
+
+  @ApiProperty({ description: 'Gender' })
+  @IsEnum(Gender)
+  gender?: Gender;
+
+  @ApiProperty({ description: 'Goal' })
+  @IsEnum(UserGoal)
+  goal?: UserGoal;
 }
