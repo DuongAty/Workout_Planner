@@ -10,7 +10,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID')!,
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET')!,
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL')!,
       scope: ['email', 'profile'],
     });
   }
@@ -26,8 +25,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       firstName: name.givenName,
       lastName: name.familyName,
       picture: photos?.[0]?.value,
-      provider: AuthProvider.GOOGLE,
       providerId: id,
+      provider: AuthProvider.GOOGLE,
+      accessToken,
     };
     done(null, user);
   }

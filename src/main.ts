@@ -11,10 +11,7 @@ async function bootstrap() {
   const logger = new Logger();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
-  app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL'),
-    credentials: true,
-  });
+  app.enableCors();
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });

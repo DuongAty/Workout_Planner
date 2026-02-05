@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { UsersRepository } from '../user/user.repository';
 import { TokenPayload } from './type/accessToken.type';
@@ -14,19 +9,51 @@ import { UploadService } from 'src/common/upload/upload.service';
 import { AuthProvider } from 'src/common/enum/user-enum';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { RedisService } from 'src/redis/redis.service';
+import * as bcrypt from 'bcrypt';
+import {
+  ACCESS_TOKEN_BLACKLIST_TTL,
+  ACCESS_TOKEN_TTL,
+  REFRESH_TOKEN_TTL,
+} from 'src/common/constants/constants';
 @Injectable()
 export class AuthService {
-  private client: OAuth2Client;
+  private googleClient: OAuth2Client;
   constructor(
     private usersRepository: UsersRepository,
     private uploadService: UploadService,
     private configService: ConfigService,
+    private jwtService: JwtService,
+    private redisService: RedisService,
   ) {
-    this.client = new OAuth2Client(
-      this.configService.get<string>('GOOGLE_CLIENT_ID'),
-      this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+    const redirectUri = `${this.configService.get('FRONTEND_URL')}/auth/google/callback`;
+    this.googleClient = new OAuth2Client(
+      this.configService.get('GOOGLE_CLIENT_ID'),
+      this.configService.get('GOOGLE_CLIENT_SECRET'),
+      redirectUri,
     );
+  }
+
+  private async generateAndSaveTokens(user: User): Promise<TokenPayload> {
+    const payload = { sub: user.id, username: user.username };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
+      this.jwtService.signAsync(payload, { expiresIn: REFRESH_TOKEN_TTL }),
+    ]);
+    const salt = await bcrypt.genSalt();
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, salt);
+    await this.usersRepository.updateRefreshToken(user.id, hashedRefreshToken);
+    return { accessToken, refreshToken };
+  }
+
+  async getTokens(userId: string, username: string) {
+    const payload = { sub: userId, username };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, { expiresIn: ACCESS_TOKEN_TTL }),
+      this.jwtService.signAsync(payload, { expiresIn: REFRESH_TOKEN_TTL }),
+    ]);
+    return { accessToken, refreshToken };
   }
 
   async signUp(createUserDto: CreateUserDto): Promise<User> {
@@ -34,87 +61,68 @@ export class AuthService {
   }
 
   async signIn(authCredentialsDto: AuthCredentialsDto): Promise<TokenPayload> {
-    return await this.usersRepository.signIn(authCredentialsDto);
+    const { username, password } = authCredentialsDto;
+    const user = await this.usersRepository.findUserByUsername(username);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return await this.generateAndSaveTokens(user);
+    }
+    throw new UnauthorizedException('Invalid credentials');
   }
+
+  async signOut(userId: string, accessToken: string): Promise<void> {
+    await this.usersRepository.clearRefreshToken(userId);
+    await this.redisService.blacklistToken(
+      accessToken,
+      ACCESS_TOKEN_BLACKLIST_TTL,
+    );
+  }
+
   async refreshTokens(
     userId: string,
     refreshToken: string,
     oldAccessToken: string,
-  ): Promise<TokenPayload> {
-    return await this.usersRepository.refreshTokens(
-      userId,
+  ) {
+    const user = await this.usersRepository.findUser(userId);
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Access Denied');
+    }
+    const refreshTokenMatches = await bcrypt.compare(
       refreshToken,
-      oldAccessToken,
+      user.refreshToken,
     );
+    if (!refreshTokenMatches) {
+      await this.signOut(userId, oldAccessToken);
+      throw new UnauthorizedException('Token detected as reused/invalid');
+    }
+    await this.redisService.blacklistToken(oldAccessToken, 900);
+    const tokens = await this.getTokens(user.id, user.username);
+    await this.usersRepository.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
-  async signOut(userId: string, accessToken: string): Promise<void> {
-    await this.usersRepository.logout(userId, accessToken);
-  }
-
-  async verifyGoogleCode(code: string, codeVerifier?: string) {
-    if (!code) throw new BadRequestException('Missing Google code');
+  async googleLogin(code: string) {
+    const FEUrl = this.configService.get('FRONTEND_URL');
     try {
-      const getTokenArgs: any = codeVerifier ? { code, codeVerifier } : code;
-      const r = await this.client.getToken(getTokenArgs);
-      const tokens = r.tokens;
-      this.client.setCredentials(tokens);
-      const ticket = await this.client.verifyIdToken({
-        idToken: tokens.id_token!,
-        audience: this.configService.get<string>('GOOGLE_CLIENT_ID'),
+      const { tokens } = await this.googleClient.getToken({
+        code,
+        redirect_uri: `${FEUrl}/auth/google/callback`,
       });
-      const payload = ticket.getPayload();
-      if (!payload)
-        throw new UnauthorizedException('Invalid Google token payload');
-      return {
+      this.googleClient.setCredentials(tokens);
+      const userInfo = await this.googleClient.request({
+        url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+      });
+      const payload = userInfo.data as any;
+      const user = await this.usersRepository.findOrCreateGoogleUser({
         email: payload.email,
         firstName: payload.given_name,
         lastName: payload.family_name,
         picture: payload.picture,
-        provider: 'google',
+        provider: AuthProvider.GOOGLE,
         providerId: payload.sub,
-        tokens,
-      };
-    } catch (err: any) {
-      console.error('Google token exchange error:', {
-        message: err.message,
-        code: err.code,
-        response: err.response?.data,
       });
-      if (err.response?.data?.error === 'invalid_grant') {
-        throw new UnauthorizedException(
-          'Google code invalid or expired (invalid_grant)',
-        );
-      }
-      throw new InternalServerErrorException('Failed to verify Google code');
-    }
-  }
-
-  async googleLogin(googleUser: any) {
-    return await this.usersRepository.findOrCreateGoogleUser(googleUser);
-  }
-
-  async extractUserInfoFromCode(code: string, provider: AuthProvider) {
-    if (provider !== AuthProvider.GOOGLE) {
-      throw new BadRequestException('Provider không hỗ trợ');
-    }
-    const googleUser = await this.verifyGoogleCode(code);
-    return {
-      email: googleUser.email,
-      username: googleUser.email?.split('@')[0],
-      userId: googleUser.providerId,
-      provider: googleUser.provider,
-    };
-  }
-
-  async loginBy(provider: AuthProvider, code: string) {
-    switch (provider) {
-      case AuthProvider.GOOGLE: {
-        const googleUser = await this.verifyGoogleCode(code);
-        return await this.googleLogin(googleUser);
-      }
-      default:
-        throw new UnauthorizedException('Provider không được hỗ trợ');
+      return await this.generateAndSaveTokens(user);
+    } catch (error) {
+      throw new UnauthorizedException('Google Auth Failed: ' + error.message);
     }
   }
 
