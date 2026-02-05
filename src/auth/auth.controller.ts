@@ -6,14 +6,12 @@ import {
   Get,
   UseGuards,
   Req,
-  Res,
   Param,
   Patch,
   ForbiddenException,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
@@ -27,8 +25,6 @@ import { UpdateUserProfileDto } from './dto/user.profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { mediaFileFilter, storageConfig } from 'src/common/upload/file-upload';
 import { IMAGE_MIMETYPE_REGEX } from 'src/common/upload/file-upload.constants';
-import { buildGoogleAuthSuccessHtml } from 'src/common/googleUtils/google-utils';
-import { AuthProvider } from 'src/common/enum/user-enum';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -82,25 +78,9 @@ export class AuthController {
     return this.authService.refreshTokens(userId, refreshToken, oldAccessToken);
   }
 
-  @Get('extract') async extractUser(
-    @Query('code') code: string,
-    @Query('provider') provider: AuthProvider,
-  ) {
-    return await this.authService.extractUserInfoFromCode(code, provider);
-  }
-
-  @Get('login') async loginBy(
-    @Query('code') code: string,
-    @Query('provider') provider: AuthProvider,
-  ) {
-    return await this.authService.loginBy(provider, code);
-  }
-
-  @UseGuards(AuthGuard('google'))
-  @Get('google/callback')
-  async validateGoogleCode(@Query('code') code: string) {
-    const tokens = await this.authService.loginBy(AuthProvider.GOOGLE, code);
-    return tokens;
+  @Post('google')
+  async authenticate(@Body('code') code: string) {
+    return await this.authService.googleLogin(code);
   }
 
   @Patch(':id/update-user')

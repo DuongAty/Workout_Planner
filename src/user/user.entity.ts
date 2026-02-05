@@ -44,10 +44,10 @@ export class User {
     enum: AuthProvider,
     default: AuthProvider.LOCAL,
   })
-  provider: AuthProvider;
+  provider?: AuthProvider;
 
   @Column({ nullable: true })
-  providerId: string;
+  providerId?: string;
 
   @Column({ type: 'text', nullable: true })
   refreshToken?: string | null;
