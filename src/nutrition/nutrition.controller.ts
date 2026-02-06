@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { NutritionService } from './nutrition.service';
 import { GetUser } from 'src/user/get-user.decorator';
 import { LogMealDto } from './dto/log-meal.dto';
@@ -18,7 +18,7 @@ export class NutritionController {
   }
 
   @Get('daily-summary')
-  async getSummary(@GetUser() user: User) {
-    return this.nutritionService.calculateDailyBalance(user);
+  async getSummary(@GetUser() user: User, @Query('date') date?: string) {
+    return this.nutritionService.calculateDailyBalance(user, date);
   }
 }

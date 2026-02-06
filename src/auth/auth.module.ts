@@ -14,9 +14,10 @@ import {
   ConfigKey,
 } from './../common/constants/constants';
 import { RedisService } from 'src/redis/redis.service';
-import { GoogleStrategy } from 'src/user/google.strategy';
 import { UploadService } from 'src/common/upload/upload.service';
 import { OAuth2Client } from 'google-auth-library';
+import { GoogleStrategy } from 'src/user/strategy/google.strategy';
+import { FacebookStrategy } from 'src/user/strategy/facebook.strategy';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { OAuth2Client } from 'google-auth-library';
     UsersRepository,
     JwtStrategy,
     GoogleStrategy,
+    FacebookStrategy,
     RedisService,
     UploadService,
     OAuth2Client,
