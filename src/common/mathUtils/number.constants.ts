@@ -1,0 +1,1 @@
+export const EPLEY_COEFFICIENT = 0.0333;

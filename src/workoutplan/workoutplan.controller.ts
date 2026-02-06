@@ -14,7 +14,7 @@ import {
 import { WorkoutplanService } from './workoutplan.service';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
-import { UpdateNameWorkoutDto } from './dto/update-name-dto';
+import { UpdateWorkoutDto, UpdateScheduleDto } from './dto/update-name-dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
 import { GetUser } from '../user/get-user.decorator';
 import { User } from '../user/user.entity';
@@ -22,7 +22,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
-
+import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
+import { WorkoutStatus } from './workout-status';
+import { AIWorkoutChatDto } from './dto/ai-workout.dto';
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -34,16 +36,34 @@ export class WorkoutplanController {
 
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
-  create(
-    @Body() createWorkoutDto: CreateWorkoutDto,
+  create(@Body() dto: CreateWorkoutDto, @GetUser() user: User) {
+    return this.workoutService.createRecurringWorkout(dto, user);
+  }
+
+  @Patch('check-missed-all')
+  async checkAllMissedWorkouts(@GetUser() user: User) {
+    return await this.workoutService.checkMissedWorkouts(user);
+  }
+
+  @Patch(':id/item-status')
+  async updateItemStatus(
+    @Param('id') id: string,
     @GetUser() user: User,
-  ): Promise<Workout> {
-    this.logger.verbose(
-      `User "${user.username}" creating a workout`,
-      createWorkoutDto,
-      WorkoutplanController.name,
-    );
-    return this.workoutService.createWorkout(createWorkoutDto, user);
+    @Body() body: { date: string; status: WorkoutStatus },
+  ) {
+    return await this.workoutService.updateItemStatus(id, user, body.status);
+  }
+
+  @Patch(':id/reschedule-item')
+  async rescheduleItem(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body() dto: UpdateScheduleDto,
+  ) {
+    return this.workoutService.updateSchedule(id, user, {
+      oldDate: dto.oldDate,
+      newDate: dto.newDate,
+    });
   }
 
   @Get()
@@ -90,42 +110,53 @@ export class WorkoutplanController {
   @Patch('/:id')
   update(
     @Param('id') id: string,
-    @Body() updateNameWorkoutDto: UpdateNameWorkoutDto,
+    @Body() updateWorkoutDto: UpdateWorkoutDto,
     @GetUser() user: User,
-  ): Promise<Workout> {
+  ) {
     this.logger.verbose(
-      `User "${user.username}" update name workout `,
-      updateNameWorkoutDto,
+      `User "${user.username}" update workout `,
+      updateWorkoutDto,
       WorkoutplanController.name,
     );
-    return this.workoutService.updateNameWorkout(
-      id,
-      updateNameWorkoutDto.name,
-      user,
-    );
+    return this.workoutService.updateWorkout(id, user, updateWorkoutDto);
   }
 
   @Post(':id/clone')
   @UseInterceptors(ClassSerializerInterceptor)
-  clone(@Param('id') id: string, @GetUser() user: User) {
+  clone(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body()
+    cloneScheduleData: {
+      name?: string;
+      startDate: string;
+      endDate: string;
+      daysOfWeek: number[];
+    },
+  ) {
     this.logger.verbose(
       `User "${user.username}" clone a workout `,
       id,
       WorkoutplanController.name,
     );
-    return this.workoutService.cloneWorkout(id, user);
+    return this.workoutService.cloneWorkout(id, user, cloneScheduleData);
   }
 
-  @Get('/:id/exercises')
-  getExercisesById(
+  @Get(':id/exercises')
+  async getExercises(
     @Param('id') id: string,
+    @Query() getExerciseFilter: GetExerciseFilter,
     @GetUser() user: User,
-  ): Promise<Workout | null> {
-    this.logger.verbose(
-      `User "${user.username}" get a workout with exercise `,
-      id,
-      WorkoutplanController.name,
-    );
-    return this.workoutService.getExercisesByWorkoutId(id, user);
+  ) {
+    return this.workoutService.getExercisesByWorkoutId(id, user, {
+      muscleGroup: getExerciseFilter.muscleGroup,
+      search: getExerciseFilter.search,
+      duration: getExerciseFilter.duration,
+    });
+  }
+
+  @Post('ai')
+  async createByAI(@Body() dto: AIWorkoutChatDto, @GetUser() user: User) {
+    return this.workoutService.generateAndSave(dto.message, user.id);
   }
 }

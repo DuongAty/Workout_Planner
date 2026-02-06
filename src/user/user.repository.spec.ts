@@ -6,13 +6,14 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import {
   ConflictException,
+  HttpStatus,
   HttpException,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-  PASSWORD_INCORRECT_MESSAGE,
   USERNAME_NOT_FOUND_MESSAGE,
-} from './../common/constants/constants';
+  PASSWORD_INCORRECT_MESSAGE,
+} from 'src/common/constants/constants';
 import { UsersRepository } from './user.repository';
 jest.mock('bcrypt');
 const mockUserRepository = () => ({
