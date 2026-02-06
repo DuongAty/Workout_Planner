@@ -17,6 +17,7 @@ import {
   ACCESS_TOKEN_TTL,
   REFRESH_TOKEN_TTL,
 } from 'src/common/constants/constants';
+import axios from 'axios';
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -112,7 +113,7 @@ export class AuthService {
         url: 'https://www.googleapis.com/oauth2/v3/userinfo',
       });
       const payload = userInfo.data as any;
-      const user = await this.usersRepository.findOrCreateGoogleUser({
+      const user = await this.usersRepository.findOrCreateSocialUser({
         email: payload.email,
         firstName: payload.given_name,
         lastName: payload.family_name,
@@ -123,6 +124,50 @@ export class AuthService {
       return await this.generateAndSaveTokens(user);
     } catch (error) {
       throw new UnauthorizedException('Google Auth Failed: ' + error.message);
+    }
+  }
+
+  async facebookLogin(code: string) {
+    try {
+      const appId = this.configService.get('FACEBOOK_APP_ID');
+      const appSecret = this.configService.get('FACEBOOK_APP_SECRET');
+      const redirectUri = `${this.configService.get('FRONTEND_URL')}/auth/facebook/callback`;
+      const tokenResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/oauth/access_token`,
+        {
+          params: {
+            client_id: appId,
+            client_secret: appSecret,
+            redirect_uri: redirectUri,
+            code: code,
+          },
+        },
+      );
+      const fbAccessToken = tokenResponse.data.access_token;
+      const userResponse = await axios.get(`https://graph.facebook.com/me`, {
+        params: {
+          fields: 'id,name,email,first_name,last_name,picture.type(large)',
+          access_token: fbAccessToken,
+        },
+      });
+      const fbUser = userResponse.data;
+      const socialData = {
+        email: fbUser.email || `${fbUser.id}@facebook.user`,
+        firstName: fbUser.first_name,
+        lastName: fbUser.last_name,
+        picture: fbUser.picture?.data?.url,
+        provider: AuthProvider.FACEBOOK,
+        providerId: fbUser.id,
+      };
+      const user =
+        await this.usersRepository.findOrCreateSocialUser(socialData);
+      return await this.generateAndSaveTokens(user);
+    } catch (error) {
+      console.error(
+        'Facebook API Error:',
+        error.response?.data || error.message,
+      );
+      throw new UnauthorizedException('Facebook Auth Failed: ' + error.message);
     }
   }
 

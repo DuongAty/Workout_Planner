@@ -412,6 +412,7 @@ export class WorkoutplanService {
           manager.create('Exercise', {
             ...ex,
             workoutPlan: savedWorkout,
+            user: { id: userId },
           }),
         );
         await manager.save('Exercise', exercises);

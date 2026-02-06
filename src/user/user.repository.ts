@@ -9,8 +9,6 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
-import { RedisService } from 'src/redis/redis.service';
-
 import { UpdateUserProfileDto } from 'src/auth/dto/user.profile.dto';
 import { AuthProvider } from 'src/common/enum/user-enum';
 @Injectable()
@@ -53,7 +51,7 @@ export class UsersRepository {
     });
   }
 
-  async findOrCreateGoogleUser(googleUser: any) {
+  async findOrCreateSocialUser(googleUser: any) {
     const { email, firstName, lastName, picture, provider, providerId } =
       googleUser;
     let user = await this.userRepository.findOneBy({ email });
@@ -61,7 +59,7 @@ export class UsersRepository {
       user = this.userRepository.create({
         email,
         fullname: `${firstName || ''} ${lastName || ''}`.trim(),
-        username: email.split('@')[0],
+        username: `${email.split('@')[0]}-${providerId.toString().slice(-4)}`,
         avatar: picture,
         provider: provider,
         providerId: providerId,

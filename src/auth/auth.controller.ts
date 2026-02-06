@@ -83,6 +83,11 @@ export class AuthController {
     return await this.authService.googleLogin(code);
   }
 
+  @Post('facebook')
+  async facebookAuth(@Body('code') code: string) {
+    return this.authService.facebookLogin(code);
+  }
+
   @Patch(':id/update-user')
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())

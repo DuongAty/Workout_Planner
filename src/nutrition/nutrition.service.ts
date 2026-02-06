@@ -34,15 +34,18 @@ export class NutritionService {
     return await this.calculateDailyBalance(user);
   }
 
-  async calculateDailyBalance(user: User) {
+  async calculateDailyBalance(user: User, dateStr?: string) {
     const today = new Date().toISOString().split('T')[0];
     const startOfDay = new Date();
+    const targetDate = dateStr || new Date().toISOString().split('T')[0];
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
-    const logs = await this.nutritionRepo.find({
-      where: { userId: user.id, createdAt: Between(startOfDay, endOfDay) },
-    });
+    const logs = await this.nutritionRepo
+      .createQueryBuilder('log')
+      .where('log.userId = :userId', { userId: user.id })
+      .andWhere('DATE(log.createdAt) = :targetDate', { targetDate })
+      .getMany();
     const totalIntake = logs.reduce((sum, item) => sum + item.calories, 0);
     const todayStr = startOfDay.toLocaleDateString('en-CA');
     const workoutsToday = await this.workoutRepo
@@ -50,8 +53,8 @@ export class NutritionService {
       .innerJoin(
         'workout.scheduleItems',
         'todayItem',
-        'todayItem.date = :todayStr',
-        { todayStr },
+        'todayItem.date = :targetDate',
+        { targetDate },
       )
       .andWhere('workout.userId = :userId', { userId: user.id })
       .getMany();
