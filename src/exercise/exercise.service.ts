@@ -9,6 +9,8 @@ import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../common/upload/upload.service';
+import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
+import { TransactionService } from 'src/common/transaction/transaction';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -16,6 +18,7 @@ export class ExerciseService {
     @InjectRepository(Exercise)
     private readonly exerciseService: Repository<Exercise>,
     private uploadService: UploadService,
+    private transactionService: TransactionService,
   ) {}
 
   async uploadMedia(
@@ -37,21 +40,19 @@ export class ExerciseService {
     return await this.exerciseService.save(exercise);
   }
 
-  async createExercise(
-    workoutId: string,
-    createExerciseDto: CreateExerciseDto,
-    user: User,
-  ) {
-    const workout = await this.workoutService.findOneWorkout(workoutId, user);
-    const newExercise = this.exerciseService.create({
-      ...createExerciseDto,
-      workoutId: workoutId,
-      workoutPlan: workout,
-      user,
+  async createExercise(workoutId: string, dto: CreateExerciseDto, user: User) {
+    return this.transactionService.run(async (manager) => {
+      const workout = await this.workoutService.findOneWorkout(workoutId, user);
+      const exercise = manager.create(Exercise, {
+        ...dto,
+        user,
+        workoutPlan: workout,
+        workoutId,
+      });
+      const savedExercise = await manager.save(exercise);
+      await this.workoutService.syncNumExercises(workoutId, manager);
+      return savedExercise;
     });
-    const savedExercise = await this.exerciseService.save(newExercise);
-    await this.workoutService.syncNumExercises(workoutId);
-    return savedExercise;
   }
 
   async getAllExercies(
@@ -59,22 +60,11 @@ export class ExerciseService {
     paginationDto: PaginationDto,
     user: User,
   ): Promise<{ data: Exercise[]; total: number; totalPages: number }> {
-    const { search, muscleGroup, duration } = getExerciseFilter;
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
     const query = this.exerciseService.createQueryBuilder('exercises');
     query.where({ user });
-    if (muscleGroup) {
-      query.andWhere('exercsies.muscleGroup = :muscleGroup', { muscleGroup });
-    }
-    if (duration) {
-      query.andWhere('exercises.duration = :duration', { duration });
-    }
-    if (search) {
-      query.andWhere('exercises.name ILIKE :search', {
-        search: `%${search}%`,
-      });
-    }
+    applyExerciseFilters(query, getExerciseFilter, 'exercises');
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
     const totalPages = Math.ceil(total / limit);
@@ -83,33 +73,30 @@ export class ExerciseService {
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {
     try {
-      return await this.exerciseService.findOneOrFail({ where: { id, user } });
+      return await this.exerciseService.findOneOrFail({
+        where: { id, user: { id: user.id } },
+      });
     } catch (error) {
       throw new NotFoundException(`Exercise with ID ${id} not found`);
     }
   }
 
   async deleteExerciseById(id: string, user: User): Promise<void> {
-    const exercise = await this.findOneExercise(id, user);
-    const workoutId = exercise.workoutId;
-    if (exercise.thumbnail) {
-      this.uploadService.cleanupFile(exercise.thumbnail);
-    }
-    if (exercise.videoUrl) {
-      this.uploadService.cleanupFile(exercise.videoUrl);
-    }
-    await this.exerciseService.softDelete(exercise);
-    await this.workoutService.syncNumExercises(workoutId);
+    return this.transactionService.run(async (manager) => {
+      const exercise = await this.findOneExercise(id, user);
+      await manager.softRemove(exercise);
+      await this.workoutService.syncNumExercises(exercise.workoutId, manager);
+      if (exercise.thumbnail)
+        this.uploadService.cleanupFile(exercise.thumbnail);
+      if (exercise.videoUrl) this.uploadService.cleanupFile(exercise.videoUrl);
+    });
   }
 
   async updateExercise(id: string, dto: UpdateExerciseDto, user: User) {
-    const exercise = await this.findOneExercise(id, user);
-    const { ...updateData } = dto;
-    Object.keys(updateData).forEach((key) => {
-      if (updateData[key] !== undefined && updateData[key] !== null) {
-        exercise[key] = updateData[key];
-      }
+    return this.transactionService.run(async (manager) => {
+      const exercise = await this.findOneExercise(id, user);
+      Object.assign(exercise, dto);
+      return await manager.save(exercise);
     });
-    return await this.exerciseService.save(exercise);
   }
 }
