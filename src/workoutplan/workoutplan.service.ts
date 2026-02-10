@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, EntityManager, Repository } from 'typeorm';
+import { DeepPartial, EntityManager, In, Repository } from 'typeorm';
 import { Workout } from './workoutplan.entity';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { GetWorkoutFilter } from './dto/filter-workout.dto';
@@ -14,13 +14,13 @@ import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { UploadService } from '../common/upload/upload.service';
 import { WorkoutStatus } from './workout-status';
-import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
-import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
+import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
+import { applyExerciseFilters } from '../common/filter/exercese-filter';
 import { UpdateWorkoutDto } from './dto/update-name-dto';
-import { TransactionService } from 'src/common/transaction/transaction';
+import { TransactionService } from '../common/transaction/transaction';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
-import { DateUtils } from 'src/common/dateUtils/dateUtils';
-import { OpenAIService } from 'src/openai/openai.service';
+import { checkDateRange, DateUtils } from '../common/dateUtils/dateUtils';
+import { OpenAIService } from '../openai/openai.service';
 import { workoutAIPrompt } from './prompt/workout-ai.prompt';
 
 @Injectable()
@@ -33,6 +33,7 @@ export class WorkoutplanService {
     private uploadService: UploadService,
     private transactionService: TransactionService,
     private openAIService: OpenAIService,
+    private scheduleItemRepository: Repository<ScheduleItem>,
   ) {}
   async syncNumExercises(workoutId: string, manager?: EntityManager) {
     const exerciseRepo = manager
@@ -74,11 +75,28 @@ export class WorkoutplanService {
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async () => {
       const { name, startDate, endDate, daysOfWeek } = dto;
+      checkDateRange(startDate, endDate);
       const scheduleItems = this.generateScheduleItems(
         startDate,
         endDate,
         daysOfWeek,
       );
+      const plannedDates = scheduleItems.map((item) => item.date);
+      const existingItems = await this.scheduleItemRepository.find({
+        where: {
+          workout: { user: { id: user.id } },
+          date: In(plannedDates),
+        },
+      });
+      if (existingItems.length > 0) {
+        const conflictDates = existingItems.map((item) => item.date);
+        console.warn(
+          `Các ngày sau đã có bài tập rồi: ${conflictDates.join(', ')}`,
+        );
+        throw new BadRequestException(
+          `Không thể tạo lịch vì các ngày sau đã có bài tập: ${conflictDates.join(', ')}`,
+        );
+      }
       const workout = this.workoutPlanService.create({
         name,
         startDate,
@@ -157,40 +175,6 @@ export class WorkoutplanService {
     });
   }
 
-  private hasScheduleChanged(
-    original: Workout,
-    dto: UpdateWorkoutDto,
-  ): boolean {
-    return (
-      this.isDateChanged(dto.startDate, original.startDate) ||
-      this.isDateChanged(dto.endDate, original.endDate) ||
-      this.isDaysOfWeekChanged(dto.daysOfWeek, original.daysOfWeek)
-    );
-  }
-
-  private isDateChanged(
-    updated?: string | Date,
-    original?: string | Date,
-  ): boolean {
-    return !!updated && updated !== original;
-  }
-
-  private isDaysOfWeekChanged(
-    updated?: number[],
-    original?: number[],
-  ): boolean {
-    if (!updated) return false;
-    return this.normalizeDays(updated) !== this.normalizeDays(original);
-  }
-
-  private normalizeDays(days?: number[]): string | null {
-    return days ? [...days].map(Number).sort().join(',') : null;
-  }
-
-  private hasNameChanged(original: Workout, dto: UpdateWorkoutDto): boolean {
-    return !!dto.name && dto.name !== original.name;
-  }
-
   async checkMissedWorkouts(user: User): Promise<void> {
     return await this.transactionService.run<void>(async (manager) => {
       const today = new Date().toISOString().split('T')[0];
@@ -219,6 +203,9 @@ export class WorkoutplanService {
     const { page, limit } = paginationDto;
     const { search, numExercises, startDate, endDate, todayOnly } =
       getWorkoutFilter;
+    if (startDate && endDate) {
+      checkDateRange(startDate, endDate);
+    }
     const skip = (page - 1) * limit;
     const query = this.workoutPlanService.createQueryBuilder('workout');
     query.leftJoinAndSelect('workout.scheduleItems', 'scheduleItems');
@@ -284,15 +271,52 @@ export class WorkoutplanService {
     });
   }
 
+  private hasScheduleChanged(
+    original: Workout,
+    dto: UpdateWorkoutDto,
+  ): boolean {
+    return (
+      this.isDateChanged(dto.startDate, original.startDate) ||
+      this.isDateChanged(dto.endDate, original.endDate) ||
+      this.isDaysOfWeekChanged(dto.daysOfWeek, original.daysOfWeek)
+    );
+  }
+
+  private isDateChanged(
+    updated?: string | Date,
+    original?: string | Date,
+  ): boolean {
+    return !!updated && updated !== original;
+  }
+
+  private isDaysOfWeekChanged(
+    updated?: number[],
+    original?: number[],
+  ): boolean {
+    if (!updated) return false;
+    return this.normalizeDays(updated) !== this.normalizeDays(original);
+  }
+
+  private normalizeDays(days?: number[]): string | null {
+    return days ? [...days].map(Number).sort().join(',') : null;
+  }
+
+  private hasNameChanged(original: Workout, dto: UpdateWorkoutDto): boolean {
+    return !!dto.name && dto.name !== original.name;
+  }
+
   async updateWorkout(id: string, user: User, updateDto: UpdateWorkoutDto) {
     return this.transactionService.run(async () => {
       const original = await this.findOneWorkout(id, user);
+      const finalStartDate = updateDto.startDate ?? original.startDate;
+      const finalEndDate = updateDto.endDate ?? original.endDate;
+      checkDateRange(finalStartDate, finalEndDate);
       const hasTimeChanged = this.hasScheduleChanged(original, updateDto);
       if (hasTimeChanged) {
         return this.cloneWorkout(id, user, {
           name: updateDto.name ?? original.name,
-          startDate: updateDto.startDate ?? original.startDate,
-          endDate: updateDto.endDate ?? original.endDate,
+          startDate: finalStartDate,
+          endDate: finalStartDate,
           daysOfWeek: updateDto.daysOfWeek ?? original.daysOfWeek,
         });
       }

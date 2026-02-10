@@ -3,20 +3,20 @@ import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { UsersRepository } from '../user/user.repository';
 import { TokenPayload } from './type/accessToken.type';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { UpdateUserProfileDto } from './dto/user.profile.dto';
-import { UploadService } from 'src/common/upload/upload.service';
-import { AuthProvider } from 'src/common/enum/user-enum';
+import { UploadService } from '../common/upload/upload.service';
+import { AuthProvider } from '../common/enum/user-enum';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from 'src/redis/redis.service';
+import { RedisService } from '../redis/redis.service';
 import * as bcrypt from 'bcrypt';
 import {
   ACCESS_TOKEN_BLACKLIST_TTL,
   ACCESS_TOKEN_TTL,
   REFRESH_TOKEN_TTL,
-} from 'src/common/constants/constants';
+} from '../common/constants/constants';
 import axios from 'axios';
 @Injectable()
 export class AuthService {
@@ -64,7 +64,14 @@ export class AuthService {
   async signIn(authCredentialsDto: AuthCredentialsDto): Promise<TokenPayload> {
     const { username, password } = authCredentialsDto;
     const user = await this.usersRepository.findUserByUsername(username);
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      throw new UnauthorizedException('Tài khoản không tồn tại');
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Mật khẩu không chính xác');
+    }
+    if (user && isMatch) {
       return await this.generateAndSaveTokens(user);
     }
     throw new UnauthorizedException('Invalid credentials');

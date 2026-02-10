@@ -22,7 +22,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { PaginationDto } from '../common/pagination/pagination.dto';
-import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
+import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
 import { AIWorkoutChatDto } from './dto/ai-workout.dto';
 @Controller({ path: 'workoutplans', version: '1' })

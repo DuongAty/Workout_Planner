@@ -1,9 +1,9 @@
-import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
+import { BodyMeasurement } from '../body-measurement/body-measurement.entity';
 import { Exercise } from '../exercise/exercise.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { NutritionLog } from 'src/nutrition/nutrition-log.entity';
-import { AuthProvider, Gender, UserGoal } from 'src/common/enum/user-enum';
+import { NutritionLog } from '../nutrition/nutrition-log.entity';
+import { AuthProvider, Gender, UserGoal } from '../common/enum/user-enum';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -15,7 +15,7 @@ export class User {
   @Column({ unique: true })
   username: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true})
   password: string;
 
   @Column({ unique: true, nullable: true })

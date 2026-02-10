@@ -1,4 +1,4 @@
-import { GetExerciseFilter } from 'src/exercise/dto/musclegroup-filter.dto';
+import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
 import { SelectQueryBuilder } from 'typeorm';
 
 export const applyExerciseFilters = (

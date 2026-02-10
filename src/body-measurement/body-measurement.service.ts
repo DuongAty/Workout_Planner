@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BodyMeasurement } from './body-measurement.entity';
 import { MuscleGroup } from '../exercise/exercise-musclegroup';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import {
   CreateMeasurementDto,
   GetMeasurementsQueryDto,
@@ -12,9 +12,9 @@ import {
   GOOD_PROGRESS,
   NEED_TRY,
   NO_ENOUGH_DATA,
-} from 'src/common/constants/constants';
+} from '../common/constants/constants';
 import { SortDirection } from './body-measurement.enum';
-import { DateUtils } from 'src/common/dateUtils/dateUtils';
+import { checkDateRange, DateUtils } from '../common/dateUtils/dateUtils';
 
 @Injectable()
 export class BodyMeasurementService {
@@ -54,6 +54,9 @@ export class BodyMeasurementService {
 
   async findAllForChart(user: User, dto: GetMeasurementsQueryDto) {
     const { key, startDate, endDate } = dto;
+    if (startDate && endDate) {
+      checkDateRange(startDate, endDate);
+    }
     const query = this.repo
       .createQueryBuilder('m')
       .where('m.userId = :userId', { userId: user.id });

@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { nutritionAnalysisSchema } from './openai.schema';
-import { nutritionPrompt } from 'src/nutrition/promt/nutrition.prompt';
+import { nutritionPrompt } from '../nutrition/promt/nutrition.prompt';
 
 @Injectable()
 export class OpenAIService {

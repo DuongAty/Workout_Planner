@@ -19,12 +19,12 @@ import { TokenPayload } from './type/accessToken.type';
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { UpdateUserProfileDto } from './dto/user.profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { mediaFileFilter, storageConfig } from 'src/common/upload/file-upload';
-import { IMAGE_MIMETYPE_REGEX } from 'src/common/upload/file-upload.constants';
+import { mediaFileFilter, storageConfig } from '../common/upload/file-upload';
+import { IMAGE_MIMETYPE_REGEX } from '../common/upload/file-upload.constants';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {

@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 export const DateUtils = {
   getStartOfDay(date: string | Date): Date {
     const d = new Date(date);
@@ -27,4 +29,14 @@ export const DateUtils = {
     }
     return dates;
   },
+};
+
+export const checkDateRange = (startDate: string, endDate: string) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (start >= end) {
+    throw new BadRequestException(
+      'The start date must be earlier than the end date.',
+    );
+  }
 };

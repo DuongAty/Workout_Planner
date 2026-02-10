@@ -1,17 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  ArrayUnique,
   IsArray,
   IsDateString,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  Max,
+  Min,
 } from 'class-validator';
 import { WorkoutStatus } from '../workout-status';
+import { Transform } from 'class-transformer';
 
 export class UpdateWorkoutDto {
   @IsNotEmpty()
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @ApiProperty({
     description: 'Name',
   })
@@ -34,6 +39,9 @@ export class UpdateWorkoutDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayUnique()
+  @Min(0, { each: true })
+  @Max(6, { each: true })
   @IsNumber({}, { each: true })
   daysOfWeek?: number[];
 }

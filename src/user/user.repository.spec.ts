@@ -13,7 +13,7 @@ import {
 import {
   USERNAME_NOT_FOUND_MESSAGE,
   PASSWORD_INCORRECT_MESSAGE,
-} from 'src/common/constants/constants';
+} from '../common/constants/constants';
 import { UsersRepository } from './user.repository';
 jest.mock('bcrypt');
 const mockUserRepository = () => ({

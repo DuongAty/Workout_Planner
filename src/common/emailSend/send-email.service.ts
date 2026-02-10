@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Workout } from 'src/workoutplan/workoutplan.entity';
+import { Workout } from '../workoutplan/workoutplan.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

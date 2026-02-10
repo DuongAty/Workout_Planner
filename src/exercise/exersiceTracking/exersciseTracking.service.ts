@@ -5,9 +5,9 @@ import { CreateSetDto } from './dto/create-set.dto';
 import { ExerciseSet } from './exerciseSet.entity';
 import { Exercise } from '../exercise.entity';
 import { GetProgressQueryDto } from './dto/get-progress-query.dto';
-import { SortDirection } from 'src/body-measurement/body-measurement.enum';
-import { WorkoutMath } from 'src/common/mathUtils/math.util';
-import { DateUtils } from 'src/common/dateUtils/dateUtils';
+import { SortDirection } from '../body-measurement/body-measurement.enum';
+import { WorkoutMath } from '../common/mathUtils/math.util';
+import { checkDateRange, DateUtils } from '../common/dateUtils/dateUtils';
 
 @Injectable()
 export class ExerciseTrackingService {
@@ -58,6 +58,9 @@ export class ExerciseTrackingService {
 
   async getTimelineProgress(exerciseId: string, query: GetProgressQueryDto) {
     const { startDate, endDate } = query;
+    if (startDate && endDate) {
+      checkDateRange(startDate, endDate);
+    }
     const localDateSql =
       "DATE(set.createdAt AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')";
     const sql1RM = WorkoutMath.get1RMSql('set.weight', 'set.reps');

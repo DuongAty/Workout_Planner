@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { StepOfExerciseService } from './step-of-exercise.service';
 import { CreateStepDto, UpdateStepDto } from './dto/create-step.dto';
-import { GetUser } from 'src/user/get-user.decorator';
-import { User } from 'src/user/user.entity';
+import { GetUser } from '../user/get-user.decorator';
+import { User } from '../user/user.entity';
 
 @Controller('steps-of-exercise')
 export class StepOfExerciseController {

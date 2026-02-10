@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { NutritionService } from './nutrition.service';
-import { GetUser } from 'src/user/get-user.decorator';
+import { GetUser } from '../user/get-user.decorator';
 import { LogMealDto } from './dto/log-meal.dto';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 

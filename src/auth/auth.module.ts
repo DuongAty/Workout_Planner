@@ -13,11 +13,11 @@ import {
   JWT_EXPIRES_IN,
   ConfigKey,
 } from './../common/constants/constants';
-import { RedisService } from 'src/redis/redis.service';
-import { UploadService } from 'src/common/upload/upload.service';
+import { RedisService } from '../redis/redis.service';
+import { UploadService } from '../common/upload/upload.service';
 import { OAuth2Client } from 'google-auth-library';
-import { GoogleStrategy } from 'src/user/strategy/google.strategy';
-import { FacebookStrategy } from 'src/user/strategy/facebook.strategy';
+import { GoogleStrategy } from '../user/strategy/google.strategy';
+import { FacebookStrategy } from '../user/strategy/facebook.strategy';
 
 @Module({
   imports: [
