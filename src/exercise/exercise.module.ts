@@ -12,11 +12,11 @@ import { UploadService } from '../common/upload/upload.service';
 import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
 import { ExerciseTrackingService } from './exersiceTracking/exersciseTracking.service';
 import { ExerciseTrackingController } from './exersiceTracking/exerciseTracking.controller';
-import { TransactionService } from 'src/common/transaction/transaction';
+import { TransactionService } from '../common/transaction/transaction';
 import { StepOfExerciseService } from './StepOfExercises/step-of-exercise.service';
 import { StepOfExerciseController } from './StepOfExercises/step-of-exercise.controller';
 import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
-import { OpenAIService } from 'src/openai/openai.service';
+import { OpenAIService } from '../openai/openai.service';
 
 @Module({
   imports: [

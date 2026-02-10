@@ -1,12 +1,12 @@
 import { AuthGuard } from '@nestjs/passport';
 import { BodyMeasurementService } from './body-measurement.service';
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { GetUser } from 'src/user/get-user.decorator';
+import { GetUser } from '../user/get-user.decorator';
 import {
   CreateMeasurementDto,
   GetMeasurementsQueryDto,
 } from './dto/measurement.dto';
-import { MuscleGroup } from 'src/exercise/exercise-musclegroup';
+import { MuscleGroup } from '../exercise/exercise-musclegroup';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('body-measurements')

@@ -9,8 +9,8 @@ import { User } from '../user/user.entity';
 import { PaginationDto } from '../common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../common/upload/upload.service';
-import { applyExerciseFilters } from 'src/common/filter/exercese-filter';
-import { TransactionService } from 'src/common/transaction/transaction';
+import { applyExerciseFilters } from '../common/filter/exercese-filter';
+import { TransactionService } from '../common/transaction/transaction';
 @Injectable()
 export class ExerciseService {
   constructor(

@@ -5,12 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
-import { CreateUserDto } from 'src/auth/dto/create-user.dto';
-import { UpdateUserProfileDto } from 'src/auth/dto/user.profile.dto';
-import { AuthProvider } from 'src/common/enum/user-enum';
+import { CreateUserDto } from '../auth/dto/create-user.dto';
+import { UpdateUserProfileDto } from '../auth/dto/user.profile.dto';
+import { AuthProvider } from '../common/enum/user-enum';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -82,9 +82,21 @@ export class UsersRepository {
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserProfileDto) {
+    const { email } = updateUserDto;
     const user = await this.findUser(userId);
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+    if (email) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email, id: Not(userId) },
+      });
+
+      if (existingUser) {
+        throw new ConflictException(
+          'Email này đã được sử dụng bởi một tài khoản khác',
+        );
+      }
     }
     await this.userRepository.update(user.id, updateUserDto);
     const updatedUser = await this.userRepository.findOneBy({ id: userId });

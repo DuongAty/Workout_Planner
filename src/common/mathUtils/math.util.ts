@@ -4,7 +4,7 @@ export const WorkoutMath = {
   calculate1RM(weight: number, reps: number): number {
     if (reps === 0) return 0;
     if (reps === 1) return weight;
-    const value = weight * (1 + 0.0333 * reps);
+    const value = weight * (1 + EPLEY_COEFFICIENT * reps);
     return this.round(value);
   },
 

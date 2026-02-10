@@ -1,7 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
-import { MuscleGroup } from 'src/exercise/exercise-musclegroup';
+import { MuscleGroup } from '../exercise/exercise-musclegroup';
 
+export enum UnitType {
+  cm = 'cm',
+  kg = 'kg',
+}
 export class CreateMeasurementDto {
   @ApiProperty({ enum: MuscleGroup })
   @IsEnum(MuscleGroup)
@@ -11,10 +15,9 @@ export class CreateMeasurementDto {
   @ApiProperty()
   value: number;
 
-  @IsOptional()
-  @IsString()
-  @ApiProperty({ required: false })
-  unit?: string;
+  @ApiProperty({ enum: UnitType })
+  @IsEnum(UnitType)
+  unit?: UnitType.cm;
 }
 
 export class GetMeasurementsQueryDto {

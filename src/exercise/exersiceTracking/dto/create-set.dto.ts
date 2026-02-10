@@ -9,6 +9,7 @@ export class CreateSetDto {
   })
   @IsNumber()
   @Min(0)
+  @Max(300)
   weight: number;
 
   @ApiProperty({
@@ -17,7 +18,7 @@ export class CreateSetDto {
   })
   @IsInt()
   @Min(1)
-  @Max(12)
+  @Max(15)
   reps: number;
 
   @ApiPropertyOptional({

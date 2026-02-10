@@ -4,8 +4,8 @@ import { Injectable } from '@nestjs/common';
 import { CreateStepDto, UpdateStepDto } from './dto/create-step.dto';
 import { Repository } from 'typeorm';
 import { ExerciseService } from '../exercise.service';
-import { User } from 'src/user/user.entity';
-import { SortDirection } from 'src/body-measurement/body-measurement.enum';
+import { User } from '../user/user.entity';
+import { SortDirection } from '../body-measurement/body-measurement.enum';
 
 @Injectable()
 export class StepOfExerciseService {

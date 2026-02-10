@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { OpenAIService } from '../openai/openai.service';
 import { User } from '../user/user.entity';
-import { Workout } from 'src/workoutplan/workoutplan.entity';
+import { Workout } from '../workoutplan/workoutplan.entity';
 import { NutritionLog } from './nutrition-log.entity';
-import { Gender, UserGoal } from 'src/common/enum/user-enum';
+import { Gender, UserGoal } from '../common/enum/user-enum';
 
 @Injectable()
 export class NutritionService {

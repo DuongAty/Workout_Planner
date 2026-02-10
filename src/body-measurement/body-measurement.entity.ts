@@ -1,5 +1,6 @@
-import { MuscleGroup } from 'src/exercise/exercise-musclegroup';
-import { User } from 'src/user/user.entity';
+import { Max, Min } from 'class-validator';
+import { MuscleGroup } from '../exercise/exercise-musclegroup';
+import { User } from '../user/user.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -19,6 +20,8 @@ export class BodyMeasurement {
   key: MuscleGroup;
 
   @Column({ type: 'float' })
+  @Min(10)
+  @Max(200)
   value: number;
 
   @Column({ default: 'cm' })

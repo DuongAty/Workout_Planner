@@ -7,18 +7,18 @@ import { Exercise } from '../exercise/exercise.entity';
 import { AuthModule } from '../auth/auth.module';
 import { LoggerModule } from '../common/logger/logger.module';
 import { UploadService } from '../common/upload/upload.service';
-import { TransactionService } from 'src/common/transaction/transaction';
-import { BodyMeasurement } from 'src/body-measurement/body-measurement.entity';
-import { BodyMeasurementController } from 'src/body-measurement/body-measurement.controller';
-import { BodyMeasurementService } from 'src/body-measurement/body-measurement.service';
-import { WorkoutReminderService } from 'src/common/emailSend/send-email.service';
-import { WorkoutReminderTask } from 'src/scheduled-tasks/workout-reminder.task';
+import { TransactionService } from '../common/transaction/transaction';
+import { BodyMeasurement } from '../body-measurement/body-measurement.entity';
+import { BodyMeasurementController } from '../body-measurement/body-measurement.controller';
+import { BodyMeasurementService } from '../body-measurement/body-measurement.service';
+import { WorkoutReminderService } from '../common/emailSend/send-email.service';
+import { WorkoutReminderTask } from '../scheduled-tasks/workout-reminder.task';
 import OpenAI from 'openai';
-import { OpenAIService } from 'src/openai/openai.service';
-import { NutritionController } from 'src/nutrition/nutrition.controller';
-import { NutritionService } from 'src/nutrition/nutrition.service';
-import { NutritionLog } from 'src/nutrition/nutrition-log.entity';
-import { User } from 'src/user/user.entity';
+import { OpenAIService } from '../openai/openai.service';
+import { NutritionController } from '../nutrition/nutrition.controller';
+import { NutritionService } from '../nutrition/nutrition.service';
+import { NutritionLog } from '../nutrition/nutrition-log.entity';
+import { User } from '../user/user.entity';
 
 @Module({
   imports: [
