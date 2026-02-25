@@ -1,4 +1,4 @@
-import { Max, Min } from 'class-validator';
+import { IsEnum, Max, Min } from 'class-validator';
 import { MuscleGroup } from '../exercise/exercise-musclegroup';
 import { User } from '../user/user.entity';
 import {
@@ -17,6 +17,7 @@ export class BodyMeasurement {
     type: 'enum',
     enum: MuscleGroup,
   })
+  @IsEnum(MuscleGroup)
   key: MuscleGroup;
 
   @Column({ type: 'float' })

@@ -1,22 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsDateString,
-  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   Max,
   Min,
 } from 'class-validator';
-import { WorkoutStatus } from '../workout-status';
 import { Transform } from 'class-transformer';
+import { trim } from 'src/common/constants/constants';
+import { IsFutureDate } from 'src/common/decorator/is-future-date.decorator';
 
 export class UpdateWorkoutDto {
   @IsNotEmpty()
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(trim)
   @ApiProperty({
     description: 'Name',
   })
@@ -40,16 +41,11 @@ export class UpdateWorkoutDto {
   @IsOptional()
   @IsArray()
   @ArrayUnique()
+  @ArrayMinSize(1)
   @Min(0, { each: true })
   @Max(6, { each: true })
   @IsNumber({}, { each: true })
   daysOfWeek?: number[];
-}
-
-export class UpdateStatusDto {
-  @ApiProperty()
-  @IsEnum(WorkoutStatus)
-  status: WorkoutStatus;
 }
 
 export class UpdateScheduleDto {
@@ -60,6 +56,7 @@ export class UpdateScheduleDto {
 
   @ApiProperty({ example: '2026-02-20' })
   @IsOptional()
+  @IsFutureDate()
   @IsDateString()
   newDate?: string;
 }
@@ -70,6 +67,10 @@ export class UpdateDaysOfWeekDto {
     description: 'The days of the week (0: CN, 1: T2...)',
   })
   @IsArray()
+  @ArrayUnique()
+  @ArrayMinSize(1)
   @IsNumber({}, { each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
   daysOfWeek: number[];
 }

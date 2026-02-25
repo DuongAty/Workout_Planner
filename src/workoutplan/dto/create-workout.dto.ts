@@ -9,15 +9,18 @@ import {
   IsNumber,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
-import { IsFutureDate } from '../common/decorator/is-future-date.decorator';
+import { IsFutureDate } from '../../common/decorator/is-future-date.decorator';
+import { trim } from 'src/common/constants/constants';
 
 export class CreateWorkoutDto {
   @ApiProperty({ example: 'Chest Workout' })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @MaxLength(50)
+  @Transform(trim)
   name: string;
 
   @ApiProperty({ example: '2026-01-05' })

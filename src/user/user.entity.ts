@@ -55,9 +55,6 @@ export class User {
   @OneToMany((_type) => Workout, (workout) => workout.user, { eager: true })
   workout: Workout[];
 
-  @OneToMany((_type) => Exercise, (exercise) => exercise.user, { eager: true })
-  exercise: Exercise[];
-
   @OneToMany(() => BodyMeasurement, (measurement) => measurement.user)
   measurements: BodyMeasurement[];
 
