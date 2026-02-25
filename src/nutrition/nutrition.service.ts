@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { OpenAIService } from '../openai/openai.service';
@@ -21,6 +21,11 @@ export class NutritionService {
 
   async logMealAndAnalyze(user: User, mealDescription: string) {
     const aiData = await this.openAIService.analyzeFood(mealDescription);
+    if (aiData.is_food === false) {
+      throw new BadRequestException(
+        'Nội dung bạn nhập không phải là bữa ăn. Vui lòng thử lại!',
+      );
+    }
     const log = this.nutritionRepo.create({
       mealDescription,
       calories: aiData.totalCalories,

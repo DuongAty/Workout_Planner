@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Workout } from '../workoutplan/workoutplan.entity';
+import { Workout } from '../../workoutplan/workoutplan.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class WorkoutReminderService {
   async processDailyReminders() {
     const todayString = new Date().toISOString().split('T')[0];
     const todayDisplayString = todayString.split('-').reverse().join('/');
-
+// using typeORM instaead of
     const workouts = await this.workoutRepo
       .createQueryBuilder('workout')
       .innerJoinAndSelect('workout.user', 'user')

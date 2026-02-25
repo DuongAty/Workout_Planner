@@ -1,17 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MuscleGroup } from '../exercise-musclegroup';
-import { IsEnum, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
+import {
+  MAX_LENGHT,
+  MAX_TIME,
+  MIN_TIME,
+  trim,
+} from '../../common/constants/constants';
 
 export class UpdateExerciseDto {
+  @Transform(trim)
   @ApiProperty({
     required: false,
     description: 'Exercise Name',
   })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  name: string;
+  @MaxLength(50)
+  name?: string;
 
   @ApiProperty({
     description: 'Muscle Group',
@@ -41,6 +57,7 @@ export class UpdateExerciseDto {
     example: 12,
   })
   @Type(() => Number)
+  @IsOptional()
   @Min(1)
   @Max(15)
   repetitions: number;
@@ -50,8 +67,9 @@ export class UpdateExerciseDto {
     description: 'Rest time ',
   })
   @Type(() => Number)
-  @Min(0)
-  @Max(600)
+  @Min(MIN_TIME)
+  @Max(MAX_TIME)
+  @IsOptional()
   restTime: number;
 
   @ApiProperty({
@@ -59,14 +77,18 @@ export class UpdateExerciseDto {
     description: 'Total time of exercise ',
   })
   @Type(() => Number)
-  @Min(0)
-  @Max(600)
+  @Min(MIN_TIME)
+  @Max(MAX_TIME)
+  @IsOptional()
   duration: number;
 
+  @Transform(trim)
   @ApiProperty({
     required: false,
     description: 'Note',
   })
-  @Max(100)
+  @IsOptional()
+  @IsNotEmpty()
+  @MaxLength(MAX_LENGHT)
   note: string;
 }

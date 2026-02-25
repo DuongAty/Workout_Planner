@@ -17,11 +17,18 @@ import { StepOfExerciseService } from './StepOfExercises/step-of-exercise.servic
 import { StepOfExerciseController } from './StepOfExercises/step-of-exercise.controller';
 import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
 import { OpenAIService } from '../openai/openai.service';
+import { ScheduleItem } from '../workoutplan/schedule-items/schedule-item.entity';
 
 @Module({
   imports: [
     forwardRef(() => WorkoutplanModule),
-    TypeOrmModule.forFeature([Exercise, Workout, ExerciseSet, StepOfExercise]),
+    TypeOrmModule.forFeature([
+      Exercise,
+      Workout,
+      ExerciseSet,
+      StepOfExercise,
+      ScheduleItem,
+    ]),
     AuthModule,
     LoggerModule,
   ],

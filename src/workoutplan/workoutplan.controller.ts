@@ -25,6 +25,8 @@ import { PaginationDto } from '../common/pagination/pagination.dto';
 import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
 import { AIWorkoutChatDto } from './dto/ai-workout.dto';
+import { CloneScheduleDto } from './dto/clone-workout.dto';
+
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
@@ -45,9 +47,9 @@ export class WorkoutplanController {
     return await this.workoutService.checkMissedWorkouts(user);
   }
 
-  @Patch(':id/item-status')
+  @Patch(':scheduleItemId/item-status')
   async updateItemStatus(
-    @Param('id') id: string,
+    @Param('scheduleItemId') id: string,
     @GetUser() user: User,
     @Body() body: { date: string; status: WorkoutStatus },
   ) {
@@ -119,27 +121,6 @@ export class WorkoutplanController {
       WorkoutplanController.name,
     );
     return this.workoutService.updateWorkout(id, user, updateWorkoutDto);
-  }
-
-  @Post(':id/clone')
-  @UseInterceptors(ClassSerializerInterceptor)
-  clone(
-    @Param('id') id: string,
-    @GetUser() user: User,
-    @Body()
-    cloneScheduleData: {
-      name?: string;
-      startDate: string;
-      endDate: string;
-      daysOfWeek: number[];
-    },
-  ) {
-    this.logger.verbose(
-      `User "${user.username}" clone a workout `,
-      id,
-      WorkoutplanController.name,
-    );
-    return this.workoutService.cloneWorkout(id, user, cloneScheduleData);
   }
 
   @Get(':id/exercises')

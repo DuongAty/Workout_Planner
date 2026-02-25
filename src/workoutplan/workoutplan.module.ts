@@ -19,6 +19,7 @@ import { NutritionController } from '../nutrition/nutrition.controller';
 import { NutritionService } from '../nutrition/nutrition.service';
 import { NutritionLog } from '../nutrition/nutrition-log.entity';
 import { User } from '../user/user.entity';
+import { ScheduleItem } from './schedule-items/schedule-item.entity';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { User } from '../user/user.entity';
       BodyMeasurement,
       NutritionLog,
       User,
+      ScheduleItem,
     ]),
     AuthModule,
     LoggerModule,

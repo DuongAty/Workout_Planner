@@ -4,7 +4,7 @@ export const nutritionAnalysisSchema = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['totalCalories', 'protein', 'carbs', 'fat', 'advice'],
+    required: ['totalCalories', 'protein', 'carbs', 'fat', 'advice', 'is_food'],
     properties: {
       totalCalories: {
         type: 'number',
@@ -13,6 +13,7 @@ export const nutritionAnalysisSchema = {
       protein: { type: 'number', description: 'Gam protein' },
       carbs: { type: 'number', description: 'Gam tinh bột' },
       fat: { type: 'number', description: 'Gam chất béo' },
+      is_food: { type: 'boolean', description: 'Bữa ăn hay không' },
       advice: {
         type: 'string',
         description: 'Lời khuyên ngắn gọn dựa trên thành phần dinh dưỡng',

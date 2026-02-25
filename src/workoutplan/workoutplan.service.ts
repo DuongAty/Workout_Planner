@@ -22,6 +22,7 @@ import { ScheduleItem } from './schedule-items/schedule-item.entity';
 import { checkDateRange, DateUtils } from '../common/dateUtils/dateUtils';
 import { OpenAIService } from '../openai/openai.service';
 import { workoutAIPrompt } from './prompt/workout-ai.prompt';
+import { CloneScheduleDto } from './dto/clone-workout.dto';
 
 @Injectable()
 export class WorkoutplanService {
@@ -33,6 +34,7 @@ export class WorkoutplanService {
     private uploadService: UploadService,
     private transactionService: TransactionService,
     private openAIService: OpenAIService,
+    @InjectRepository(ScheduleItem)
     private scheduleItemRepository: Repository<ScheduleItem>,
   ) {}
   async syncNumExercises(workoutId: string, manager?: EntityManager) {
@@ -90,9 +92,6 @@ export class WorkoutplanService {
       });
       if (existingItems.length > 0) {
         const conflictDates = existingItems.map((item) => item.date);
-        console.warn(
-          `Các ngày sau đã có bài tập rồi: ${conflictDates.join(', ')}`,
-        );
         throw new BadRequestException(
           `Không thể tạo lịch vì các ngày sau đã có bài tập: ${conflictDates.join(', ')}`,
         );
@@ -147,6 +146,25 @@ export class WorkoutplanService {
     },
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async (manager) => {
+      const currentWorkout = await this.findOneWorkout(id, user);
+      if (!currentWorkout) throw new NotFoundException('Workout không tồn tại');
+      const finalEndDate = updateDto.endDate || currentWorkout.endDate;
+      const finalStartDate = updateDto.startDate || currentWorkout.startDate;
+      if (updateDto.newDate && finalEndDate) {
+        const newDateVal = new Date(updateDto.newDate);
+        const endDateVal = new Date(finalEndDate);
+        const startDateVal = new Date(finalStartDate);
+        if (newDateVal > endDateVal) {
+          throw new BadRequestException(
+            `Ngày mới (${updateDto.newDate}) không được vượt quá ngày kết thúc (${finalEndDate})`,
+          );
+        }
+        if (newDateVal < startDateVal) {
+          throw new BadRequestException(
+            `Ngày mới (${updateDto.newDate}) không được trước ngày bắt đầu (${finalStartDate})`,
+          );
+        }
+      }
       if (updateDto.oldDate && updateDto.newDate) {
         const result = await manager
           .getRepository(ScheduleItem)
@@ -316,7 +334,8 @@ export class WorkoutplanService {
         return this.cloneWorkout(id, user, {
           name: updateDto.name ?? original.name,
           startDate: finalStartDate,
-          endDate: finalStartDate,
+          endDate: finalEndDate,
+          estimatedCalories: original.estimatedCalories,
           daysOfWeek: updateDto.daysOfWeek ?? original.daysOfWeek,
         });
       }
@@ -331,12 +350,7 @@ export class WorkoutplanService {
   async cloneWorkout(
     id: string,
     user: User,
-    dto: {
-      name?: string;
-      startDate: string;
-      endDate: string;
-      daysOfWeek: number[];
-    },
+    dto: CloneScheduleDto,
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async () => {
       const original = await this.findOneWorkout(id, user, ['exercises']);
@@ -371,7 +385,6 @@ export class WorkoutplanService {
           thumbnail,
           videoUrl,
           workoutId: newWorkout.id,
-          user,
         } as DeepPartial<Exercise>);
       });
       await this.exerciseService.save(exerciseData);
@@ -410,6 +423,11 @@ export class WorkoutplanService {
 
   async generateAndSave(message: string, userId: string) {
     const aiData = await this.generateFromChat(message);
+    if (aiData.is_workout_request === false) {
+      throw new BadRequestException(
+        'Your request is not related to creating a workout schedule. Please try again!'
+      );
+    }
     return await this.transactionService.run(async (manager: EntityManager) => {
       try {
         const workout = manager.create('Workout', {
@@ -436,7 +454,6 @@ export class WorkoutplanService {
           manager.create('Exercise', {
             ...ex,
             workoutPlan: savedWorkout,
-            user: { id: userId },
           }),
         );
         await manager.save('Exercise', exercises);

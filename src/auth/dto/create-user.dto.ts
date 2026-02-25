@@ -1,27 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  MAX_LENGHT_USER,
+  MIN_LENGHT_USER,
+  passwordVal,
+  trim,
+} from 'src/common/constants/constants';
 
 export class CreateUserDto {
   @IsString()
-  @MinLength(8)
-  @MaxLength(20)
+  @Transform(trim)
+  @MinLength(MIN_LENGHT_USER)
+  @MaxLength(MAX_LENGHT_USER)
   @ApiProperty({
     description: 'Full Name',
   })
   fullname: string;
 
   @IsString()
-  @MinLength(8)
-  @MaxLength(20)
+  @Transform(trim)
+  @MinLength(MIN_LENGHT_USER)
+  @MaxLength(MAX_LENGHT_USER)
   @ApiProperty({
     description: 'User Name',
   })
   username: string;
 
   @IsString()
-  @MinLength(8)
-  @MaxLength(20)
-  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+  @Transform(trim)
+  @MinLength(MIN_LENGHT_USER)
+  @MaxLength(MAX_LENGHT_USER)
+  @Matches(passwordVal, {
     message:
       'The password is too weak: It needs to include uppercase letters, lowercase letters, and numbers/special characters.',
   })

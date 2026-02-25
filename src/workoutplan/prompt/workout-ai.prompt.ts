@@ -4,6 +4,22 @@ Design a workout schedule based on the following request: "${userMessage}"
 
 IMPORTANT RULES:
 
+NEW VALIDATION RULE: 
+- If the request relates to creating a workout schedule, exercises, or gym advice: Set "is_workout_request": true.
+- If the request is NOT related (casual conversation, food, trash, etc.): Set "is_workout_request": false.
+
+Return the result strictly in JSON format, including:
+- "is_workout_request": boolean
+- "id": UUID
+- "name": string
+- "numExercises": number
+- "startDate": string
+- "endDate": string
+- "daysOfWeek": string[]
+- "estimatedCalories": number
+- "exercises": Array
+- "scheduleItems": Array
+
 Return the result strictly in JSON format, including:
 
 A list of training days in scheduleItems

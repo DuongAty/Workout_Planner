@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
-import { MuscleGroup } from '../exercise/exercise-musclegroup';
+import { IsEnum, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { MuscleGroup } from '../../exercise/exercise-musclegroup';
 
 export enum UnitType {
   cm = 'cm',
@@ -13,11 +13,13 @@ export class CreateMeasurementDto {
 
   @IsNumber()
   @ApiProperty()
+  @Min(20)
+  @Max(200)
   value: number;
 
   @ApiProperty({ enum: UnitType })
   @IsEnum(UnitType)
-  unit?: UnitType.cm;
+  unit?: UnitType = UnitType.cm;
 }
 
 export class GetMeasurementsQueryDto {

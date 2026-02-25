@@ -35,7 +35,7 @@ export class NutritionLog {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne((_type) => User, (user) => user.exercise, { eager: false })
+  @ManyToOne((_type) => User, (user) => user.nutritionLogs, { eager: false })
   @Exclude({ toPlainOnly: true })
   user: User;
 

@@ -6,7 +6,6 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { Exercise } from '../exercise.entity';
-import { Max, Min } from 'class-validator';
 
 @Entity('exercise_sets')
 export class ExerciseSet {

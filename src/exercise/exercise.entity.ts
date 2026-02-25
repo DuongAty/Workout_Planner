@@ -57,10 +57,6 @@ export class Exercise {
   @Column()
   workoutId: string;
 
-  @ManyToOne((_type) => User, (user) => user.exercise, { eager: false })
-  @Exclude({ toPlainOnly: true })
-  user: User;
-
   @OneToMany(() => ExerciseSet, (exerciseSet) => exerciseSet.exercise, {
     cascade: true,
   })

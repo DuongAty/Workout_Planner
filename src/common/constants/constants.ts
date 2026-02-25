@@ -15,3 +15,13 @@ export const THROTTLER_LIMIT = 20;
 export const NEED_TRY = 'Needs to try harder.';
 export const GOOD_PROGRESS = 'Good progress';
 export const NO_ENOUGH_DATA = 'Not enough data';
+export const MAX_TIME = 600;
+export const MIN_TIME = 60;
+export const MAX_LENGHT = 100;
+export const MIN_LENGHT_USER = 8;
+export const MAX_LENGHT_USER = 20;
+
+export const trim = ({ value }) =>
+  typeof value === 'string' ? value.trim() : value;
+
+export const passwordVal = /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/

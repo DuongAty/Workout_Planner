@@ -1,17 +1,20 @@
-import { Max } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsNumber, MaxLength } from 'class-validator';
+import { MAX_LENGHT, trim } from 'src/common/constants/constants';
 
 export class CreateStepDto {
+  @IsNotEmpty()
+  @IsNumber()
   order: number;
 
-  @Max(100)
+  @MaxLength(MAX_LENGHT)
+  @IsNotEmpty()
+  @Transform(trim)
   description: string;
-
-  exerciseId: string;
 }
 
 export class UpdateStepDto {
-  order: number;
-
-  @Max(100)
+  @MaxLength(MAX_LENGHT)
+  @Transform(trim)
   description: string;
 }

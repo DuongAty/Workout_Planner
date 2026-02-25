@@ -63,7 +63,9 @@ export class ExerciseService {
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
     const query = this.exerciseService.createQueryBuilder('exercises');
-    query.where({ user });
+    query
+      .innerJoin('exercises.workoutPlan', 'workout')
+      .where('workout.userId = :userId', { userId: user.id });
     applyExerciseFilters(query, getExerciseFilter, 'exercises');
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
@@ -74,7 +76,7 @@ export class ExerciseService {
   async findOneExercise(id: string, user: User): Promise<Exercise> {
     try {
       return await this.exerciseService.findOneOrFail({
-        where: { id, user: { id: user.id } },
+        where: { id, workoutPlan: { user: { id: user.id } } },
       });
     } catch (error) {
       throw new NotFoundException(`Exercise with ID ${id} not found`);
