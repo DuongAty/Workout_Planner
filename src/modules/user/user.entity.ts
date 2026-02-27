@@ -1,9 +1,8 @@
-import { BodyMeasurement } from '../modules/body-measurement/body-measurement.entity';
-import { Exercise } from '../modules/exercise/exercise.entity';
-import { Workout } from '../modules/workoutplan/workoutplan.entity';
+import { BodyMeasurement } from '../body-measurement/body-measurement.entity';
+import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { NutritionLog } from '../modules/nutrition/nutrition-log.entity';
-import { AuthProvider, Gender, UserGoal } from '../enums/user-enum';
+import { NutritionLog } from '../nutrition/nutrition-log.entity';
+import { AuthProvider, Gender, UserGoal } from '../../enums/user-enum';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Workout } from '../../workoutplan/workoutplan.entity';
+import { Workout } from '../../modules/workoutplan/workoutplan.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -19,23 +19,23 @@ export class WorkoutReminderService {
   async processDailyReminders() {
     const todayString = new Date().toISOString().split('T')[0];
     const todayDisplayString = todayString.split('-').reverse().join('/');
-// using typeORM instaead of
-    const workouts = await this.workoutRepo
-      .createQueryBuilder('workout')
-      .innerJoinAndSelect('workout.user', 'user')
-      .innerJoinAndSelect(
-        'workout.scheduleItems',
-        'item',
-        'item.date = :today AND LOWER(item.status) = :status',
-        { today: todayString, status: 'planned' },
-      )
-      .getMany();
 
+    const workouts = await this.workoutRepo.find({
+      where: {
+        scheduleItems: {
+          date: todayString,
+          status: 'planned',
+        },
+      },
+      relations: {
+        user: true,
+        scheduleItems: true,
+      },
+    });
     if (workouts.length === 0) {
       this.logger.log('🔔 Không có lịch tập nào cần nhắc nhở hôm nay.');
       return;
     }
-
     for (const workout of workouts) {
       if (!workout.user?.email) continue;
       await this.sendEmail(workout, todayDisplayString);
