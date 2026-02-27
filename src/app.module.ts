@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { configValidationSchema } from './config.schema';
-import { WorkoutplanModule } from './workoutplan/workoutplan.module';
-import { ExerciseModule } from './exercise/exercise.module';
+import { WorkoutplanModule } from './modules/workoutplan/workoutplan.module';
+import { ExerciseModule } from './modules/exercise/exercise.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-import { THROTTLER_LIMIT, THROTTLER_TTL } from './common/constants/constants';
+import { THROTTLER_LIMIT, THROTTLER_TTL } from './constants/constants';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
-import { OpenAIModule } from './openai/openai.module';
+import { OpenAIModule } from './modules/openai/openai.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
