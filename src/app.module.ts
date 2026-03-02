@@ -14,6 +14,12 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
 import { OpenAIModule } from './modules/openai/openai.module';
+import { JobsModule } from './jobs/job.module';
+import { EmailProcessor } from './processors/email.processor';
+import { BullModule } from '@nestjs/bull';
+import { OpenAIProcessor } from './processors/openai.processor';
+import { NotificationModule } from './modules/notification/notification.module';
+import { User } from './modules/user/user.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,7 +30,10 @@ import { OpenAIModule } from './modules/openai/openai.module';
     WorkoutplanModule,
     ExerciseModule,
     OpenAIModule,
+    JobsModule,
+    NotificationModule,
     ScheduleModule.forRoot(),
+    TypeOrmModule.forFeature([User]),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -88,12 +97,25 @@ import { OpenAIModule } from './modules/openai/openai.module';
       }),
     }),
     AuthModule,
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+          password: configService.get('REDIS_PASSWORD'),
+        },
+      }),
+    }),
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    EmailProcessor,
+    OpenAIProcessor,
   ],
 })
 export class AppModule {}

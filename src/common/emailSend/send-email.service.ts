@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workout } from '../../modules/workoutplan/workoutplan.entity';
+import { JobService } from '../../jobs/job.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -12,8 +12,8 @@ export class WorkoutReminderService {
   constructor(
     @InjectRepository(Workout)
     private readonly workoutRepo: Repository<Workout>,
-    private readonly mailerService: MailerService,
-    private configService: ConfigService,
+    private readonly jobService: JobService,
+    private readonly configService: ConfigService,
   ) {}
 
   async processDailyReminders() {
@@ -32,35 +32,25 @@ export class WorkoutReminderService {
         scheduleItems: true,
       },
     });
+
     if (workouts.length === 0) {
-      this.logger.log('🔔 Không có lịch tập nào cần nhắc nhở hôm nay.');
+      this.logger.log('Không có lịch tập hôm nay');
       return;
     }
+
     for (const workout of workouts) {
       if (!workout.user?.email) continue;
-      await this.sendEmail(workout, todayDisplayString);
-    }
-  }
 
-  private async sendEmail(workout: Workout, date: string) {
-    try {
-      await this.mailerService.sendMail({
-        to: workout.user.email,
-        subject: `🚀 SẴN SÀNG CHƯA? Lịch tập ${workout.name.toUpperCase()} hôm nay!`,
-        template: 'workout-reminder',
-        context: {
-          fullname: workout.user.fullname || 'Gymer',
-          date,
-          workoutName: workout.name,
-          numExercises: workout.numExercises,
-          url: this.configService.get('FRONTEND_URL') + '/dashboard',
-        },
+      await this.jobService.addEmailJob({
+        email: workout.user.email,
+        fullname: workout.user.fullname || 'Gymer',
+        workoutName: workout.name,
+        date: todayDisplayString,
+        numExercises: workout.numExercises,
+        url: this.configService.get('FRONTEND_URL') + '/dashboard',
       });
-      this.logger.log(`✅ Đã gửi mail cho: ${workout.user.email}`);
-    } catch (error) {
-      this.logger.error(
-        `❌ Lỗi gửi mail cho ${workout.user.email}: ${error.message}`,
-      );
     }
+
+    this.logger.log(`Đã thêm ${workouts.length} email jobs`);
   }
 }

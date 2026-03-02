@@ -9,13 +9,19 @@ import { Not, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { CreateUserDto } from '../auth/dto/create-user.dto';
-import { UpdateUserProfileDto } from '../auth/dto/user.profile.dto';
+import {
+  UpdateTokenDto,
+  UpdateUserProfileDto,
+} from '../auth/dto/user.profile.dto';
 import { AuthProvider } from '../../enums/user-enum';
+import { Token } from './fcmToken/token.entity';
 @Injectable()
 export class UsersRepository {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Token)
+    private tokenRepository: Repository<Token>,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -43,6 +49,24 @@ export class UsersRepository {
     await this.userRepository.update(userId, {
       refreshToken: hashedRefreshToken,
     });
+  }
+  async updateToken(userId: string, dto: UpdateTokenDto) {
+    const existingToken = await this.tokenRepository.findOne({
+      where: { userId: userId, device: 'web' },
+    });
+
+    if (existingToken) {
+      return await this.tokenRepository.update(existingToken.userId, {
+        fcmToken: dto.fcmToken,
+      });
+    } else {
+      const newToken = this.tokenRepository.create({
+        fcmToken: dto.fcmToken,
+        userId: userId,
+        device: 'web',
+      });
+      return await this.tokenRepository.save(newToken);
+    }
   }
 
   async clearRefreshToken(userId: string) {

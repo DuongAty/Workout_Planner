@@ -4,7 +4,7 @@ import { UsersRepository } from '../user/user.repository';
 import { TokenPayload } from './type/accessToken.type';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from '../user/user.entity';
-import { UpdateUserProfileDto } from './dto/user.profile.dto';
+import { UpdateTokenDto, UpdateUserProfileDto } from './dto/user.profile.dto';
 import { UploadService } from '../../upload/upload.service';
 import { AuthProvider } from './../../enums/user-enum';
 import { OAuth2Client } from 'google-auth-library';
@@ -83,6 +83,10 @@ export class AuthService {
       accessToken,
       ACCESS_TOKEN_BLACKLIST_TTL,
     );
+  }
+
+  async updateToken(userId: string, dto: UpdateTokenDto) {
+    return this.usersRepository.updateToken(userId, dto);
   }
 
   async refreshTokens(

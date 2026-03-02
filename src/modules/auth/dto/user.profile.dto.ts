@@ -70,3 +70,10 @@ export class UpdateUserProfileDto {
   @IsEnum(UserGoal)
   goal?: UserGoal;
 }
+
+export class UpdateTokenDto {
+  @ApiProperty({ description: 'Token' })
+  @IsString()
+  @IsOptional()
+  fcmToken?: string;
+}

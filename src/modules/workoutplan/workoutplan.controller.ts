@@ -26,6 +26,7 @@ import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
 import { AIWorkoutChatDto } from './dto/ai-workout.dto';
 import { CloneScheduleDto } from './dto/clone-workout.dto';
+import { JobService } from 'src/jobs/job.service';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -34,6 +35,7 @@ export class WorkoutplanController {
   constructor(
     private workoutService: WorkoutplanService,
     private logger: AppLogger,
+    private jobService: JobService,
   ) {}
 
   @Post()
@@ -138,6 +140,13 @@ export class WorkoutplanController {
 
   @Post('ai')
   async createByAI(@Body() dto: AIWorkoutChatDto, @GetUser() user: User) {
-    return this.workoutService.generateAndSave(dto.message, user.id);
+    await this.jobService.addOpenAIJob({
+      prompt: dto.message,
+      userId: user.id,
+    });
+    return {
+      message:
+        'Your request is being processed in the background. Please wait!',
+    };
   }
 }
