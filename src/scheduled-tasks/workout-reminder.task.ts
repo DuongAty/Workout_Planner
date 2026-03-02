@@ -1,4 +1,3 @@
-// ../scheduled-tasks/workout-reminder.task.ts
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { WorkoutReminderService } from '../common/emailSend/send-email.service';
