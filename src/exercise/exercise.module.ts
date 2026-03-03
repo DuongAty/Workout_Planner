@@ -9,15 +9,42 @@ import { LoggerModule } from '../common/logger/logger.module';
 import { WorkoutplanModule } from '../workoutplan/workoutplan.module';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../common/upload/upload.service';
+import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
+import { ExerciseTrackingService } from './exersiceTracking/exersciseTracking.service';
+import { ExerciseTrackingController } from './exersiceTracking/exerciseTracking.controller';
+import { TransactionService } from '../common/transaction/transaction';
+import { StepOfExerciseService } from './StepOfExercises/step-of-exercise.service';
+import { StepOfExerciseController } from './StepOfExercises/step-of-exercise.controller';
+import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
+import { OpenAIService } from '../openai/openai.service';
+import { ScheduleItem } from '../workoutplan/schedule-items/schedule-item.entity';
 
 @Module({
   imports: [
     forwardRef(() => WorkoutplanModule),
-    TypeOrmModule.forFeature([Exercise, Workout]),
+    TypeOrmModule.forFeature([
+      Exercise,
+      Workout,
+      ExerciseSet,
+      StepOfExercise,
+      ScheduleItem,
+    ]),
     AuthModule,
     LoggerModule,
   ],
-  providers: [ExerciseService, WorkoutplanService, UploadService],
-  controllers: [ExerciseController],
+  providers: [
+    ExerciseService,
+    WorkoutplanService,
+    UploadService,
+    ExerciseTrackingService,
+    TransactionService,
+    StepOfExerciseService,
+    OpenAIService,
+  ],
+  controllers: [
+    ExerciseController,
+    ExerciseTrackingController,
+    StepOfExerciseController,
+  ],
 })
 export class ExerciseModule {}

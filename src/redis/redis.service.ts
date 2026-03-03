@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
-import { USER_CACHE_TTL } from 'src/common/constants/constants';
+import { USER_CACHE_TTL } from '../common/constants/constants';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {

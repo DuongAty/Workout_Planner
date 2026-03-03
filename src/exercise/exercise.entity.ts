@@ -8,7 +8,10 @@ import {
   JoinColumn,
   ManyToOne,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { ExerciseSet } from './exersiceTracking/exerciseSet.entity';
+import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
 
 @Entity('exercises')
 export class Exercise {
@@ -33,7 +36,7 @@ export class Exercise {
   @Column({ default: 0 })
   duration: number;
 
-  @Column({ length: 100 })
+  @Column({ nullable: true })
   note!: string;
 
   @Column({ nullable: true })
@@ -54,7 +57,11 @@ export class Exercise {
   @Column()
   workoutId: string;
 
-  @ManyToOne((_type) => User, (user) => user.exercise, { eager: false })
-  @Exclude({ toPlainOnly: true })
-  user: User;
+  @OneToMany(() => ExerciseSet, (exerciseSet) => exerciseSet.exercise, {
+    cascade: true,
+  })
+  sets: ExerciseSet[];
+
+  @OneToMany(() => StepOfExercise, (step) => step.exercise, { cascade: true })
+  steps: StepOfExercise[];
 }

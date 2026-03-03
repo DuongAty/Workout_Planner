@@ -1,356 +1,410 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
 import { WorkoutplanService } from './workoutplan.service';
+import { WorkoutStatus } from './workout-status';
+import { UploadService } from '../common/upload/upload.service';
+import { TransactionService } from '../common/transaction/transaction';
+import { OpenAIService } from '../openai/openai.service';
+import { DateUtils } from '../common/dateUtils/dateUtils';
+
 import { Workout } from './workoutplan.entity';
 import { Exercise } from '../exercise/exercise.entity';
-import { NotFoundException } from '@nestjs/common';
-import { ExerciseService } from '../exercise/exercise.service';
-import { PassportModule } from '@nestjs/passport';
-import { AppLogger } from '../common/logger/app-logger.service';
-import { UploadService } from '../common/upload/upload.service';
+import { ScheduleItem } from './schedule-items/schedule-item.entity';
+import { BodyMeasurement } from '../body-measurement/body-measurement.entity';
+import { NutritionLog } from '../nutrition/nutrition-log.entity';
+import { User } from '../user/user.entity';
 
-const mockUser = { id: 'id', username: 'duong', password: '123' };
-const mockWorkout = { id: 'workout-123', title: 'Plan A', user: mockUser };
-const workoutRepoMock = {
-  create: jest.fn(),
-  save: jest.fn(),
-  getAllWorkout: jest.fn().mockResolvedValue('value'),
-  findOneOrFail: jest.fn().mockResolvedValue(''),
-  delete: jest.fn(),
-  update: jest.fn(),
-  where: jest.fn().mockReturnThis(),
-  getCount: jest.fn().mockResolvedValue(5),
-  createQueryBuilder: jest.fn().mockReturnThis(),
-  remove: jest.fn(),
-};
-const mockExerciseService = {
-  create: jest.fn(),
-  save: jest.fn(),
-};
-let workPlanService: WorkoutplanService;
 describe('WorkoutplanService', () => {
+  let service: WorkoutplanService;
+  const mockUser = { id: 'user-123' } as User;
+  const mockWorkout = {
+    id: 'w-1',
+    name: 'Test Workout',
+    startDate: '2024-01-01',
+    endDate: '2024-01-07',
+    daysOfWeek: [1, 3],
+    exercises: [],
+    scheduleItems: [],
+    user: mockUser,
+  } as unknown as Workout;
+
+  const createMockQueryBuilder = () => ({
+    select: jest.fn().mockReturnThis(),
+    innerJoinAndSelect: jest.fn().mockReturnThis(),
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    innerJoin: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orWhere: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getOne: jest.fn(),
+    getMany: jest.fn().mockResolvedValue([]),
+    getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    setParameters: jest.fn().mockReturnThis(),
+    getQuery: jest.fn().mockReturnValue('SELECT query'),
+    getParameters: jest.fn().mockReturnValue({}),
+  });
+
+  const mockWorkoutRepo = {
+    create: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    findOne: jest.fn(),
+    findOneOrFail: jest.fn(),
+    createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+  };
+
+  const mockExerciseRepo = {
+    count: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+  };
+
+  const mockScheduleItemRepo = {
+    find: jest.fn(),
+    save: jest.fn(),
+    createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+  };
+
+  const mockGenericRepo = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+  };
+
+  const mockUploadService = {
+    cleanupFile: jest.fn(),
+    cloneFile: jest.fn((fileName) => `cloned_${fileName}`),
+  };
+
+  const mockOpenAIService = {
+    chat: jest.fn(),
+  };
+
+  const mockTransactionService = {
+    run: jest.fn(async (callback) => {
+      const mockManager = {
+        getRepository: jest.fn((entity) => {
+          if (entity === Workout || entity === 'Workout')
+            return mockWorkoutRepo;
+          if (entity === Exercise || entity === 'Exercise')
+            return mockExerciseRepo;
+          if (entity === ScheduleItem || entity === 'ScheduleItem')
+            return mockScheduleItemRepo;
+          return mockGenericRepo;
+        }),
+        create: jest.fn().mockImplementation((entity, data) => data),
+        save: jest
+          .fn()
+          .mockImplementation(async (entity, data) => data || entity),
+        createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+      };
+      return await callback(mockManager);
+    }),
+  };
+
+  const mockDataSource = {
+    createQueryRunner: jest.fn(),
+  };
+
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
-      imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       providers: [
-        AppLogger,
         WorkoutplanService,
-        ExerciseService,
-        UploadService,
+        { provide: getRepositoryToken(Workout), useValue: mockWorkoutRepo },
+        { provide: getRepositoryToken(Exercise), useValue: mockExerciseRepo },
         {
-          provide: getRepositoryToken(Workout),
-          useValue: workoutRepoMock,
+          provide: getRepositoryToken(ScheduleItem),
+          useValue: mockScheduleItemRepo,
+        },
+        { provide: getRepositoryToken(User), useValue: mockGenericRepo },
+        {
+          provide: getRepositoryToken(BodyMeasurement),
+          useValue: mockGenericRepo,
         },
         {
-          provide: getRepositoryToken(Exercise),
-          useValue: mockExerciseService,
+          provide: getRepositoryToken(NutritionLog),
+          useValue: mockGenericRepo,
         },
-        {
-          provide: UploadService,
-          useValue: {
-            cleanupFile: jest.fn().mockResolvedValue(undefined),
-            cloneFile: jest.fn((file) => `cloned-${file}`),
-          },
-        },
+        { provide: UploadService, useValue: mockUploadService },
+        { provide: OpenAIService, useValue: mockOpenAIService },
+        { provide: TransactionService, useValue: mockTransactionService },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
-    workPlanService = module.get<WorkoutplanService>(WorkoutplanService);
-    uploadService = module.get<UploadService>(UploadService);
-  });
-  describe('syncNumExercises', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-    it('You should update numExercises with the number of exercises in the workout.', async () => {
-      const workoutId = 'w1';
-      const queryBuilderMock = {
-        where: jest.fn().mockReturnThis(),
-        getCount: jest.fn().mockResolvedValue(3),
-      };
-      mockExerciseService.createQueryBuilder = jest
-        .fn()
-        .mockReturnValue(queryBuilderMock);
-      await workPlanService.syncNumExercises(workoutId);
-      expect(mockExerciseService.createQueryBuilder).toHaveBeenCalledWith(
-        'exercise',
-      );
-      expect(queryBuilderMock.where).toHaveBeenCalledWith(
-        'exercise.workoutId = :workoutId',
-        { workoutId },
-      );
-      expect(workoutRepoMock.update).toHaveBeenCalledWith(workoutId, {
-        numExercises: 3,
-      });
-    });
-    it('You should update numExercises to 0 when there are no exercises.', async () => {
-      const workoutId = 'w2';
-      mockExerciseService.createQueryBuilder = jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnThis(),
-        getCount: jest.fn().mockResolvedValue(0),
-      });
-      await workPlanService.syncNumExercises(workoutId);
-      expect(workoutRepoMock.update).toHaveBeenCalledWith(workoutId, {
-        numExercises: 0,
-      });
-    });
+    service = module.get<WorkoutplanService>(WorkoutplanService);
   });
 
-  describe('createWorkout', () => {
-    it('should create and save a workout', async () => {
-      const dto = { name: 'Push Day' };
-      const created = { id: 1, name: dto.name, user: mockUser };
-      workoutRepoMock.create.mockReturnValue(created);
-      workoutRepoMock.save.mockResolvedValue(created);
-      const result = await workPlanService.createWorkout(dto, mockUser);
-      expect(workoutRepoMock.create).toHaveBeenCalledWith({
-        name: dto.name,
-        user: mockUser,
-      });
-      expect(workoutRepoMock.save).toHaveBeenCalledWith(created);
-      expect(result).toEqual(created);
+  describe('createRecurringWorkout', () => {
+    const dto = {
+      name: 'Morning Routine',
+      startDate: '2024-01-01',
+      endDate: '2024-01-07',
+      daysOfWeek: [1, 3],
+    };
+
+    it('should create a workout successfully when no conflict exists', async () => {
+      mockScheduleItemRepo.find.mockResolvedValue([]);
+      mockWorkoutRepo.create.mockReturnValue(mockWorkout);
+      mockWorkoutRepo.save.mockResolvedValue(mockWorkout);
+      const result = await service.createRecurringWorkout(dto as any, mockUser);
+      expect(mockScheduleItemRepo.find).toHaveBeenCalled();
+      expect(mockWorkoutRepo.save).toHaveBeenCalled();
+      expect(result).toEqual(mockWorkout);
+    });
+
+    it('should throw BadRequestException if dates conflict', async () => {
+      mockScheduleItemRepo.find.mockResolvedValue([{ date: '2024-01-01' }]);
+      await expect(
+        service.createRecurringWorkout(dto as any, mockUser),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockWorkoutRepo.save).not.toHaveBeenCalled();
     });
   });
 
   describe('getAllWorkout', () => {
-    it('returns data, total and totalPages', async () => {
-      const mockData = ['workout1', 'workout2'];
-      const mockTotal = 2;
-      const filter = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        skip: jest.fn().mockReturnThis(),
-        take: jest.fn().mockReturnThis(),
-        getManyAndCount: jest.fn().mockResolvedValue([mockData, mockTotal]),
-      };
-      workoutRepoMock.createQueryBuilder = jest.fn().mockReturnValue(filter);
-      const filterDto = { search: 'Push Up', numExercises: 5 };
-      const paginationDto = { page: 2, limit: 10 };
-      const expectedSkip = 10;
-      const result = await workPlanService.getAllWorkout(
-        filterDto,
-        paginationDto,
-        mockUser,
-      );
-      expect(workoutRepoMock.createQueryBuilder).toHaveBeenCalledWith(
-        'workout',
-      );
-      expect(filter.where).toHaveBeenCalledWith({ user: mockUser });
-      expect(filter.andWhere).toHaveBeenCalledWith(
-        'workout.name ILIKE :search',
-        { search: `%${filterDto.search}%` },
-      );
-      expect(filter.andWhere).toHaveBeenCalledWith(
-        'workout.numExercises = :numExercises',
-        { numExercises: filterDto.numExercises },
-      );
-      expect(filter.skip).toHaveBeenCalledWith(expectedSkip);
-      expect(filter.take).toHaveBeenCalledWith(paginationDto.limit);
-      expect(result).toEqual({
-        data: mockData,
-        total: mockTotal,
-        totalPages: 1,
+    const filterDto = { page: 1, limit: 10 };
+
+    it('should return paginated workouts', async () => {
+      const qb = createMockQueryBuilder();
+      qb.getManyAndCount.mockResolvedValue([[mockWorkout], 1]);
+      mockWorkoutRepo.createQueryBuilder.mockReturnValue(qb);
+      const result = await service.getAllWorkout({}, filterDto, mockUser);
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(result.data).toEqual([mockWorkout]);
+      expect(result.total).toBe(1);
+    });
+
+    it('should apply search filter correctly', async () => {
+      const qb = createMockQueryBuilder();
+      mockWorkoutRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.getAllWorkout({ search: 'Legs' }, filterDto, mockUser);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('workout.name ILIKE :search', {
+        search: '%Legs%',
       });
+    });
+
+    it('should apply todayOnly filter (Inner Join)', async () => {
+      const qb = createMockQueryBuilder();
+      mockWorkoutRepo.createQueryBuilder.mockReturnValue(qb);
+      await service.getAllWorkout({ todayOnly: true }, filterDto, mockUser);
+      expect(qb.innerJoin).toHaveBeenCalledWith(
+        'workout.scheduleItems',
+        'todayItem',
+        expect.stringContaining('todayItem.date = :today'),
+        expect.any(Object),
+      );
     });
   });
 
   describe('findOneWorkout', () => {
-    it('It should return a workout if found.', async () => {
-      workoutRepoMock.findOneOrFail.mockResolvedValue(mockWorkout);
-      const result = await workPlanService.findOneWorkout(
-        'workout-123',
-        mockUser,
-      );
-      expect(workoutRepoMock.findOneOrFail).toHaveBeenCalledWith({
-        where: { id: 'workout-123', user: mockUser },
-        relations: [],
-      });
+    it('should return workout if found', async () => {
+      mockWorkoutRepo.findOneOrFail.mockResolvedValue(mockWorkout);
+      const result = await service.findOneWorkout('w-1', mockUser);
       expect(result).toEqual(mockWorkout);
     });
-    it('You should throw a NotFoundException if the workout is not found.', async () => {
-      workoutRepoMock.findOneOrFail.mockRejectedValue(new Error());
-      const workoutId = 'wrong-id';
+
+    it('should throw NotFoundException if not found', async () => {
+      mockWorkoutRepo.findOneOrFail.mockRejectedValue(new Error('DB Error'));
+
       await expect(
-        workPlanService.findOneWorkout(workoutId, mockUser),
+        service.findOneWorkout('invalid-id', mockUser),
       ).rejects.toThrow(NotFoundException);
-      await expect(
-        workPlanService.findOneWorkout(workoutId, mockUser),
-      ).rejects.toThrow(`Workout with ID ${workoutId} not found`);
     });
-    it('Therefore, call the correct relations if they are passed in.', async () => {
-      workoutRepoMock.findOneOrFail.mockResolvedValue(mockWorkout);
-      const relations = ['exercises'];
-      await workPlanService.findOneWorkout('workout-123', mockUser, relations);
-      expect(workoutRepoMock.findOneOrFail).toHaveBeenCalledWith({
-        where: { id: 'workout-123', user: mockUser },
-        relations: relations,
+  });
+
+  describe('updateWorkout', () => {
+    it('should trigger cloneWorkout when schedule (startDate) changes', async () => {
+      jest.spyOn(service, 'findOneWorkout').mockResolvedValue(mockWorkout);
+      const cloneSpy = jest
+        .spyOn(service as any, 'cloneWorkout')
+        .mockResolvedValue({ id: 'w-cloned' });
+      const updateDto = { startDate: '2024-02-01', endDate: '2024-02-07' };
+      const result = await service.updateWorkout('w-1', mockUser, updateDto);
+      expect(cloneSpy).toHaveBeenCalled();
+      expect(result).toEqual({ id: 'w-cloned' });
+    });
+    it('should only update name (no clone) when schedule is same', async () => {
+      jest.spyOn(service, 'findOneWorkout').mockResolvedValue(mockWorkout);
+      const cloneSpy = jest.spyOn(service as any, 'cloneWorkout');
+      const updateDto = { name: 'New Name' };
+      mockWorkoutRepo.save.mockResolvedValue({
+        ...mockWorkout,
+        name: 'New Name',
       });
+      const result = await service.updateWorkout('w-1', mockUser, updateDto);
+      expect(cloneSpy).not.toHaveBeenCalled();
+      expect(mockWorkoutRepo.save).toHaveBeenCalled();
+      expect(result.name).toBe('New Name');
     });
   });
 
   describe('deleteWorkoutById', () => {
-    it('should successfully delete a workout', async () => {
-      const workoutId = 'id';
-      const mockWorkout = { id: workoutId, exercises: [] };
+    it('should cleanup files and remove workout', async () => {
+      const workoutWithFiles = {
+        ...mockWorkout,
+        exercises: [
+          { thumbnail: 'thumb.jpg', videoUrl: 'video.mp4' },
+          { thumbnail: null, videoUrl: 'video2.mp4' },
+        ],
+      };
       jest
-        .spyOn(workPlanService, 'findOneWorkout')
-        .mockResolvedValue(mockWorkout as any);
-      workoutRepoMock.remove = jest.fn().mockResolvedValue(mockWorkout);
-      await workPlanService.deleteWorkoutById(workoutId, mockUser);
-      expect(workoutRepoMock.remove).toHaveBeenCalledWith(mockWorkout);
+        .spyOn(service, 'findOneWorkout')
+        .mockResolvedValue(workoutWithFiles as any);
+
+      await service.deleteWorkoutById('w-1', mockUser);
+      expect(mockUploadService.cleanupFile).toHaveBeenCalledTimes(3);
+      expect(mockWorkoutRepo.remove).toHaveBeenCalled();
     });
-    it('should throw NotFoundException if workout not found or not owned by user', async () => {
-      const workoutId = 'non-existent-id';
-      workoutRepoMock.remove.mockClear();
-      const spy = jest
-        .spyOn(workPlanService, 'findOneWorkout')
-        .mockRejectedValue(
-          new NotFoundException(`Workout with ID "${workoutId}" not found`),
-        );
-      await expect(
-        workPlanService.deleteWorkoutById(workoutId, mockUser),
-      ).rejects.toThrow(NotFoundException);
-      expect(workoutRepoMock.remove).not.toHaveBeenCalled();
-      spy.mockRestore();
+
+    it('should handle workout with no exercises', async () => {
+      jest.spyOn(service, 'findOneWorkout').mockResolvedValue(mockWorkout); // mockWorkout có exercises = []
+      await service.deleteWorkoutById('w-1', mockUser);
+      expect(mockUploadService.cleanupFile).not.toHaveBeenCalled();
+      expect(mockWorkoutRepo.remove).toHaveBeenCalled();
     });
   });
 
-  describe('updateWorkoutName', () => {
-    const id = 'id';
-    const newName = 'Leg Day Extreme';
-    const workout = {
-      id: id,
-      name: 'Old Name',
-      user: mockUser,
+  describe('generateAndSave (AI)', () => {
+    const aiResponse = {
+      name: 'AI Plan',
+      startDate: '2024-01-01',
+      endDate: '2024-01-02',
+      daysOfWeek: [1],
+      scheduleItems: [{ date: '2024-01-01' }],
+      exercises: [{ name: 'Pushup' }],
     };
-    let findOneWorkoutSpy: jest.SpyInstance;
-    beforeEach(() => {
-      findOneWorkoutSpy = jest.spyOn(workPlanService, 'findOneWorkout');
-      jest.clearAllMocks();
-    });
-    it('should successfully update the workout name when found', async () => {
-      findOneWorkoutSpy.mockResolvedValue(workout);
-      const updatedWorkout = { ...workout, name: newName };
-      workoutRepoMock.save.mockResolvedValue(updatedWorkout);
-      const result = await workPlanService.updateNameWorkout(
-        id,
-        newName,
-        mockUser,
+
+    it('should save AI generated data successfully', async () => {
+      jest
+        .spyOn(service, 'generateFromChat')
+        .mockResolvedValue(aiResponse as any);
+      const mockManager = {
+        create: jest.fn((entity, data) => data),
+        save: jest.fn(async (entity, data) => data),
+      };
+      mockTransactionService.run.mockImplementation(async (cb) =>
+        cb(mockManager),
       );
-      expect(findOneWorkoutSpy).toHaveBeenCalledWith(id, mockUser);
-      expect(workoutRepoMock.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: id,
-          name: newName,
-          user: mockUser,
-        }),
+      const result = await service.generateAndSave('create plan', 'user-id');
+      expect(mockManager.create).toHaveBeenCalledWith(
+        'Workout',
+        expect.anything(),
       );
-      expect(workoutRepoMock.save).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(updatedWorkout);
-      expect(result.name).toBe(newName);
+      expect(mockManager.create).toHaveBeenCalledWith(
+        'Exercise',
+        expect.anything(),
+      );
+      expect(mockManager.save).toHaveBeenCalledTimes(3); // Workout + ScheduleItems + Exercises
     });
-    it('should throw NotFoundException if findOneWorkout throws it', async () => {
-      const notFoundError = new NotFoundException('Workout not found');
-      workoutRepoMock.findOneOrFail.mockRejectedValue(notFoundError);
-      await expect(
-        workPlanService.updateNameWorkout(id, newName, mockUser),
-      ).rejects.toThrow(NotFoundException);
-      expect(workoutRepoMock.save).not.toHaveBeenCalled();
-      expect(workoutRepoMock.findOneOrFail).toHaveBeenCalledTimes(1);
+
+    it('should throw InternalServerErrorException if DB save fails', async () => {
+      jest
+        .spyOn(service, 'generateFromChat')
+        .mockResolvedValue(aiResponse as any);
+      const mockManager = {
+        create: jest.fn(),
+        save: jest.fn().mockRejectedValue(new Error('DB Error')),
+      };
+      mockTransactionService.run.mockImplementation(async (cb) =>
+        cb(mockManager),
+      );
+
+      await expect(service.generateAndSave('msg', 'uid')).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+
+    it('should throw BadRequestException if AI returns null', async () => {
+      mockOpenAIService.chat.mockResolvedValue(null);
+      await expect(service.generateFromChat('msg')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
-  describe('WorkPlanClone', () => {
-    const workoutId = 'id';
-    const newId = 'newId';
-    const originalExercises = [
-      {
-        id: 'ex1',
-        name: 'Ngực trên',
-        sets: 4,
-        reps: 10,
-        restTime: 60,
-        note: '.',
-        muscleGroup: 'Ngực',
-      },
-      {
-        id: 'ex2',
-        name: 'Squat',
-        sets: 3,
-        reps: 8,
-        restTime: 90,
-        note: '.',
-        muscleGroup: 'Chân',
-      },
-    ];
-    const originalWorkout = {
-      id: workoutId,
-      name: 'Full Body A',
-      numExercises: 2,
-      user: mockUser,
-      exercises: originalExercises,
-    };
-    const newWorkout = {
-      id: newId,
-      name: originalWorkout.name + ' (Clone)',
-      user: mockUser,
-    };
-    const newExercisesCreated = originalExercises.map((ex, index) => ({
-      ...ex,
-      id: `newEx${index}`,
-      workoutId: newId,
-      user: mockUser,
-    }));
-    beforeEach(() => {
-      findOneWorkoutSpy = jest.spyOn(workPlanService, 'findOneWorkout');
-      jest.clearAllMocks();
-    });
-    it('should successfully clone the workout and its exercises', async () => {
-      workoutRepoMock.findOneOrFail.mockResolvedValue(originalWorkout);
-      workoutRepoMock.create.mockReturnValue(newWorkout);
-      workoutRepoMock.save.mockReturnValue(newWorkout);
-      mockExerciseService.create.mockImplementation((data) => {
-        const index = originalExercises.findIndex(
-          (ex) => ex.name === data.name,
-        );
-        return newExercisesCreated[index];
-      });
-      mockExerciseService.save.mockResolvedValue(newExercisesCreated);
-      const result = await workPlanService.cloneWorkout(workoutId, mockUser);
-      expect(workoutRepoMock.findOneOrFail).toHaveBeenCalledWith({
-        where: { id: workoutId, user: mockUser },
-        relations: ['exercises'],
-      });
-      expect(workoutRepoMock.create).toHaveBeenCalledWith({
-        name: 'Full Body A (Clone)',
-        numExercises: 2,
-        user: mockUser,
-      });
-      expect(workoutRepoMock.save).toHaveBeenCalledWith(newWorkout);
-      expect(mockExerciseService.create).toHaveBeenCalledTimes(
-        originalExercises.length,
-      );
-      expect(mockExerciseService.create).toHaveBeenCalledWith(
+  describe('cloneWorkout', () => {
+    it('should deeply clone workout, schedule and files', async () => {
+      jest.spyOn(service, 'findOneWorkout').mockResolvedValue({
+        ...mockWorkout,
+        exercises: [{ id: 'ex1', thumbnail: 't.jpg' }],
+      } as any);
+      jest
+        .spyOn(DateUtils, 'generateScheduleDays')
+        .mockReturnValue(['2024-02-01']);
+      mockWorkoutRepo.create.mockReturnValue({ id: 'new-w' });
+      mockWorkoutRepo.save.mockResolvedValue({ id: 'new-w' });
+      await service.cloneWorkout('w-1', mockUser, {
+        startDate: '2024-02-01',
+        endDate: '2024-02-02',
+        daysOfWeek: [1],
+      } as any);
+      expect(mockUploadService.cloneFile).toHaveBeenCalledWith('t.jpg');
+      expect(mockExerciseRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Ngực trên',
-          workoutId: newId,
-          user: mockUser,
+          id: undefined,
+          thumbnail: 'cloned_t.jpg',
         }),
       );
-      expect(mockExerciseService.save).toHaveBeenCalledWith(
-        newExercisesCreated,
-      );
-      expect(result.id).toBe(newId);
-      expect(result.name).toBe('Full Body A (Clone)');
-      expect(result.exercises.length).toBe(originalExercises.length);
     });
-    it('should throw NotFoundException if findOneWorkout throws it', async () => {
-      const notFoundError = new NotFoundException('Workout not found');
-      workoutRepoMock.findOneOrFail.mockRejectedValue(notFoundError);
+  });
+
+  describe('checkMissedWorkouts', () => {
+    it('should update status to Missed for past planned items', async () => {
+      const qb = createMockQueryBuilder();
+      const mockManager = {
+        getRepository: jest.fn().mockReturnValue({
+          createQueryBuilder: () => qb,
+        }),
+        createQueryBuilder: jest.fn().mockReturnValue(qb),
+      };
+      mockTransactionService.run.mockImplementation(async (cb) =>
+        cb(mockManager),
+      );
+      await service.checkMissedWorkouts(mockUser);
+      expect(qb.update).toHaveBeenCalledWith(ScheduleItem);
+      expect(qb.set).toHaveBeenCalledWith({ status: WorkoutStatus.Missed });
+      expect(qb.execute).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateItemStatus', () => {
+    it('should throw NotFoundException if item does not exist', async () => {
+      const qb = createMockQueryBuilder();
+      qb.getOne.mockResolvedValue(null); // Không tìm thấy
+
+      const mockManager = {
+        getRepository: jest
+          .fn()
+          .mockReturnValue({ createQueryBuilder: () => qb }),
+      };
+      mockTransactionService.run.mockImplementation(async (cb) =>
+        cb(mockManager),
+      );
+
       await expect(
-        workPlanService.cloneWorkout(workoutId, mockUser),
+        service.updateItemStatus('item-id', mockUser, WorkoutStatus.Completed),
       ).rejects.toThrow(NotFoundException);
-      expect(workoutRepoMock.save).not.toHaveBeenCalled();
-      expect(workoutRepoMock.findOneOrFail).toHaveBeenCalledTimes(1);
     });
   });
 });
