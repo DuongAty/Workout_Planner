@@ -18,10 +18,12 @@ import { applyExerciseFilters } from '../../filters/exercese-filter';
 import { UpdateWorkoutDto } from './dto/update-name-dto';
 import { TransactionService } from '../../transaction/transaction';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
-import { checkDateRange, DateUtils } from '../../utils/dateUtils/dateUtils';
+import { checkDateRange } from '../../utils/dateUtils/dateUtils';
 import { OpenAIService } from '../openai/openai.service';
-import { workoutAIPrompt } from './prompt/workout-ai.prompt';
+import { workoutAIPrompt, workoutAnalytics } from './prompt/workout-ai.prompt';
 import { CloneScheduleDto } from './dto/clone-workout.dto';
+import { RRule } from 'rrule';
+import { AnalyticsService } from 'src/common/service/analytics.service';
 
 @Injectable()
 export class WorkoutplanService {
@@ -35,6 +37,7 @@ export class WorkoutplanService {
     private openAIService: OpenAIService,
     @InjectRepository(ScheduleItem)
     private scheduleItemRepository: Repository<ScheduleItem>,
+    private analyticsService: AnalyticsService,
   ) {}
   async syncNumExercises(workoutId: string, manager?: EntityManager) {
     const exerciseRepo = manager
@@ -53,21 +56,24 @@ export class WorkoutplanService {
     startDate: string,
     endDate: string,
     daysOfWeek: number[],
-  ): ScheduleItem[] {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const items: ScheduleItem[] = [];
-    const current = new Date(start);
-    while (current <= end) {
-      if (daysOfWeek.includes(current.getDay())) {
-        const item = new ScheduleItem();
-        item.date = current.toISOString().split('T')[0];
-        item.status = WorkoutStatus.Planned;
-        items.push(item);
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    return items;
+  ): { items: ScheduleItem[]; rruleString: string } {
+    const rule = new RRule({
+      freq: RRule.WEEKLY,
+      byweekday: daysOfWeek,
+      dtstart: new Date(startDate),
+      until: new Date(endDate),
+    });
+
+    const items = rule.all().map((date) => {
+      const item = new ScheduleItem();
+      item.date = date.toISOString().split('T')[0];
+      item.status = WorkoutStatus.Planned;
+      return item;
+    });
+    return {
+      items,
+      rruleString: rule.toString(),
+    };
   }
 
   async createRecurringWorkout(
@@ -77,11 +83,14 @@ export class WorkoutplanService {
     return await this.transactionService.run<Workout>(async () => {
       const { name, startDate, endDate, daysOfWeek } = dto;
       checkDateRange(startDate, endDate);
-      const scheduleItems = this.generateScheduleItems(
+      const { items: scheduleItems, rruleString } = this.generateScheduleItems(
         startDate,
         endDate,
         daysOfWeek,
       );
+      if (scheduleItems.length === 0) {
+        throw new BadRequestException('Không tìm thấy ngày tập phù hợp.');
+      }
       const plannedDates = scheduleItems.map((item) => item.date);
       const existingItems = await this.scheduleItemRepository.find({
         where: {
@@ -92,14 +101,14 @@ export class WorkoutplanService {
       if (existingItems.length > 0) {
         const conflictDates = existingItems.map((item) => item.date);
         throw new BadRequestException(
-          `Không thể tạo lịch vì các ngày sau đã có bài tập: ${conflictDates.join(', ')}`,
+          `Trùng lịch tại các ngày: ${conflictDates.join(', ')}`,
         );
       }
       const workout = this.workoutPlanService.create({
         name,
         startDate,
         endDate,
-        daysOfWeek,
+        recurrenceRule: rruleString,
         user,
         scheduleItems,
       });
@@ -295,7 +304,7 @@ export class WorkoutplanService {
     return (
       this.isDateChanged(dto.startDate, original.startDate) ||
       this.isDateChanged(dto.endDate, original.endDate) ||
-      this.isDaysOfWeekChanged(dto.daysOfWeek, original.daysOfWeek)
+      this.isDaysOfWeekChanged(dto.daysOfWeek, original.recurrenceRule)
     );
   }
 
@@ -306,12 +315,25 @@ export class WorkoutplanService {
     return !!updated && updated !== original;
   }
 
+  private getDaysFromRRuleString(rruleStr: string): number[] {
+    try {
+      const rule = RRule.fromString(rruleStr);
+      return rule.options.byweekday;
+    } catch {
+      return [];
+    }
+  }
+
   private isDaysOfWeekChanged(
-    updated?: number[],
-    original?: number[],
+    updatedDays?: number[],
+    originalRRule?: string,
   ): boolean {
-    if (!updated) return false;
-    return this.normalizeDays(updated) !== this.normalizeDays(original);
+    if (!updatedDays || !originalRRule) return false;
+    const originalDays = this.getDaysFromRRuleString(originalRRule);
+    return (
+      JSON.stringify([...updatedDays].sort()) !==
+      JSON.stringify([...originalDays].sort())
+    );
   }
 
   private normalizeDays(days?: number[]): string | null {
@@ -325,8 +347,12 @@ export class WorkoutplanService {
   async updateWorkout(id: string, user: User, updateDto: UpdateWorkoutDto) {
     return this.transactionService.run(async () => {
       const original = await this.findOneWorkout(id, user);
+
       const finalStartDate = updateDto.startDate ?? original.startDate;
       const finalEndDate = updateDto.endDate ?? original.endDate;
+      const finalDays =
+        updateDto.daysOfWeek ??
+        this.getDaysFromRRuleString(original.recurrenceRule);
       checkDateRange(finalStartDate, finalEndDate);
       const hasTimeChanged = this.hasScheduleChanged(original, updateDto);
       if (hasTimeChanged) {
@@ -334,8 +360,8 @@ export class WorkoutplanService {
           name: updateDto.name ?? original.name,
           startDate: finalStartDate,
           endDate: finalEndDate,
+          daysOfWeek: finalDays,
           estimatedCalories: original.estimatedCalories,
-          daysOfWeek: updateDto.daysOfWeek ?? original.daysOfWeek,
         });
       }
       if (this.hasNameChanged(original, updateDto)) {
@@ -353,19 +379,16 @@ export class WorkoutplanService {
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async () => {
       const original = await this.findOneWorkout(id, user, ['exercises']);
-      const scheduleDates = DateUtils.generateScheduleDays(
+      const { items: scheduleItems, rruleString } = this.generateScheduleItems(
         dto.startDate,
         dto.endDate,
         dto.daysOfWeek,
       );
-      const scheduleItems = scheduleDates.map((date) => ({
-        date,
-        status: WorkoutStatus.Planned,
-      }));
       const newWorkout = await this.workoutPlanService.save(
         this.workoutPlanService.create({
           ...dto,
           name: dto.name || original.name,
+          recurrenceRule: rruleString,
           scheduleItems,
           user,
           numExercises: original.exercises.length,
@@ -429,26 +452,33 @@ export class WorkoutplanService {
     }
     return await this.transactionService.run(async (manager: EntityManager) => {
       try {
+        const { items: scheduleItems, rruleString } =
+          this.generateScheduleItems(
+            aiData.startDate,
+            aiData.endDate,
+            aiData.daysOfWeek.map(Number),
+          );
+        console.log('scheduleItems từ generate:', scheduleItems);
         const workout = manager.create('Workout', {
           id: aiData.id,
           name: aiData.name,
           numExercises: aiData.numExercises,
           startDate: aiData.startDate,
           endDate: aiData.endDate,
-          daysOfWeek: aiData.daysOfWeek.map(Number),
+          recurrenceRule: rruleString,
           estimatedCalories: aiData.estimatedCalories,
           user: { id: userId },
         });
-        const savedWorkout = await manager.save(workout);
-        const scheduleItems = aiData.scheduleItems.map((item: any) =>
+        const savedWorkout = (await manager.save(workout)) as Workout;
+        const linkedScheduleItems = aiData.scheduleItems.map((item) =>
           manager.create('ScheduleItem', {
             id: item.id,
             date: item.date,
-            status: WorkoutStatus.Planned,
-            workout: savedWorkout,
+            status: item.status,
+            workout: { id: savedWorkout.id },
           }),
         );
-        await manager.save('ScheduleItem', scheduleItems);
+        await manager.save('ScheduleItem', linkedScheduleItems);
         const exercises = aiData.exercises.map((ex: any) =>
           manager.create('Exercise', {
             ...ex,
@@ -461,5 +491,17 @@ export class WorkoutplanService {
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
+  }
+
+  async generateWorkoutStatistics(userId: string) {
+    const prompt = await this.analyticsService.getPastWorkoutsAnalysis(userId);
+    if (typeof prompt === 'string' && prompt.startsWith('Bạn chưa có')) {
+      return { message: prompt };
+    }
+    const data = await this.openAIService.Statistics(prompt);
+    if (!data) {
+      throw new BadRequestException('AI response data is incomplete');
+    }
+    return data;
   }
 }

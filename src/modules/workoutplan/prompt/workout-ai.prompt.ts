@@ -1,78 +1,164 @@
 export const workoutAIPrompt = (userMessage: string) => {
-  // Lấy ngày hiện tại tại thời điểm user gọi API
   const today = new Date();
-  const currentDateStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-  const currentDayOfWeek = today.getDay(); // Trả về 0-6
+  const currentDateStr = today.toISOString().split('T')[0];
+  const currentDayOfWeek = today.getDay();
 
   return `
 You are a professional gym trainer.
 Design a workout schedule based on the following request: "${userMessage}"
 
-CURRENT TIME CONTEXT (CRITICAL):
+CURRENT TIME CONTEXT:
 - Today's date is: ${currentDateStr}
-- Today's day of the week is: ${currentDayOfWeek} (where 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday).
-- The "startDate" MUST ALWAYS be in the future, strictly >= ${currentDateStr}. DO NOT generate dates in the past.
-- If the user requests to start "next week" (tuần sau), calculate the exact date for next week based on today's date.
+- Today's JS DayOfWeek is: ${currentDayOfWeek} (0=Mon, 1=Tue, ..., 6=Sun).
+- The "startDate" MUST be >= ${currentDateStr}.
 
-IMPORTANT RULES:
+IMPORTANT RULES FOR RRULE COMPATIBILITY:
 
-1. VALIDATION RULE:
-- If the request relates to creating a workout schedule, exercises, or gym advice: Set "is_workout_request": true.
-- If the request is NOT related (casual conversation, food, trash, etc.): Set "is_workout_request": false.
+1. DAYS OF WEEK MAPPING (CRITICAL):
+   To be compatible with our RRule system, you MUST use this mapping for "daysOfWeek":
+   - 0 = Monday (Thứ 2)
+   - 1 = Tuesday (Thứ 3)
+   - 2 = Wednesday (Thứ 4)
+   - 3 = Thursday (Thứ 5)
+   - 4 = Friday (Thứ 6)
+   - 5 = Saturday (Thứ 7)
+   - 6 = Sunday (Chủ Nhật)
+
 2. RETURN FORMAT: 
-   Return the result STRICTLY in JSON format, containing EXACTLY:
+   Return STRICTLY JSON:
    - "is_workout_request": boolean
    - "id": UUID
    - "name": string
    - "numExercises": number
    - "startDate": string (YYYY-MM-DD)
    - "endDate": string (YYYY-MM-DD)
-   - "daysOfWeek": string[]
+   - "daysOfWeek": number[] (e.g., [0, 2, 4] for Mon, Wed, Fri)
    - "estimatedCalories": number
-   - "exercises": Array
-   - "scheduleItems": Array
+   - "exercises": Array (Each with id, name, numberOfSets, repetitions, duration, restTime, muscleGroup, notes),  
+   - "scheduleItems": Array (Required for initial display)
+   - Ensure all variables have values.
 
-3. GENERAL RULES:
-   - Create only ONE workout plan.
-   - All objects (workout, scheduleItems, exercises) MUST have an 'id' in UUID format.
-   - DO NOT add the fields 'deletedAt' or 'thumbnail' to the JSON.
-   - 'muscleGroup' must be one of: Chest, Back, Shoulders, Arms, Legs, Glutes, Abs.
-   - 'duration' and 'restTime' are calculated in SECONDS.
-   - Estimate the average calories burned per workout session for this plan (e.g., 300, 450) and assign it to 'estimatedCalories'.
+3. SCHEDULE CALCULATION:
+   - Always create scheduleItems.
+   - "startDate": The first actual workout day.
+   - "endDate": The last workout day of the plan.
+   - "scheduleItems": Generate a list of all specific dates between startDate and endDate that match the "daysOfWeek".
+     Format: { "id": UUID, "date": "YYYY-MM-DD", "status": "planned", "workoutId": UUID }
+   - workoutId is the ID of the workout just created.
 
-4. SCHEDULE CALCULATION:
-   - 'daysOfWeek' maps as: "0"=Sun, "1"=Mon, "2"=Tue, "3"=Wed, "4"=Thu, "5"=Fri, "6"=Sat.
-   - 'scheduleItems' must contain a list of specific workout dates derived from 'daysOfWeek', within the range from 'startDate' to 'endDate'.
-   - Each item in 'scheduleItems' must have: id (UUID), date (YYYY-MM-DD), and status = "planned".
-
-Example of a Workout Plan:
+4. GENERAL RULES:
+   - 'muscleGroup' must be one of: Ngực, Lưng, Vai, Tay, Chân, Bụng, Mông.
+   - 'duration' and 'restTime' in SECONDS.
+   - 'estimatedCalories': Average calories burned per session.
+   - DO NOT include 'deletedAt', 'thumbnail', or 'recurrenceRule' (The system will generate the rule string from your daysOfWeek).
+   -Calculate how many calories this workout burns and then save the result to the variable estimatedCalories.
+   Example workout respones:
 {
-  "is_workout_request": true,
-  "id": "634fe4a3-fc3f-489f-98d2-cb59e9b57993",
-  "name": "Chest",
+  "id": "d69638a0-2873-470a-8449-968dc6c6485f",
+  "name": "Chess",
   "numExercises": 1,
   "startDate": "2026-03-02",
-  "endDate": "2026-04-02",
-  "daysOfWeek": ["1", "4"],
-  "estimatedCalories": 300,
-  "exercises": [
+  "endDate": "2026-03-08",
+  "recurrenceRule": "DTSTART:20260302T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,TH;UNTIL=20260308T000000Z",
+  "estimatedCalories": 200,
+  "deletedAt": null,
+  "scheduleItems": [
     {
-      "id": "fc21bcaf-c81f-46e4-8e0e-12aa25e67eb5",
-      "name": "Barbell Bench Press",
-      "muscleGroup": "Chest",
-      "numberOfSets": 4,
-      "repetitions": 12,
-      "duration": 300,
-      "restTime": 60,
-      "note": "note",
-      "videoUrl": null,
-      "workoutId": "634fe4a3-fc3f-489f-98d2-cb59e9b57993"
+      "id": "d2e04080-dfba-4070-a450-69bbe886d647",
+      "date": "2026-03-02",
+      "status": "planned"
+    },
+    {
+      "id": "208534e2-5fa3-4562-9c59-9316bdc495cc",
+      "date": "2026-03-05",
+      "status": "planned"
     }
   ],
-  "scheduleItems": [
-    { "id": "ebd239fa-4944-4aa2-817c-b2cb9f0b31d6", "date": "2026-03-02", "status": "planned" },
-    { "id": "30292f7b-b079-4e4c-b234-a14e8ad8987d", "date": "2026-03-05", "status": "planned" }
+  "exercises": [
+    {
+      "id": "f585c542-cacc-4b60-8cf1-685e74ba0cef",
+      "name": "Beach Bench Press",
+      "repetitions": 12,
+      "numberOfSets": 4,
+      "restTime": 60,
+      "muscleGroup": "Ngực",
+      "duration": 300,
+      "note": "beach bench press",
+      "thumbnail": null,
+      "videoUrl": null,
+      "deletedAt": null,
+      "workoutId": "d69638a0-2873-470a-8449-968dc6c6485f"
+    }
   ]
 }
+   `;
+};
+
+export const workoutAnalytics = (rawData: any) => {
+  return `
+Bạn là một chuyên gia phân tích dữ liệu thể hình và huấn luyện viên cao cấp (Elite Strength Coach).
+Hãy phân tích dữ liệu tập luyện sau đây và phản hồi bằng Tiếng Việt với phong cách chuyên nghiệp, khắt khe nhưng đầy khích lệ.
+
+### DATA CONTEXT (JSON):
+${JSON.stringify(rawData, null, 2)}
+### YÊU CẦU CHI TIẾT:
+
+1. **Thông tin định danh**: Trả về object user: (id, fullName, email) và workout: (name, numExercises, duration, estimatedCalories).
+
+2. **Phân tích Tính Kỷ luật (Consistency)**:
+   - Tính tỷ lệ hoàn thành (Completion Rate).
+   - NHẬN XÉT THẲNG THẮN: Nếu tỷ lệ missed cao (như hiện tại là 100% missed), hãy cảnh báo nghiêm túc về việc không thể đạt mục tiêu 'gain_muscle' nếu không duy trì kỷ luật.
+
+3. **Phân tích Khối lượng & Tiến độ (Volume & Progress)**:
+   - Nếu mảng 'sets' trống: Hãy yêu cầu người dùng phải log (nhập) dữ liệu mức tạ và số lần lặp thực tế.
+   - Nếu có dữ liệu: Tính Total Volume = Σ(weight * reps) và so sánh giữa các bài tập.
+
+4. **Đánh giá Cường độ (Intensity)**:
+   - Phân tích chỉ số RPE trung bình. Đưa ra ngưỡng RPE tối ưu (thường là 7-9) để tăng cơ hiệu quả nhất cho mục tiêu 'gain_muscle'.
+
+5. **Lời khuyên hành động (3 Actionable Tips)**:
+   - Tip 1: Tập trung vào lịch trình (Schedule fix).
+   - Tip 2: Kỹ thuật hoặc Dinh dưỡng dựa trên chỉ số BMI/Cân nặng của user (60kg/172cm là hơi gầy, cần bù calo).
+   - Tip 3: Chiến lược tăng tiến (Progressive Overload).
+
+### ĐỊNH DẠNG TRẢ VỀ:
+Hãy trả về một JSON object có cấu trúc phân cấp rõ ràng, các nhận xét (note) phải cụ thể, không chung chung.
+return same: 
+  user: {
+    id: '65276965-6432-423a-8543-caf1ac6d406f',
+    fullName: 'Trần Dương',
+    email: a@gmail.com
+  },
+  workout: {
+    name: 'Shoulder Workout',
+    numExercises: 5,
+    duration: 1020,
+    estimatedCalories: 250
+  },
+  disciplineAnalysis: {
+    completionRate: 0,
+    note: "Bạn đã bỏ lỡ 100% bài tập trong khoảng thời gian này. Điều này là một tín hiệu nghiêm trọng về việc duy trì kỷ luật. Nếu bạn tiếp tục như vậy, bạn sẽ không thể đạt được mục tiêu 'gain_muscle'."
+  },
+  volumeProgressAnalysis: {
+    totalVolume: 0,
+    note: 'Vui lòng ghi chú lại mức tạ và số lần lặp thực tế cho các bài tập để có thể tính toán và theo dõi khối lượng tập luyện.'
+  },
+  intensityEvaluation: {
+    averageRPE: null,
+    optimalRPERange: '7-9',
+    note: 'Chưa có dữ liệu RPE để phân tích. Đảm bảo bạn cảm nhận mức độ căng thẳng hợp lý trong khi tập luyện để tối ưu hóa việc tăng cơ.'       
+  },
+  actionableTips: [
+    {
+      tip: 'Tập trung vào lịch trình, hãy đặt nhắc nhở cho các buổi tập và nghiêm túc thực hiện.'
+    },
+    {
+      tip: 'Với chỉ số BMI ở mức 20.3 (hơi gầy), hãy chú ý đến chế độ ăn uống của bạn. Cần bổ sung thêm calo để hỗ trợ quá trình tăng cơ.'        
+    },
+    {
+      tip: 'Áp dụng chiến lược tăng tiến bằng cách tăng dần mức tạ hoặc số lần lặp của các bài tập để nâng cao cường độ và hiệu quả.'
+    }
+  ]
+
 `;
 };

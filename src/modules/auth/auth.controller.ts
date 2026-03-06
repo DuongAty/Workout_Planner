@@ -26,6 +26,7 @@ import { mediaFileFilter, storageConfig } from 'src/upload/file-upload';
 import { IMAGE_MIMETYPE_REGEX } from 'src/upload/file-upload.constants';
 import { User } from 'src/modules/user/user.entity';
 import { GetUser } from '../user/get-user.decorator';
+import { I18nLang } from 'nestjs-i18n';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -57,7 +58,8 @@ export class AuthController {
   @Get('/me')
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
-  getMe(@Req() req) {
+  getMe(@Req() req, @I18nLang() lang: string) {
+    console.log('lang', lang);
     return req.user;
   }
 
@@ -76,6 +78,7 @@ export class AuthController {
   }
 
   @Post('/refresh')
+
   async refresh(
     @Body('userId') userId: string,
     @Body('refreshToken') refreshToken: string,

@@ -18,6 +18,7 @@ export class JobService {
     date: string;
     numExercises: number;
     url: string;
+    lang: string;
   }) {
     return this.emailQueue.add('send-email', data, {
       attempts: 3,
@@ -25,8 +26,47 @@ export class JobService {
       removeOnComplete: true,
     });
   }
-  async addOpenAIJob(data: { prompt: string; userId?: string; type?: string }) {
-    return this.openaiQueue.add('openai-generate', data, {
+  async addOpenAIJobWorkout(data: {
+    prompt: string;
+    userId?: string;
+    type?: string;
+  }) {
+    return this.openaiQueue.add('openai-workout-generate', data, {
+      attempts: 3,
+      backoff: 5000,
+      removeOnComplete: true,
+    });
+  }
+
+  async addOpenAIJobWorkoutStatistics(data: {
+    userId?: string;
+    type?: string;
+  }) {
+    return this.openaiQueue.add('openai-workout-statistics-generate', data, {
+      attempts: 3,
+      backoff: 5000,
+      removeOnComplete: true,
+    });
+  }
+
+  async addOpenAIJobCalo(data: {
+    userId?: string;
+    prompt: string;
+    type?: string;
+  }) {
+    return this.openaiQueue.add('openai-calo-generate', data, {
+      attempts: 3,
+      backoff: 5000,
+      removeOnComplete: true,
+    });
+  }
+
+  async addRegisterEmailJob(data: {
+    email: string;
+    fullname: string;
+    lang: string;
+  }) {
+    return this.emailQueue.add('send-register-email', data, {
       attempts: 3,
       backoff: 5000,
       removeOnComplete: true,

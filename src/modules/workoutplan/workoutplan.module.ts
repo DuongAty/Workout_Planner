@@ -21,6 +21,8 @@ import { User } from '../user/user.entity';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
 import { JobsModule } from 'src/jobs/job.module';
 import { NotificationService } from '../notification/notification.service';
+import { AnalyticsService } from 'src/common/service/analytics.service';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { NotificationService } from '../notification/notification.service';
       User,
       ScheduleItem,
     ]),
+    BullModule.registerQueue({ name: 'openai' }),
     AuthModule,
     LoggerModule,
     JobsModule,
@@ -51,6 +54,7 @@ import { NotificationService } from '../notification/notification.service';
     OpenAIService,
     NutritionService,
     NotificationService,
+    AnalyticsService,
   ],
   exports: [WorkoutplanService],
 })

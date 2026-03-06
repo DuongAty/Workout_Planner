@@ -16,22 +16,22 @@
       <h1>WORKOUT PLANNER</h1>
     </div>
     <div class="content">
-      <h2>Chào {{fullname}}, 💪</h2>
-      <p>Hôm nay (<b>{{date}}</b>), bạn có một lộ trình tập luyện đã được lên lịch sẵn.</p>
+      <h2>{{hello}} {{fullname}}, 💪</h2>
+      <p>{{today}} (<b>{{date}}</b>), {{remid}}</p>
       
       <div class="workout-info">
-        <p style="margin: 0; font-size: 18px;"><b>Chủ đề:</b> {{workoutName}}</p>
-        <p style="margin: 5px 0 0 0; color: #6b7280;">Số lượng bài tập: {{numExercises}} bài</p>
+        <p style="margin: 0; font-size: 18px;"><b>{{workout_name}} </b> {{workoutName}}</p>
+        <p style="margin: 5px 0 0 0; color: #6b7280;">{{num_Exercises}} {{numExercises}} {{ex}}</p>
       </div>
 
-      <p>Việc duy trì kỷ luật là chìa khóa của thành công. Đừng để những nỗ lực trước đó lãng phí!</p>
+      <p>{{desdescription}}</p>
 
       <div class="button-wrapper">
-        <a href="{{url}}" class="button">XEM CHI TIẾT LỊCH TẬP</a>
+        <a href="{{url}}" class="button">{{link}}</a>
       </div>
     </div>
     <div class="footer">
-      © 2026 Workout Planner App. Mọi quyền được bảo lưu.
+      © 2026 Workout Planner App.
     </div>
   </div>
 </div>

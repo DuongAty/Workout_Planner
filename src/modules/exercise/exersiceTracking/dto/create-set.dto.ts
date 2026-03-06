@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumber, IsInt, IsOptional, Min, Max } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class CreateSetDto {
   @ApiProperty({
@@ -7,18 +8,21 @@ export class CreateSetDto {
     description: 'Dumbbell weight (kg or lbs)',
     type: Number,
   })
-  @IsNumber()
-  @Min(0)
-  @Max(300)
+  @IsNumber(
+    {},
+    { message: i18nValidationMessage('common.validation.IsNumber') },
+  )
+  @Min(0, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(300, { message: i18nValidationMessage('common.validation.Max') })
   weight: number;
 
   @ApiProperty({
     example: 10,
     description: 'Number of repetitions (reps)',
   })
-  @IsInt()
-  @Min(1)
-  @Max(15)
+  @IsInt({ message: i18nValidationMessage('common.validation.IsInt') })
+  @Min(1, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(15, { message: i18nValidationMessage('common.validation.Max') })
   reps: number;
 
   @ApiPropertyOptional({
@@ -27,8 +31,11 @@ export class CreateSetDto {
     type: Number,
   })
   @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(10)
+  @IsNumber(
+    {},
+    { message: i18nValidationMessage('common.validation.IsNumber') },
+  )
+  @Min(1, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(10, { message: i18nValidationMessage('common.validation.Max') })
   rpe?: number;
 }

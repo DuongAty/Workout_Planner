@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsString, IsNotEmpty } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 import { trim } from 'src/constants/constants';
 
 export class LogMealDto {
@@ -9,7 +10,7 @@ export class LogMealDto {
     description: 'Mô tả bữa ăn của bạn',
   })
   @Transform(trim)
-  @IsString()
+  @IsString({ message: i18nValidationMessage('common.validation.IsString') })
   @IsNotEmpty()
   meal: string;
 }

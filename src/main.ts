@@ -6,6 +6,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './document-builder';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -22,10 +23,16 @@ async function bootstrap() {
   const port = configService.get<number>('PORT')!;
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
-    new ValidationPipe({
+    new I18nValidationPipe({
       whitelist: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
+  );
+  app.useGlobalFilters(
+    new I18nValidationExceptionFilter({ detailedErrors: false }),
   );
   const config = DocumentConfig();
   const document = SwaggerModule.createDocument(app, config);

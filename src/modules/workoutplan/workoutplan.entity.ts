@@ -32,11 +32,11 @@ export class Workout {
   @Column({ type: 'date', nullable: true })
   endDate: string;
 
+  @Column({ type: 'text' })
+  recurrenceRule: string;
+
   @Column({ type: 'float', default: 0 })
   estimatedCalories: number;
-
-  @Column({ type: 'simple-array', nullable: true })
-  daysOfWeek: number[];
 
   @DeleteDateColumn()
   deletedAt: Date;

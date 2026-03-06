@@ -52,7 +52,7 @@ export class User {
   @Column({ type: 'text', nullable: true })
   refreshToken?: string | null;
 
-  @OneToMany((_type) => Workout, (workout) => workout.user, { eager: true })
+  @OneToMany((_type) => Workout, (workout) => workout.user, { eager: false })
   workout: Workout[];
 
   @OneToMany(() => Token, (token) => token.user)

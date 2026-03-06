@@ -1,0 +1,38 @@
+{
+    "validation": {
+        "IsEmail": "{property} Please enter a valid email address",
+        "MinLength": "{property} Please enter at least {constraints.0} characters",
+        "MaxLength": "{property} Please enter no more than {constraints.0} characters",
+        "Min": "{property} Please enter a value greater than or equal to {constraints.0}",
+        "Max": "{property} Please enter a value less than or equal to {constraints.0}",
+        "IsArray": "{property} Please enter an array",
+        "IsString": "{property} Please enter a string",
+        "IsInt": "{property} Please enter an integer",
+        "IsNumber": "{property} Please enter a number",
+        "Password": "The password is too weak: It needs to include uppercase letters, lowercase letters, and numbers/special characters.",
+        "IsEnum": "{property} Please enter one of the following values: {constraints.1}. (You entered: {value})"
+    },
+    "registration": {
+        "subject" : "Registration Suscessful",
+        "welcome": "WELCOME!",
+        "hello": "Hello",
+        "welcome_text": "Welcome to Workout Planner. Your account has been registered.",
+        "welcome_text2":"Start your fitness journey by creating your first workout plan today!",
+        "login": "LOGIN NOW",
+        "contact": "If you have any questions, please email us.",
+        "desdescription": "You will receive this email if you register at workout-planner.com"
+    },
+    "emailRemider":{
+        "ready": "Ready to start? ",
+        "workout": "Workout",
+        "hello": "Hello ",
+        "today": "Today: ",
+        "remid": " you have one exercise reminder has been set.",
+        "workout_name": "Workout name: ",
+        "num_Exercises": "Number of exercises: ",
+        "ex": " exercises",
+        "desdescription":"Reminder is a key to fitness. Don't forget the things before it!",
+        "link": "VIEW DETAILS"
+    }
+
+}

@@ -27,6 +27,7 @@ export class NutritionService {
       );
     }
     const log = this.nutritionRepo.create({
+      id: aiData.id,
       mealDescription,
       calories: aiData.totalCalories,
       protein: aiData.protein,

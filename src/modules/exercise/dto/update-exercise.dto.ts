@@ -16,6 +16,7 @@ import {
   MIN_TIME,
   trim,
 } from '../../../constants/constants';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class UpdateExerciseDto {
   @Transform(trim)
@@ -26,7 +27,9 @@ export class UpdateExerciseDto {
   @IsOptional()
   @IsNotEmpty()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(50, {
+    message: i18nValidationMessage('common.validation.MaxLength'),
+  })
   name?: string;
 
   @ApiProperty({
@@ -47,8 +50,8 @@ export class UpdateExerciseDto {
   })
   @Type(() => Number)
   @IsOptional()
-  @Min(1)
-  @Max(5)
+  @Min(1, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(5, { message: i18nValidationMessage('common.validation.Max') })
   numberOfSets: number;
 
   @ApiProperty({
@@ -58,8 +61,8 @@ export class UpdateExerciseDto {
   })
   @Type(() => Number)
   @IsOptional()
-  @Min(1)
-  @Max(15)
+  @Min(1, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(15, { message: i18nValidationMessage('common.validation.Max') })
   repetitions: number;
 
   @ApiProperty({
@@ -67,8 +70,8 @@ export class UpdateExerciseDto {
     description: 'Rest time ',
   })
   @Type(() => Number)
-  @Min(MIN_TIME)
-  @Max(MAX_TIME)
+  @Min(MIN_TIME, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(MAX_TIME, { message: i18nValidationMessage('common.validation.Max') })
   @IsOptional()
   restTime: number;
 
@@ -77,8 +80,8 @@ export class UpdateExerciseDto {
     description: 'Total time of exercise ',
   })
   @Type(() => Number)
-  @Min(MIN_TIME)
-  @Max(MAX_TIME)
+  @Min(MIN_TIME, { message: i18nValidationMessage('common.validation.Min') })
+  @Max(MAX_TIME, { message: i18nValidationMessage('common.validation.Max') })
   @IsOptional()
   duration: number;
 
@@ -89,6 +92,8 @@ export class UpdateExerciseDto {
   })
   @IsOptional()
   @IsNotEmpty()
-  @MaxLength(MAX_LENGHT)
+  @MaxLength(MAX_LENGHT, {
+    message: i18nValidationMessage('common.validation.MaxLength'),
+  })
   note: string;
 }

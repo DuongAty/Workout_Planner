@@ -15,6 +15,11 @@ import {
 } from '../auth/dto/user.profile.dto';
 import { AuthProvider } from '../../enums/user-enum';
 import { Token } from './fcmToken/token.entity';
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
+import { ConfigService } from '@nestjs/config';
+import { JobService } from 'src/jobs/job.service';
+import { I18nContext } from 'nestjs-i18n';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -22,24 +27,38 @@ export class UsersRepository {
     private userRepository: Repository<User>,
     @InjectRepository(Token)
     private tokenRepository: Repository<Token>,
+    @InjectQueue('email') private mailQueue: Queue,
+    private jobService: JobService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
-    const { fullname, username, password } = createUserDto;
-    const existingUser = await this.userRepository.findOneBy({ username });
+    const { email, fullname, username, password } = createUserDto;
+    const existingUser = await this.userRepository.findOneBy([
+      { username },
+      { email },
+    ]);
     if (existingUser) {
-      throw new ConflictException('Username already exits');
+      throw new ConflictException('Username or Email already exits');
     }
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
     const user = this.userRepository.create({
+      email,
       fullname,
       username,
       password: hashedPassword,
       provider: AuthProvider.LOCAL,
     });
     try {
-      return await this.userRepository.save(user);
+      const saveUser = await this.userRepository.save(user);
+      const currentLang = I18nContext.current()?.lang || 'vi';
+      await this.jobService.addRegisterEmailJob({
+        email: saveUser.email,
+        fullname: saveUser.fullname,
+        lang: currentLang,
+      });
+
+      return saveUser;
     } catch (error) {
       throw new InternalServerErrorException();
     }
@@ -56,7 +75,7 @@ export class UsersRepository {
     });
 
     if (existingToken) {
-      return await this.tokenRepository.update(existingToken.userId, {
+      return await this.tokenRepository.update(existingToken.id, {
         fcmToken: dto.fcmToken,
       });
     } else {
@@ -117,9 +136,7 @@ export class UsersRepository {
       });
 
       if (existingUser) {
-        throw new ConflictException(
-          'Email này đã được sử dụng bởi một tài khoản khác',
-        );
+        throw new ConflictException('common.errors.emailAlreadyExists');
       }
     }
     await this.userRepository.update(user.id, updateUserDto);

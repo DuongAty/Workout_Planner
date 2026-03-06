@@ -11,4 +11,5 @@ HANDLING RULES:
 3. If the user does not specify the quantity (eg: "1 bowl of pho"), use the average standard quantity of Vietnamese restaurants.
 4. Automatically detect hidden ingredients (For example: Vermicelli with tofu and shrimp paste includes vermicelli, beans, meat, fish sauce...).
 5. Returns EXACT results according to the defined JSON Schema.
+6. Add id is UUID
 `;

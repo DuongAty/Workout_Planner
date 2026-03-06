@@ -25,7 +25,6 @@ import { PaginationDto } from '../../common/pagination/pagination.dto';
 import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
 import { AIWorkoutChatDto } from './dto/ai-workout.dto';
-import { CloneScheduleDto } from './dto/clone-workout.dto';
 import { JobService } from 'src/jobs/job.service';
 
 @Controller({ path: 'workoutplans', version: '1' })
@@ -140,8 +139,19 @@ export class WorkoutplanController {
 
   @Post('ai')
   async createByAI(@Body() dto: AIWorkoutChatDto, @GetUser() user: User) {
-    await this.jobService.addOpenAIJob({
+    await this.jobService.addOpenAIJobWorkout({
       prompt: dto.message,
+      userId: user.id,
+    });
+    return {
+      message:
+        'Your request is being processed in the background. Please wait!',
+    };
+  }
+
+  @Post('ai-statistics')
+  async createByAIStatistics(@GetUser() user: User) {
+    await this.jobService.addOpenAIJobWorkoutStatistics({
       userId: user.id,
     });
     return {

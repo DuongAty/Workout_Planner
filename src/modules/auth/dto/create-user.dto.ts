@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 import {
   MAX_LENGHT_USER,
   MIN_LENGHT_USER,
@@ -9,10 +16,17 @@ import {
 } from 'src/constants/constants';
 
 export class CreateUserDto {
+  @ApiProperty({ description: 'Email' })
+  @IsEmail({}, { message: i18nValidationMessage('common.validation.IsEmail') })
+  @Transform(trim)
+  email: string;
+
   @IsString()
   @Transform(trim)
-  @MinLength(MIN_LENGHT_USER)
-  @MaxLength(MAX_LENGHT_USER)
+  @MinLength(MIN_LENGHT_USER, {
+    message: i18nValidationMessage('common.validation.MinLength')})
+  @MaxLength(MAX_LENGHT_USER, {
+    message: i18nValidationMessage('common.validation.MaxLength')})
   @ApiProperty({
     description: 'Full Name',
   })
@@ -20,8 +34,12 @@ export class CreateUserDto {
 
   @IsString()
   @Transform(trim)
-  @MinLength(MIN_LENGHT_USER)
-  @MaxLength(MAX_LENGHT_USER)
+  @MinLength(MIN_LENGHT_USER, {
+    message: i18nValidationMessage('common.validation.MinLength'),
+  })
+  @MaxLength(MAX_LENGHT_USER, {
+    message: i18nValidationMessage('common.validation.MaxLength'),
+  })
   @ApiProperty({
     description: 'User Name',
   })
@@ -29,11 +47,14 @@ export class CreateUserDto {
 
   @IsString()
   @Transform(trim)
-  @MinLength(MIN_LENGHT_USER)
-  @MaxLength(MAX_LENGHT_USER)
+  @MinLength(MIN_LENGHT_USER, {
+    message: i18nValidationMessage('common.validation.MinLength'),
+  })
+  @MaxLength(MAX_LENGHT_USER, {
+    message: i18nValidationMessage('common.validation.MaxLength'),
+  })
   @Matches(passwordVal, {
-    message:
-      'The password is too weak: It needs to include uppercase letters, lowercase letters, and numbers/special characters.',
+    message: i18nValidationMessage('common.validation.Password'),
   })
   @ApiProperty({
     description: 'Password',

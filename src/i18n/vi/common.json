@@ -1,0 +1,49 @@
+{
+  "validation": {
+    "IsEmail": "Địa chỉ email không hợp lệ, vui lòng kiểm tra lại.",
+    "MinLength": "{property} Ngắn quá, phải ít nhất {constraints.0} ký tự",
+    "MaxLength": "{property} Nhiều quá, tối đa {constraints.0} ký tự",
+    "IsArray": "{property} Phải là mảng",
+    "IsNumber": "{property} Phải là số",
+    "IsString": "{property} Phải là ký tự",
+    "IsInt": "{property} Phải là số nguyên",
+    "Min": "{property} Tối thiểu phải lớn hơn {constraints.0}",
+    "Max": "{property} Tối đa phải nhỏ hơn {constraints.0}",
+    "Password": "Mật khẩu quá yếu: Mật khẩu cần bao gồm chữ cái viết hoa, chữ cái viết thường và số/ký tự đặc biệt.",
+    "IsEnum": "{property} phải là một trong các giá trị sau: {constraints.1}. (Bạn đã nhập: {value})"
+ },
+
+ "registration": {
+  "subject" : "Đăng ký thành công",
+  "welcome": "CHÀO MỪNG BẠN!",
+  "hello": "Xin chào",
+  "welcome_text": "Chào mừng bạn đã gia nhập cộng đồng <b>Workout Planner</b>. Tài khoản của bạn đã được đăng ký thành công.",
+  "welcome_text2":"Hãy bắt đầu hành trình thay đổi bản thân bằng cách lập lịch tập luyện đầu tiên ngay hôm nay!",
+  "login": "ĐĂNG NHẬP NGAY",
+  "contact": "Nếu bạn có bất kỳ thắc mắc nào, đừng ngần ngại phản hồi lại email này.",
+  "desdescription": "Bạn nhận được email này vì đã đăng ký tài khoản tại workout-planner.com"
+ },
+ "emailRemider":{
+  "ready": "SẴN SÀNG CHƯA? ",
+  "workout": "Lịch tập",
+  "hello": "Xin chào",
+  "today": "Hôm nay: ",
+  "remid": " bạn có một lộ trình tập luyện đã được lên lịch sẵn.",
+  "workout_name": "Chủ đề: ",
+  "num_Exercises": "Số lượng bài tập: ",
+  "ex": " bài",
+  "desdescription":"Việc duy trì kỷ luật là chìa khóa của thành công. Đừng để những nỗ lực trước đó lãng phí!",
+  "link": "XEM CHI TIẾT LỊCH TẬP"
+
+
+ },
+ "errors": {
+  "notFound": "Không tìm thấy",
+  "alreadyExists":"Username hoặc Email đã tồn tại ",
+  "notFoundUser":"User not found",
+  "emailAlreadyExists":"Email này đã được sử dụng bởi một tài khoản khác",
+  "notFoundWorkout":"Không tìm thấy Workout",
+  "notFoundExercise":"Không tìm thấy bài tập"
+
+ }
+}

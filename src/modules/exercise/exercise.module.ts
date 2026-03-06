@@ -18,6 +18,7 @@ import { StepOfExerciseController } from './StepOfExercises/step-of-exercise.con
 import { StepOfExercise } from './StepOfExercises/step-of-exercise.entity';
 import { OpenAIService } from '../openai/openai.service';
 import { ScheduleItem } from '../workoutplan/schedule-items/schedule-item.entity';
+import { AnalyticsService } from 'src/common/service/analytics.service';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ScheduleItem } from '../workoutplan/schedule-items/schedule-item.entity
     TransactionService,
     StepOfExerciseService,
     OpenAIService,
+    AnalyticsService,
   ],
   controllers: [
     ExerciseController,

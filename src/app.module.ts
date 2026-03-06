@@ -17,9 +17,16 @@ import { OpenAIModule } from './modules/openai/openai.module';
 import { JobsModule } from './jobs/job.module';
 import { EmailProcessor } from './processors/email.processor';
 import { BullModule } from '@nestjs/bull';
-import { OpenAIProcessor } from './processors/openai.processor';
 import { NotificationModule } from './modules/notification/notification.module';
 import { User } from './modules/user/user.entity';
+import {
+  AcceptLanguageResolver,
+  HeaderResolver,
+  I18nModule,
+  QueryResolver,
+} from 'nestjs-i18n';
+import path from 'path';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -59,6 +66,18 @@ import { User } from './modules/user/user.entity';
           },
         },
       }),
+    }),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true,
+      },
+      resolvers: [
+        new HeaderResolver(['x-custom-lang']),
+        new QueryResolver(['lang']),
+        AcceptLanguageResolver,
+      ],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -108,6 +127,12 @@ import { User } from './modules/user/user.entity';
         },
       }),
     }),
+    BullModule.registerQueue(
+      {
+        name: 'email',
+      },
+      { name: 'openai' },
+    ),
   ],
   providers: [
     {
@@ -115,7 +140,6 @@ import { User } from './modules/user/user.entity';
       useClass: ThrottlerGuard,
     },
     EmailProcessor,
-    OpenAIProcessor,
   ],
 })
 export class AppModule {}

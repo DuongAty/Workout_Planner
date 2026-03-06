@@ -49,6 +49,41 @@ export class OpenAIService {
     }
   }
 
+  async Statistics(prompt: string): Promise<any> {
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Analyze the following users workout data and provide insights, statistics, and advice. Return ONLY pure JSON. No markdown, no backticks, no explanation.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        response_format: { type: 'json_object' },
+      });
+
+      let content = response.choices[0].message.content || '';
+      content = content
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      try {
+        const parsedData = JSON.parse(content);
+        return parsedData;
+      } catch (parseError) {
+        console.error('Errors parse JSON:', content);
+        throw new InternalServerErrorException(
+          'AI response was not valid JSON format',
+        );
+      }
+    } catch (error) {
+      console.error('OpenAI API Error:', error);
+      throw new InternalServerErrorException('Failed to connect to OpenAI');
+    }
+  }
+
   async analyzeFood(foodDescription: string): Promise<any> {
     try {
       const prompt = nutritionPrompt(foodDescription);

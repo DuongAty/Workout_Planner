@@ -19,10 +19,17 @@ import { OAuth2Client } from 'google-auth-library';
 import { GoogleStrategy } from '../user/strategy/google.strategy';
 import { FacebookStrategy } from '../user/strategy/facebook.strategy';
 import { Token } from '../user/fcmToken/token.entity';
+import { NutritionService } from '../nutrition/nutrition.service';
+import { NutritionLog } from '../nutrition/nutrition-log.entity';
+import { Workout } from '../workoutplan/workoutplan.entity';
+import { OpenAIService } from '../openai/openai.service';
+import { BullModule } from '@nestjs/bull';
+import { JobsModule } from 'src/jobs/job.module';
 
 @Module({
   imports: [
     ConfigModule,
+    JobsModule,
     PassportModule.register({ defaultStrategy: JWT_STRATEGY }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -34,7 +41,8 @@ import { Token } from '../user/fcmToken/token.entity';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, Token]),
+    TypeOrmModule.forFeature([User, Token, NutritionLog, Workout]),
+    BullModule.registerQueue({ name: 'email' }),
   ],
   providers: [
     AuthService,
@@ -45,8 +53,10 @@ import { Token } from '../user/fcmToken/token.entity';
     RedisService,
     UploadService,
     OAuth2Client,
+    NutritionService,
+    OpenAIService,
   ],
   controllers: [AuthController],
-  exports: [JwtStrategy, PassportModule, UsersRepository],
+  exports: [JwtStrategy, PassportModule, UsersRepository, NutritionService],
 })
 export class AuthModule {}

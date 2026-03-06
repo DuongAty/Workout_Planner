@@ -7,6 +7,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 import { MAX_LENGHT, trim } from 'src/constants/constants';
 
 export class UpsertStepDto {
@@ -15,10 +16,15 @@ export class UpsertStepDto {
   id?: string;
 
   @IsNotEmpty()
-  @IsNumber()
+  @IsNumber(
+    {},
+    { message: i18nValidationMessage('common.validation.IsNumber') },
+  )
   order: number;
 
-  @MaxLength(MAX_LENGHT)
+  @MaxLength(MAX_LENGHT, {
+    message: i18nValidationMessage('common.validation.MaxLength'),
+  })
   @IsNotEmpty()
   @Transform(trim)
   description: string;

@@ -1,0 +1,38 @@
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - .env.dev
+    depends_on:
+      - db
+      - redis
+    networks:
+      - workout-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    networks:
+      - workout-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    networks:
+      - workout-network
+
+networks:
+  workout-network:
+    driver: bridge

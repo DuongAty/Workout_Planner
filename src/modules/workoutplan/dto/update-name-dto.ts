@@ -13,6 +13,7 @@ import {
 import { Transform } from 'class-transformer';
 import { trim } from 'src/constants/constants';
 import { IsFutureDate } from '../../../decorators/is-future-date.decorator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class UpdateWorkoutDto {
   @IsNotEmpty()
@@ -39,12 +40,24 @@ export class UpdateWorkoutDto {
     required: false,
   })
   @IsOptional()
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('common.validation.IsArray') })
   @ArrayUnique()
-  @ArrayMinSize(1)
-  @Min(0, { each: true })
-  @Max(6, { each: true })
-  @IsNumber({}, { each: true })
+  @ArrayMinSize(1, { message: i18nValidationMessage('common.validation.Min') })
+  @Min(0, {
+    each: true,
+    message: i18nValidationMessage('common.validation.Min'),
+  })
+  @Max(6, {
+    each: true,
+    message: i18nValidationMessage('common.validation.Max'),
+  })
+  @IsNumber(
+    {},
+    {
+      each: true,
+      message: i18nValidationMessage('common.validation.IsNumber'),
+    },
+  )
   daysOfWeek?: number[];
 }
 
@@ -66,11 +79,23 @@ export class UpdateDaysOfWeekDto {
     example: [0, 2, 4, 6],
     description: 'The days of the week (0: CN, 1: T2...)',
   })
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('common.validation.IsArray') })
   @ArrayUnique()
-  @ArrayMinSize(1)
-  @IsNumber({}, { each: true })
-  @Min(0, { each: true })
-  @Max(6, { each: true })
+  @ArrayMinSize(1, { message: i18nValidationMessage('common.validation.Min') })
+  @IsNumber(
+    {},
+    {
+      each: true,
+      message: i18nValidationMessage('common.validation.IsNumber'),
+    },
+  )
+  @Min(0, {
+    each: true,
+    message: i18nValidationMessage('common.validation.Min'),
+  })
+  @Max(6, {
+    each: true,
+    message: i18nValidationMessage('common.validation.Max'),
+  })
   daysOfWeek: number[];
 }

@@ -5,7 +5,8 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "assets": [
-      { "include": "templates/**/*", "outDir": "dist/src" }
+      { "include": "templates/**/*", "outDir": "dist/src" },
+      { "include": "i18n/**/*", "watchAssets": true }
     ],
     "watchAssets": true
   }

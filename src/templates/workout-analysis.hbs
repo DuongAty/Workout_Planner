@@ -1,0 +1,58 @@
+<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+  <h2 style="color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px;">
+    📊 Báo cáo phân tích tập luyện: {{user.fullName}}
+  </h2>
+  
+  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px;">
+    <h3 style="margin-top: 0; color: #3498db;">🏋️ Chi tiết buổi tập: {{workout.name}}</h3>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 5px 0;"><b>Số bài tập:</b></td>
+        <td>{{workout.numExercises}} bài</td>
+      </tr>
+      <tr>
+        <td style="padding: 5px 0;"><b>Thời gian:</b></td>
+        <td>{{workout.duration}} giây</td>
+      </tr>
+      <tr>
+        <td style="padding: 5px 0;"><b>Calo ước tính:</b></td>
+        <td style="color: #e67e22; font-weight: bold;">{{workout.estimatedCalories}} kcal</td>
+      </tr>
+    </table>
+  </div>
+
+  <div style="margin-top: 25px;">
+    <h3 style="color: #2c3e50; border-left: 4px solid #e74c3c; padding-left: 10px;">💡 Phân tích chuyên sâu từ AI</h3>
+    
+    <div style="margin-bottom: 15px;">
+      <p style="margin-bottom: 5px;"><b>🛡️ Độ kỷ luật ({{disciplineAnalysis.completionRate}}%):</b></p>
+      <p style="font-style: italic; color: #555; background: #fff5f5; padding: 10px; border-radius: 5px;">
+        {{disciplineAnalysis.note}}
+      </p>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <p style="margin-bottom: 5px;"><b>📈 Khối lượng (Volume):</b></p>
+      <p style="color: #555;">{{volumeProgressAnalysis.note}}</p>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <p style="margin-bottom: 5px;"><b>🔥 Cường độ (RPE tối ưu: {{intensityEvaluation.optimalRPERange}}):</b></p>
+      <p style="color: #555;">{{intensityEvaluation.note}}</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 25px; background: #e8f4fd; padding: 15px; border-radius: 8px;">
+    <h3 style="margin-top: 0; color: #2980b9;">🚀 Lời khuyên dành riêng cho bạn:</h3>
+    <ul style="padding-left: 20px; margin-bottom: 0;">
+      {{#each actionableTips}}
+        <li style="margin-bottom: 10px;">{{this.tip}}</li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <p style="margin-top: 30px; font-size: 12px; color: #95a5a6; text-align: center;">
+    Báo cáo này được tạo tự động bởi AI dựa trên dữ liệu tập luyện của bạn.<br>
+    Hãy duy trì tập luyện đều đặn để đạt mục tiêu nhé!
+  </p>
+</div>

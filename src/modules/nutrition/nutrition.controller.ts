@@ -5,16 +5,27 @@ import { LogMealDto } from './dto/log-meal.dto';
 import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { JobService } from 'src/jobs/job.service';
 
 @Controller('nutrition')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class NutritionController {
-  constructor(private readonly nutritionService: NutritionService) {}
+  constructor(
+    private readonly nutritionService: NutritionService,
+    private readonly jobService: JobService,
+  ) {}
 
   @Post('log')
   async logMeal(@Body() dto: LogMealDto, @GetUser() user: User) {
-    return this.nutritionService.logMealAndAnalyze(user, dto.meal);
+    await this.jobService.addOpenAIJobCalo({
+      userId: user.id,
+      prompt: dto.meal,
+    });
+    return {
+      message:
+        'Your request is being processed in the background. Please wait!',
+    };
   }
 
   @Get('daily-summary')
