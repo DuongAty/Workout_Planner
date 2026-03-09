@@ -93,7 +93,7 @@ export class OpenAIService {
           {
             role: 'system',
             content:
-              'Bạn là chuyên gia dinh dưỡng. Hãy phân tích thành phần dinh dưỡng từ mô tả của người dùng.',
+              'You are a nutritionist. Analyze the nutritional information from the users description.',
           },
           { role: 'user', content: prompt },
         ],
@@ -106,7 +106,7 @@ export class OpenAIService {
       return response.choices[0].message.parsed;
     } catch (error) {
       throw new InternalServerErrorException(
-        'Không thể phân tích đồ ăn: ' + error.message,
+        'Unable to analyze the food: ' + error.message,
       );
     }
   }

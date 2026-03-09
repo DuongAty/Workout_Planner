@@ -20,7 +20,7 @@ import { TransactionService } from '../../transaction/transaction';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
 import { checkDateRange } from '../../utils/dateUtils/dateUtils';
 import { OpenAIService } from '../openai/openai.service';
-import { workoutAIPrompt, workoutAnalytics } from './prompt/workout-ai.prompt';
+import { workoutAIPrompt } from './prompt/workout-ai.prompt';
 import { CloneScheduleDto } from './dto/clone-workout.dto';
 import { RRule } from 'rrule';
 import { AnalyticsService } from 'src/common/service/analytics.service';
@@ -81,38 +81,41 @@ export class WorkoutplanService {
     user: User,
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async () => {
-      const { name, startDate, endDate, daysOfWeek } = dto;
-      checkDateRange(startDate, endDate);
-      const { items: scheduleItems, rruleString } = this.generateScheduleItems(
-        startDate,
-        endDate,
-        daysOfWeek,
-      );
-      if (scheduleItems.length === 0) {
-        throw new BadRequestException('Không tìm thấy ngày tập phù hợp.');
+      try {
+        const { name, startDate, endDate, daysOfWeek } = dto;
+        checkDateRange(startDate, endDate);
+        const { items: scheduleItems, rruleString } =
+          this.generateScheduleItems(startDate, endDate, daysOfWeek);
+        if (scheduleItems.length === 0) {
+          throw new BadRequestException(
+            'No suitable training dates were found.',
+          );
+        }
+        const plannedDates = scheduleItems.map((item) => item.date);
+        const existingItems = await this.scheduleItemRepository.find({
+          where: {
+            workout: { user: { id: user.id } },
+            date: In(plannedDates),
+          },
+        });
+        if (existingItems.length > 0) {
+          const conflictDates = existingItems.map((item) => item.date);
+          throw new BadRequestException(
+            `The schedules overlap on these days: ${conflictDates.join(', ')}`,
+          );
+        }
+        const workout = this.workoutPlanService.create({
+          name,
+          startDate,
+          endDate,
+          recurrenceRule: rruleString,
+          user,
+          scheduleItems,
+        });
+        return await this.workoutPlanService.save(workout);
+      } catch (err) {
+        throw new BadRequestException('Lỗi DB: ' + err.message);
       }
-      const plannedDates = scheduleItems.map((item) => item.date);
-      const existingItems = await this.scheduleItemRepository.find({
-        where: {
-          workout: { user: { id: user.id } },
-          date: In(plannedDates),
-        },
-      });
-      if (existingItems.length > 0) {
-        const conflictDates = existingItems.map((item) => item.date);
-        throw new BadRequestException(
-          `Trùng lịch tại các ngày: ${conflictDates.join(', ')}`,
-        );
-      }
-      const workout = this.workoutPlanService.create({
-        name,
-        startDate,
-        endDate,
-        recurrenceRule: rruleString,
-        user,
-        scheduleItems,
-      });
-      return await this.workoutPlanService.save(workout);
     });
   }
 
@@ -154,50 +157,55 @@ export class WorkoutplanService {
     },
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async (manager) => {
-      const currentWorkout = await this.findOneWorkout(id, user);
-      if (!currentWorkout) throw new NotFoundException('Workout không tồn tại');
-      const finalEndDate = updateDto.endDate || currentWorkout.endDate;
-      const finalStartDate = updateDto.startDate || currentWorkout.startDate;
-      if (updateDto.newDate && finalEndDate) {
-        const newDateVal = new Date(updateDto.newDate);
-        const endDateVal = new Date(finalEndDate);
-        const startDateVal = new Date(finalStartDate);
-        if (newDateVal > endDateVal) {
-          throw new BadRequestException(
-            `Ngày mới (${updateDto.newDate}) không được vượt quá ngày kết thúc (${finalEndDate})`,
-          );
+      try {
+        const currentWorkout = await this.findOneWorkout(id, user);
+        if (!currentWorkout)
+          throw new NotFoundException('Workout không tồn tại');
+        const finalEndDate = updateDto.endDate || currentWorkout.endDate;
+        const finalStartDate = updateDto.startDate || currentWorkout.startDate;
+        if (updateDto.newDate && finalEndDate) {
+          const newDateVal = new Date(updateDto.newDate);
+          const endDateVal = new Date(finalEndDate);
+          const startDateVal = new Date(finalStartDate);
+          if (newDateVal > endDateVal) {
+            throw new BadRequestException(
+              `New date (${updateDto.newDate}) do not exceed the end date. (${finalEndDate})`,
+            );
+          }
+          if (newDateVal < startDateVal) {
+            throw new BadRequestException(
+              `New date (${updateDto.newDate}) not permitted before the start date. (${finalStartDate})`,
+            );
+          }
         }
-        if (newDateVal < startDateVal) {
-          throw new BadRequestException(
-            `Ngày mới (${updateDto.newDate}) không được trước ngày bắt đầu (${finalStartDate})`,
-          );
-        }
-      }
-      if (updateDto.oldDate && updateDto.newDate) {
-        const result = await manager
-          .getRepository(ScheduleItem)
-          .createQueryBuilder()
-          .update()
-          .set({ date: updateDto.newDate, status: WorkoutStatus.Planned })
-          .where('workoutId = :id AND date = :oldDate', {
-            id,
-            oldDate: updateDto.oldDate,
-          })
-          .execute();
+        if (updateDto.oldDate && updateDto.newDate) {
+          const result = await manager
+            .getRepository(ScheduleItem)
+            .createQueryBuilder()
+            .update()
+            .set({ date: updateDto.newDate, status: WorkoutStatus.Planned })
+            .where('workoutId = :id AND date = :oldDate', {
+              id,
+              oldDate: updateDto.oldDate,
+            })
+            .execute();
 
-        if (result.affected === 0)
-          throw new NotFoundException('Schedule date not found');
+          if (result.affected === 0)
+            throw new NotFoundException('Schedule date not found');
+        }
+        if (updateDto.startDate || updateDto.endDate) {
+          await manager.getRepository(Workout).update(
+            { id, user: { id: user.id } },
+            {
+              ...(updateDto.startDate && { startDate: updateDto.startDate }),
+              ...(updateDto.endDate && { endDate: updateDto.endDate }),
+            },
+          );
+        }
+        return this.findOneWorkout(id, user, ['scheduleItems']);
+      } catch (err) {
+        throw new BadRequestException('Lỗi DB: ' + err.message);
       }
-      if (updateDto.startDate || updateDto.endDate) {
-        await manager.getRepository(Workout).update(
-          { id, user: { id: user.id } },
-          {
-            ...(updateDto.startDate && { startDate: updateDto.startDate }),
-            ...(updateDto.endDate && { endDate: updateDto.endDate }),
-          },
-        );
-      }
-      return this.findOneWorkout(id, user, ['scheduleItems']);
     });
   }
 
@@ -282,18 +290,22 @@ export class WorkoutplanService {
 
   async deleteWorkoutById(id: string, user: User): Promise<void> {
     return await this.transactionService.run<void>(async () => {
-      const workoutPlan = await this.findOneWorkout(id, user, ['exercises']);
-      if (workoutPlan.exercises && workoutPlan.exercises.length > 0) {
-        for (const exercise of workoutPlan.exercises) {
-          if (exercise.thumbnail) {
-            this.uploadService.cleanupFile(exercise.thumbnail);
-          }
-          if (exercise.videoUrl) {
-            this.uploadService.cleanupFile(exercise.videoUrl);
+      try {
+        const workoutPlan = await this.findOneWorkout(id, user, ['exercises']);
+        if (workoutPlan.exercises && workoutPlan.exercises.length > 0) {
+          for (const exercise of workoutPlan.exercises) {
+            if (exercise.thumbnail) {
+              this.uploadService.cleanupFile(exercise.thumbnail);
+            }
+            if (exercise.videoUrl) {
+              this.uploadService.cleanupFile(exercise.videoUrl);
+            }
           }
         }
+        await this.workoutPlanService.remove(workoutPlan);
+      } catch (err) {
+        throw new BadRequestException('Lỗi DB: ' + err.message);
       }
-      await this.workoutPlanService.remove(workoutPlan);
     });
   }
 
@@ -346,29 +358,32 @@ export class WorkoutplanService {
 
   async updateWorkout(id: string, user: User, updateDto: UpdateWorkoutDto) {
     return this.transactionService.run(async () => {
-      const original = await this.findOneWorkout(id, user);
-
-      const finalStartDate = updateDto.startDate ?? original.startDate;
-      const finalEndDate = updateDto.endDate ?? original.endDate;
-      const finalDays =
-        updateDto.daysOfWeek ??
-        this.getDaysFromRRuleString(original.recurrenceRule);
-      checkDateRange(finalStartDate, finalEndDate);
-      const hasTimeChanged = this.hasScheduleChanged(original, updateDto);
-      if (hasTimeChanged) {
-        return this.cloneWorkout(id, user, {
-          name: updateDto.name ?? original.name,
-          startDate: finalStartDate,
-          endDate: finalEndDate,
-          daysOfWeek: finalDays,
-          estimatedCalories: original.estimatedCalories,
-        });
+      try {
+        const original = await this.findOneWorkout(id, user);
+        const finalStartDate = updateDto.startDate ?? original.startDate;
+        const finalEndDate = updateDto.endDate ?? original.endDate;
+        const finalDays =
+          updateDto.daysOfWeek ??
+          this.getDaysFromRRuleString(original.recurrenceRule);
+        checkDateRange(finalStartDate, finalEndDate);
+        const hasTimeChanged = this.hasScheduleChanged(original, updateDto);
+        if (hasTimeChanged) {
+          return this.cloneWorkout(id, user, {
+            name: updateDto.name ?? original.name,
+            startDate: finalStartDate,
+            endDate: finalEndDate,
+            daysOfWeek: finalDays,
+            estimatedCalories: original.estimatedCalories,
+          });
+        }
+        if (this.hasNameChanged(original, updateDto)) {
+          original.name = updateDto.name!;
+          return this.workoutPlanService.save(original);
+        }
+        return original;
+      } catch (err) {
+        throw new BadRequestException('Lỗi DB: ' + err.message);
       }
-      if (this.hasNameChanged(original, updateDto)) {
-        original.name = updateDto.name!;
-        return this.workoutPlanService.save(original);
-      }
-      return original;
     });
   }
 
@@ -378,39 +393,44 @@ export class WorkoutplanService {
     dto: CloneScheduleDto,
   ): Promise<Workout> {
     return await this.transactionService.run<Workout>(async () => {
-      const original = await this.findOneWorkout(id, user, ['exercises']);
-      const { items: scheduleItems, rruleString } = this.generateScheduleItems(
-        dto.startDate,
-        dto.endDate,
-        dto.daysOfWeek,
-      );
-      const newWorkout = await this.workoutPlanService.save(
-        this.workoutPlanService.create({
-          ...dto,
-          name: dto.name || original.name,
-          recurrenceRule: rruleString,
-          scheduleItems,
-          user,
-          numExercises: original.exercises.length,
-        }),
-      );
-      const exerciseData = original.exercises.map((ex) => {
-        const thumbnail = ex.thumbnail
-          ? this.uploadService.cloneFile(ex.thumbnail)
-          : null;
-        const videoUrl = ex.videoUrl
-          ? this.uploadService.cloneFile(ex.videoUrl)
-          : null;
-        return this.exerciseService.create({
-          ...ex,
-          id: undefined,
-          thumbnail,
-          videoUrl,
-          workoutId: newWorkout.id,
-        } as DeepPartial<Exercise>);
-      });
-      await this.exerciseService.save(exerciseData);
-      return newWorkout;
+      try {
+        const original = await this.findOneWorkout(id, user, ['exercises']);
+        const { items: scheduleItems, rruleString } =
+          this.generateScheduleItems(
+            dto.startDate,
+            dto.endDate,
+            dto.daysOfWeek,
+          );
+        const newWorkout = await this.workoutPlanService.save(
+          this.workoutPlanService.create({
+            ...dto,
+            name: dto.name || original.name,
+            recurrenceRule: rruleString,
+            scheduleItems,
+            user,
+            numExercises: original.exercises.length,
+          }),
+        );
+        const exerciseData = original.exercises.map((ex) => {
+          const thumbnail = ex.thumbnail
+            ? this.uploadService.cloneFile(ex.thumbnail)
+            : null;
+          const videoUrl = ex.videoUrl
+            ? this.uploadService.cloneFile(ex.videoUrl)
+            : null;
+          return this.exerciseService.create({
+            ...ex,
+            id: undefined,
+            thumbnail,
+            videoUrl,
+            workoutId: newWorkout.id,
+          } as DeepPartial<Exercise>);
+        });
+        await this.exerciseService.save(exerciseData);
+        return newWorkout;
+      } catch (err) {
+        throw new BadRequestException('Lỗi DB: ' + err.message);
+      }
     });
   }
 
@@ -458,7 +478,6 @@ export class WorkoutplanService {
             aiData.endDate,
             aiData.daysOfWeek.map(Number),
           );
-        console.log('scheduleItems từ generate:', scheduleItems);
         const workout = manager.create('Workout', {
           id: aiData.id,
           name: aiData.name,
@@ -493,11 +512,20 @@ export class WorkoutplanService {
     });
   }
 
-  async generateWorkoutStatistics(userId: string) {
-    const prompt = await this.analyticsService.getPastWorkoutsAnalysis(userId);
-    if (typeof prompt === 'string' && prompt.startsWith('Bạn chưa có')) {
-      return { message: prompt };
+  async generateWorkoutStatistics(
+    userId: string,
+    workoutId: string,
+    customPrompt?: string,
+  ) {
+    const prompt = customPrompt;
+    if (!prompt) {
+      const analysisData =
+        await this.analyticsService.getPastWorkoutsAnalysis(userId);
+      if (typeof analysisData === 'string') {
+        return { message: analysisData };
+      }
     }
+    if (!prompt) return { message: 'Không có dữ liệu tập luyện.' };
     const data = await this.openAIService.Statistics(prompt);
     if (!data) {
       throw new BadRequestException('AI response data is incomplete');

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -17,9 +18,9 @@ import { AuthProvider } from '../../enums/user-enum';
 import { Token } from './fcmToken/token.entity';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
-import { ConfigService } from '@nestjs/config';
 import { JobService } from 'src/jobs/job.service';
 import { I18nContext } from 'nestjs-i18n';
+import { SocialUserPayload } from 'src/interfaces/interface';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -94,7 +95,7 @@ export class UsersRepository {
     });
   }
 
-  async findOrCreateSocialUser(googleUser: any) {
+  async findOrCreateSocialUser(googleUser: SocialUserPayload) {
     const { email, firstName, lastName, picture, provider, providerId } =
       googleUser;
     let user = await this.userRepository.findOneBy({ email });
@@ -125,23 +126,26 @@ export class UsersRepository {
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserProfileDto) {
-    const { email } = updateUserDto;
-    const user = await this.findUser(userId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    if (email) {
-      const existingUser = await this.userRepository.findOne({
-        where: { email, id: Not(userId) },
-      });
-
-      if (existingUser) {
-        throw new ConflictException('common.errors.emailAlreadyExists');
+    try {
+      const { email } = updateUserDto;
+      const user = await this.findUser(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
       }
+      if (email) {
+        const existingUser = await this.userRepository.findOne({
+          where: { email, id: Not(userId) },
+        });
+        if (existingUser) {
+          throw new ConflictException('Email already exists!');
+        }
+      }
+      await this.userRepository.update(user.id, updateUserDto);
+      const updatedUser = await this.userRepository.findOneBy({ id: userId });
+      return updatedUser;
+    } catch (err) {
+      throw new BadRequestException('DB Error: ' + err.message);
     }
-    await this.userRepository.update(user.id, updateUserDto);
-    const updatedUser = await this.userRepository.findOneBy({ id: userId });
-    return updatedUser;
   }
 
   async updateAvatar(userId: string, avatarPath: string) {

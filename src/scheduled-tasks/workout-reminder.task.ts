@@ -11,7 +11,7 @@ export class WorkoutReminderTask {
     await this.reminderService.processDailyReminders();
   }
 
-  @Cron('0 5 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
+  @Cron('0 23 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
   async handleDailyAIAnalysis() {
     await this.reminderService.handleDailyAIAnalysis();
   }

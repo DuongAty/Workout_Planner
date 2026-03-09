@@ -18,6 +18,7 @@ import {
   REFRESH_TOKEN_TTL,
 } from '../../constants/constants';
 import axios from 'axios';
+import { GoogleUserInfo } from 'src/interfaces/interface';
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -65,11 +66,11 @@ export class AuthService {
     const { username, password } = authCredentialsDto;
     const user = await this.usersRepository.findUserByUsername(username);
     if (!user) {
-      throw new UnauthorizedException('Tài khoản không tồn tại');
+      throw new UnauthorizedException('The account does not exist.');
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException('Mật khẩu không chính xác');
+      throw new UnauthorizedException('Incorrect password');
     }
     if (user && isMatch) {
       return await this.generateAndSaveTokens(user);
@@ -123,7 +124,7 @@ export class AuthService {
       const userInfo = await this.googleClient.request({
         url: 'https://www.googleapis.com/oauth2/v3/userinfo',
       });
-      const payload = userInfo.data as any;
+      const payload = userInfo.data as GoogleUserInfo;
       const user = await this.usersRepository.findOrCreateSocialUser({
         email: payload.email,
         firstName: payload.given_name,
@@ -161,7 +162,7 @@ export class AuthService {
           access_token: fbAccessToken,
         },
       });
-      const fbUser = userResponse.data;
+      const fbUser = userResponse.data as any;
       const socialData = {
         email: fbUser.email || `${fbUser.id}@facebook.user`,
         firstName: fbUser.first_name,

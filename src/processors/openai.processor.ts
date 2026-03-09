@@ -8,6 +8,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/modules/user/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { NutritionService } from 'src/modules/nutrition/nutrition.service';
+import { JobService } from 'src/jobs/job.service';
+import { AnalyticsService } from 'src/common/service/analytics.service';
+import { OpenAIService } from 'src/modules/openai/openai.service';
 
 @Processor('openai')
 export class OpenAIProcessor {
@@ -21,6 +24,9 @@ export class OpenAIProcessor {
     private userRepo: Repository<User>,
     @InjectQueue('email')
     private mailQueue: Queue,
+    private jobService: JobService,
+    private analyticsService: AnalyticsService,
+    private openAIService: OpenAIService,
   ) {}
 
   @Process('openai-workout-generate')
@@ -29,15 +35,17 @@ export class OpenAIProcessor {
     this.logger.log(`Processing OpenAI job Workout create for User: ${userId}`);
     try {
       const result: any = await this.workoutService.generateAndSave(
-        userId,
         prompt,
+        userId,
       );
       this.logger.log(`OpenAI job completed and saved for ID: ${result.id}`);
       const user = await this.userRepo.findOne({
         where: { id: userId },
         relations: ['token'],
       });
-
+      if (!user) {
+        throw new Error('User not found');
+      }
       if (user?.token && user.token.length > 0) {
         for (const tokenEntity of user.token) {
           await this.notificationService.sendPushNotification(
@@ -49,6 +57,16 @@ export class OpenAIProcessor {
           );
         }
       }
+      await this.jobService.addWorkoutCreatedEmailJob({
+        email: user.email,
+        fullname: user.fullname,
+        name: result.name,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        numExercises: result.numExercises,
+        estimatedCalories: result.estimatedCalories,
+        link: `${this.configService.get('FRONTEND_URL')}/workout/${result.id}`,
+      });
       return result;
     } catch (error) {
       this.logger.error(`OpenAI job failed: ${error.message}`);
@@ -58,18 +76,27 @@ export class OpenAIProcessor {
 
   @Process('openai-workout-statistics-generate')
   async statisticsCreated(job: Job) {
-    const { prompt, userId } = job.data;
+    const { prompt, userId, email, workoutId } = job.data;
     try {
-      const result: any =
-        await this.workoutService.generateWorkoutStatistics(userId);
+      const result = await this.workoutService.generateWorkoutStatistics(
+        userId,
+        workoutId,
+        prompt,
+      );
       this.logger.log(`OpenAI job completed for ID: ${userId}`);
+      if (!email) {
+        throw new Error('Không tìm thấy email người dùng trong job');
+      }
+      if (!email) {
+        throw new Error('Email người dùng không tồn tại trong job');
+      }
       await this.mailQueue.add('send-workout-analysis', {
-        to: result.user.email,
+        to: email,
         subject: `📊 Phân tích tập luyện chuyên sâu: ${result.workout.name}`,
         template: 'workout-analysis',
         context: result,
       });
-
+      console.log('result', result);
       return result;
     } catch (error) {
       this.logger.error(`OpenAI job failed: ${error.message}`);

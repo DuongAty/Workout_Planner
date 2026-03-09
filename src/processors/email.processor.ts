@@ -144,4 +144,34 @@ export class EmailProcessor {
       throw error;
     }
   }
+  @Process('send-workout-created-email')
+  async handleWorkoutCreatedEmail(job: Job) {
+    const {
+      email,
+      fullname,
+      name,
+      startDate,
+      endDate,
+      numExercises,
+      estimatedCalories,
+      link,
+    } = job.data;
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'WorkoutPlan của bạn đã sẵn sàng 💪',
+      template: 'workout-created',
+      context: {
+        fullname,
+        name,
+        startDate,
+        endDate,
+        numExercises,
+        estimatedCalories,
+        link,
+      },
+    });
+
+    this.logger.log(`Workout created email sent to ${email}`);
+  }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -43,15 +43,19 @@ export class ExerciseService {
   async createExercise(workoutId: string, dto: CreateExerciseDto, user: User) {
     return this.transactionService.run(async (manager) => {
       const workout = await this.workoutService.findOneWorkout(workoutId, user);
-      const exercise = manager.create(Exercise, {
-        ...dto,
-        user,
-        workoutPlan: workout,
-        workoutId,
-      });
-      const savedExercise = await manager.save(exercise);
-      await this.workoutService.syncNumExercises(workoutId, manager);
-      return savedExercise;
+      try {
+        const exercise = manager.create(Exercise, {
+          ...dto,
+          user,
+          workoutPlan: workout,
+          workoutId,
+        });
+        const savedExercise = await manager.save(exercise);
+        await this.workoutService.syncNumExercises(workoutId, manager);
+        return savedExercise;
+      } catch (err) {
+        throw new BadRequestException('Lỗi DB: ' + err.message);
+      }
     });
   }
 

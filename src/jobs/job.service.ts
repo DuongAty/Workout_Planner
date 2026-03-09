@@ -72,4 +72,29 @@ export class JobService {
       removeOnComplete: true,
     });
   }
+
+  async addWorkoutCreatedEmailJob(data: {
+    email: string;
+    fullname: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    numExercises: number;
+    estimatedCalories: number;
+    link: string;
+  }) {
+    return this.emailQueue.add('send-workout-created-email', data, {
+      attempts: 3,
+      backoff: 5000,
+      removeOnComplete: true,
+    });
+  }
+
+  async addSendEmailJob(data: any) {
+    return this.emailQueue.add('send-analysis-email', data, {
+      attempts: 3,
+      backoff: 5000,
+      removeOnComplete: true,
+    });
+  }
 }

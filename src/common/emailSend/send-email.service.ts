@@ -8,6 +8,7 @@ import { I18nContext } from 'nestjs-i18n';
 import { User } from 'src/modules/user/user.entity';
 import type { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { AnalyticsService } from '../service/analytics.service';
 
 @Injectable()
 export class WorkoutReminderService {
@@ -22,6 +23,7 @@ export class WorkoutReminderService {
     private readonly userRepo: Repository<User>,
     @InjectQueue('openai')
     private readonly openaiQueue: Queue,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async processDailyReminders() {
@@ -58,44 +60,50 @@ export class WorkoutReminderService {
         lang: currentLang,
       });
     }
-
     this.logger.log(`Đã thêm ${workouts.length} email jobs`);
   }
 
   async handleDailyAIAnalysis() {
-    this.logger.log(
-      '--- Bắt đầu tiến trình phân tích AI tự động (5h sáng) ---',
-    );
+    this.logger.log('--- Bắt đầu tiến trình phân tích AI tự động ---');
     const users = await this.userRepo.find({
       select: ['id', 'email'],
     });
-    if (users.length === 0) return;
+    if (users.length === 0) {
+      this.logger.warn('Không tìm thấy người dùng nào để phân tích.');
+      return;
+    }
+    let totalJobsAdded = 0;
     for (const user of users) {
       try {
-        await this.openaiQueue.add(
-          'openai-workout-statistics-generate',
-          {
+        const workoutAnalyses =
+          await this.analyticsService.getPastWorkoutsAnalysis(user.id);
+        if (!workoutAnalyses || workoutAnalyses.length === 0) {
+          continue;
+        }
+        if (typeof workoutAnalyses === 'string') {
+          this.logger.warn(workoutAnalyses);
+          continue;
+        }
+        for (const analysis of workoutAnalyses) {
+          await this.openaiQueue.add('openai-workout-statistics-generate', {
             userId: user.id,
-            prompt: 'Phân tích dữ liệu tập luyện của tôi',
-          },
-          {
-            attempts: 3,
-            backoff: 5000,
-            removeOnComplete: true,
-          },
-        );
-
+            email: user.email,
+            prompt: analysis.prompt,
+            workoutId: analysis.workoutId,
+          });
+          totalJobsAdded++;
+        }
         this.logger.debug(
-          `Đã đẩy job phân tích vào hàng đợi cho User: ${user.email}`,
+          `Đã đẩy ${workoutAnalyses.length} job phân tích cho User: ${user.email}`,
         );
       } catch (err) {
         this.logger.error(
-          `Lỗi khi đẩy job cho user ${user.id}: ${err.message}`,
+          `Lỗi khi xử lý phân tích cho user ${user.id}: ${err.message}`,
         );
       }
     }
     this.logger.log(
-      `--- Đã xếp hàng phân tích cho ${users.length} người dùng ---`,
+      `--- Đã xếp hàng thành công ${totalJobsAdded} job phân tích cho hệ thống ---`,
     );
   }
 }
