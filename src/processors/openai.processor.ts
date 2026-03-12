@@ -11,6 +11,7 @@ import { NutritionService } from 'src/modules/nutrition/nutrition.service';
 import { JobService } from 'src/jobs/job.service';
 import { AnalyticsService } from 'src/common/service/analytics.service';
 import { OpenAIService } from 'src/modules/openai/openai.service';
+import { getMonthlyAnalysis } from 'src/modules/workoutplan/prompt/workout-ai.prompt';
 
 @Processor('openai')
 export class OpenAIProcessor {
@@ -31,13 +32,10 @@ export class OpenAIProcessor {
 
   @Process('openai-workout-generate')
   async handleOpenAI(job: Job) {
-    const { prompt, userId } = job.data;
+    const { prompt, userId, lang } = job.data;
     this.logger.log(`Processing OpenAI job Workout create for User: ${userId}`);
     try {
-      const result: any = await this.workoutService.generateAndSave(
-        prompt,
-        userId,
-      );
+      const result = await this.workoutService.generateAndSave(prompt, userId);
       this.logger.log(`OpenAI job completed and saved for ID: ${result.id}`);
       const user = await this.userRepo.findOne({
         where: { id: userId },
@@ -66,6 +64,7 @@ export class OpenAIProcessor {
         numExercises: result.numExercises,
         estimatedCalories: result.estimatedCalories,
         link: `${this.configService.get('FRONTEND_URL')}/workout/${result.id}`,
+        lang,
       });
       return result;
     } catch (error) {
@@ -85,9 +84,6 @@ export class OpenAIProcessor {
       );
       this.logger.log(`OpenAI job completed for ID: ${userId}`);
       if (!email) {
-        throw new Error('Không tìm thấy email người dùng trong job');
-      }
-      if (!email) {
         throw new Error('Email người dùng không tồn tại trong job');
       }
       await this.mailQueue.add('send-workout-analysis', {
@@ -96,7 +92,6 @@ export class OpenAIProcessor {
         template: 'workout-analysis',
         context: result,
       });
-      console.log('result', result);
       return result;
     } catch (error) {
       this.logger.error(`OpenAI job failed: ${error.message}`);
@@ -106,7 +101,7 @@ export class OpenAIProcessor {
 
   @Process('openai-calo-generate')
   async caloriesCreated(job: Job) {
-    const { prompt, userId } = job.data;
+    const { prompt, userId, lang } = job.data;
     this.logger.log(`Processing OpenAI job Meal Analyze for User: ${userId}`);
     try {
       const user = await this.userRepo.findOne({
@@ -119,6 +114,7 @@ export class OpenAIProcessor {
       const result: any = await this.nutritionService.logMealAndAnalyze(
         user,
         prompt,
+        lang,
       );
       this.logger.log(`OpenAI job completed and saved for ID: ${result.id}`);
       if (user?.token && user.token.length > 0) {
@@ -133,6 +129,35 @@ export class OpenAIProcessor {
       return result;
     } catch (error) {
       this.logger.error(`OpenAI job failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Process('openai-workout-statistics-monthly')
+  async handleAnalysis(job: Job) {
+    const { rawMonthlyData, userId, email, fullname, lang } = job.data;
+    try {
+      const dataString = JSON.stringify(rawMonthlyData);
+      const prompt = getMonthlyAnalysis(dataString, lang);
+      const data = rawMonthlyData.stats;
+      const aiAnalysis =
+        await this.openAIService.analyzeMonthlyProgress(prompt);
+      await this.mailQueue.add('send-workout-monthly', {
+        to: email,
+        subject: `🌙 Báo cáo tập luyện tháng & Lời khuyên từ AI`,
+        template: 'monthly-report',
+        context: {
+          fullname,
+          data,
+          aiAnalysis,
+        },
+      });
+      return {
+        data,
+        aiAnalysis,
+      };
+    } catch (error) {
+      this.logger.error(`Lỗi phân tích AI: ${error.message}`);
       throw error;
     }
   }

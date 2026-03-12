@@ -24,6 +24,7 @@ import { workoutAIPrompt } from './prompt/workout-ai.prompt';
 import { CloneScheduleDto } from './dto/clone-workout.dto';
 import { RRule } from 'rrule';
 import { AnalyticsService } from 'src/common/service/analytics.service';
+import { I18nContext } from 'nestjs-i18n';
 
 @Injectable()
 export class WorkoutplanService {
@@ -455,7 +456,8 @@ export class WorkoutplanService {
   }
 
   async generateFromChat(message: string) {
-    const prompt = workoutAIPrompt(message);
+    const lang = I18nContext.current()?.lang || 'vi';
+    const prompt = workoutAIPrompt(message, lang);
     const data = await this.openAIService.chat(prompt);
     if (!data) {
       throw new BadRequestException('AI response data is incomplete');

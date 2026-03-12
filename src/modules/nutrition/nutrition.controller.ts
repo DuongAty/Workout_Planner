@@ -6,6 +6,7 @@ import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JobService } from 'src/jobs/job.service';
+import { I18nContext } from 'nestjs-i18n';
 
 @Controller('nutrition')
 @UseGuards(AuthGuard())
@@ -18,9 +19,11 @@ export class NutritionController {
 
   @Post('log')
   async logMeal(@Body() dto: LogMealDto, @GetUser() user: User) {
+    const lang = I18nContext.current()?.lang || 'vi';
     await this.jobService.addOpenAIJobCalo({
       userId: user.id,
       prompt: dto.meal,
+      lang,
     });
     return {
       message:

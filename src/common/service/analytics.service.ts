@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getMonthlyAnalysis, workoutAnalytics } from 'src/modules/workoutplan/prompt/workout-ai.prompt';
+import { I18nContext } from 'nestjs-i18n';
+import {
+  getMonthlyAnalysis,
+  workoutAnalytics,
+} from 'src/modules/workoutplan/prompt/workout-ai.prompt';
 import { Workout } from 'src/modules/workoutplan/workoutplan.entity';
 import { Repository, LessThan } from 'typeorm';
 
@@ -12,6 +16,7 @@ export class AnalyticsService {
   ) {}
   async getPastWorkoutsAnalysis(userId: string) {
     const today = new Date().toISOString().split('T')[0];
+    const lang = I18nContext.current()?.lang || 'vi';
     const pastWorkouts = await this.workoutRepository.find({
       where: {
         user: { id: userId },
@@ -49,43 +54,43 @@ export class AnalyticsService {
     }
     return pastWorkouts.map((workout) => ({
       workoutId: workout.id,
-      prompt: workoutAnalytics(JSON.stringify(workout)),
+      prompt: workoutAnalytics(JSON.stringify(workout), lang),
     }));
   }
 
   calculateStats(workouts: any[]) {
     const totalWorkouts = workouts.length;
-
     let totalExercises = 0;
     let totalDuration = 0;
-
+    let estimatedCalories = 0;
     for (const workout of workouts) {
       totalExercises += workout.exercises?.length || 0;
-
-      totalDuration += (workout.scheduleItems?.length || 0) * 60;
+      estimatedCalories += workout.estimatedCalories || 0;
+      workout.exercises.forEach((ex) => {
+        totalDuration += Number(ex.duration) || 0;
+      });
     }
-
     return {
       totalWorkouts,
+      estimatedCalories,
       totalExercises,
       totalDuration,
     };
   }
+
   async getMonthlyAnalysis(userId: string) {
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
       .toISOString()
       .split('T')[0];
-
+    const lang = I18nContext.current()?.lang || 'vi';
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       .toISOString()
       .split('T')[0];
     const workouts = this.workoutRepository.createQueryBuilder('workout');
-    workouts.leftJoinAndSelect(
-      'workout.scheduleItems',
-      'scheduleItems',
-      'workout.exercises',
-    );
+    workouts
+      .leftJoinAndSelect('workout.scheduleItems', 'scheduleItems')
+      .leftJoinAndSelect('workout.exercises', 'exercises');
     if (startDate) {
       workouts.andWhere('workout.startDate >= :startDate', { startDate });
     }
@@ -101,7 +106,7 @@ export class AnalyticsService {
     const stats = this.calculateStats(rawData);
     return {
       stats,
-      prompt: getMonthlyAnalysis(rawData),
+      prompt: getMonthlyAnalysis(rawData, lang),
     };
   }
 }

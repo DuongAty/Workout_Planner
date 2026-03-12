@@ -58,8 +58,7 @@ export class AuthController {
   @Get('/me')
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
-  getMe(@Req() req, @I18nLang() lang: string) {
-    console.log('lang', lang);
+  getMe(@Req() req) {
     return req.user;
   }
 

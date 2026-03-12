@@ -155,23 +155,80 @@ export class EmailProcessor {
       numExercises,
       estimatedCalories,
       link,
+      lang,
     } = job.data;
+    try {
+      const [
+        subject,
+        title,
+        hello,
+        head_description,
+        start_Date,
+        end_Date,
+        num_Exercises,
+        calories,
+        ex,
+        footer_description,
+        details,
+      ] = await Promise.all([
+        this.i18n.t('common.create.subject', { lang }),
+        this.i18n.t('common.create.title', { lang }),
+        this.i18n.t('common.create.hello', { lang }),
+        this.i18n.t('common.create.head_description', { lang }),
+        this.i18n.t('common.create.start_Date', { lang }),
+        this.i18n.t('common.create.end_Date', { lang }),
+        this.i18n.t('common.create.num_Exercises', { lang }),
+        this.i18n.t('common.create.calories', { lang }),
+        this.i18n.t('common.create.ex', { lang }),
+        this.i18n.t('common.create.footer_description', { lang }),
+        this.i18n.t('common.create.details', { lang }),
+      ]);
+      this.logger.log(`[Queue] Đang xử lý job ${job.name} gửi đến: ${email}`);
+      await this.mailerService.sendMail({
+        to: email,
+        subject: subject + ' 💪',
+        template: 'workout-created',
+        context: {
+          fullname,
+          name,
+          startDate,
+          endDate,
+          numExercises,
+          estimatedCalories,
+          link,
+          title,
+          hello,
+          head_description,
+          start_Date,
+          end_Date,
+          num_Exercises,
+          calories,
+          ex,
+          footer_description,
+          details,
+        },
+      });
+      this.logger.log(`Workout created email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(`[Queue] ❌ Lỗi gửi mail: ${error.message}`);
+      throw error;
+    }
+  }
 
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'WorkoutPlan của bạn đã sẵn sàng 💪',
-      template: 'workout-created',
-      context: {
-        fullname,
-        name,
-        startDate,
-        endDate,
-        numExercises,
-        estimatedCalories,
-        link,
-      },
-    });
-
-    this.logger.log(`Workout created email sent to ${email}`);
+  @Process('send-workout-monthly')
+  async processSendMail(job: Job) {
+    const { to, subject, template, context } = job.data;
+    try {
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        template,
+        context,
+      });
+      this.logger.log(`Đã gửi báo cáo tháng thành công tới: ${to}`);
+    } catch (error) {
+      this.logger.error(`Lỗi gửi mail: ${error.message}`);
+      throw error;
+    }
   }
 }

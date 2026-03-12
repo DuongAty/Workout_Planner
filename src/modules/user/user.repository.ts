@@ -58,7 +58,6 @@ export class UsersRepository {
         fullname: saveUser.fullname,
         lang: currentLang,
       });
-
       return saveUser;
     } catch (error) {
       throw new InternalServerErrorException();
@@ -74,7 +73,6 @@ export class UsersRepository {
     const existingToken = await this.tokenRepository.findOne({
       where: { userId: userId, device: 'web' },
     });
-
     if (existingToken) {
       return await this.tokenRepository.update(existingToken.id, {
         fcmToken: dto.fcmToken,

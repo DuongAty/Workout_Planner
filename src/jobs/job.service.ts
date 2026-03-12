@@ -30,6 +30,7 @@ export class JobService {
     prompt: string;
     userId?: string;
     type?: string;
+    lang?: string;
   }) {
     return this.openaiQueue.add('openai-workout-generate', data, {
       attempts: 3,
@@ -53,6 +54,7 @@ export class JobService {
     userId?: string;
     prompt: string;
     type?: string;
+    lang?: string;
   }) {
     return this.openaiQueue.add('openai-calo-generate', data, {
       attempts: 3,
@@ -82,6 +84,7 @@ export class JobService {
     numExercises: number;
     estimatedCalories: number;
     link: string;
+    lang: string;
   }) {
     return this.emailQueue.add('send-workout-created-email', data, {
       attempts: 3,

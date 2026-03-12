@@ -33,6 +33,20 @@
         "ex": " exercises",
         "desdescription":"Reminder is a key to fitness. Don't forget the things before it!",
         "link": "VIEW DETAILS"
+    },
+    "create":{
+        "subject": "Workout Plan Created",
+        "title": "Workout Plan Created Successfully",
+        "hello": "Hello ",
+        "head_description": "You have successfully created a workout plan. ",
+        "start_Date": "Start Date: ",
+        "end_Date": "End Date: ",
+        "num_Exercises": "Number of exercises: ",
+        "calories": "Calories: ",
+        "ex": " exercises",
+        "footer_description": "This workout plan is personalized based on your current body and fitness goals. Don't forget to update your results after each workout!",
+        "details": "VIEW DETAILS"
     }
+
 
 }

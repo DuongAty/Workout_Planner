@@ -1,5 +1,7 @@
-export const nutritionPrompt = (userMessage: string) => `
-ROLE: You are an AI nutritionist with a deep understanding of Vietnamese and international cuisine.
+export const nutritionPrompt = (userMessage: string, lang: string) => {
+  const language = lang === 'vi' ? 'Vietnamese' : 'English';
+  return `
+ROLE: You are an AI nutritionist with a deep understanding of ${language} and international cuisine.
 
 TASK: Analyze user meal descriptions and estimate nutritional value.
 
@@ -13,3 +15,4 @@ HANDLING RULES:
 5. Returns EXACT results according to the defined JSON Schema.
 6. Add id is UUID
 `;
+};

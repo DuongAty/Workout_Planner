@@ -17,7 +17,7 @@
   "subject" : "Đăng ký thành công",
   "welcome": "CHÀO MỪNG BẠN!",
   "hello": "Xin chào",
-  "welcome_text": "Chào mừng bạn đã gia nhập cộng đồng <b>Workout Planner</b>. Tài khoản của bạn đã được đăng ký thành công.",
+  "welcome_text": "Chào mừng bạn đã gia nhập cộng đồng Workout Planner. Tài khoản của bạn đã được đăng ký thành công.",
   "welcome_text2":"Hãy bắt đầu hành trình thay đổi bản thân bằng cách lập lịch tập luyện đầu tiên ngay hôm nay!",
   "login": "ĐĂNG NHẬP NGAY",
   "contact": "Nếu bạn có bất kỳ thắc mắc nào, đừng ngần ngại phản hồi lại email này.",
@@ -45,5 +45,18 @@
   "notFoundWorkout":"Không tìm thấy Workout",
   "notFoundExercise":"Không tìm thấy bài tập"
 
+ },
+ "create":{
+  "subject" : "WorkoutPlan của bạn đã sẵn sàng",
+  "title": "Kế Hoạch Tập Luyện Mới",
+  "hello":"Xin chào",
+  "head_description":"AI của chúng tôi đã thiết kế riêng cho bạn một lộ trình tập luyện tối ưu. Sẵn sàng bắt đầu chưa?",
+  "start_Date":"Ngày bắt đầu: ",
+  "end_Date":"Ngày kết thúc: ",
+  "num_Exercises":"Số bài tập: ",
+  "calories":"Calories dự tính: ",
+  "ex": " bài",
+  "footer_description":"Lộ trình này được cá nhân hóa dựa trên các số hình thể và mức tiêu hiện tại của bản. Đừng quên cập nhật kết quả sau mối buổi tập nhé!",
+  "details": "Xem Chi Tiết Bài Tập"
  }
 }

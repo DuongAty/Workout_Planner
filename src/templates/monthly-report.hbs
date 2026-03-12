@@ -1,0 +1,81 @@
+<style>
+  .container { background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+  .header { background-color: #4F46E5; padding: 30px; text-align: center; }
+  .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+  .content { padding: 30px; color: #1f2937; }
+  
+  /* Grid chỉ số */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+  .stat-item { background-color: #f9fafb; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #e5e7eb; }
+  .stat-value { display: block; font-size: 18px; font-weight: bold; color: #4F46E5; }
+  .stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; margin-top: 4px; display: block; }
+  
+  /* Box phân tích */
+  .analysis-box { background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0; }
+  .improvement-list { padding-left: 20px; color: #4b5563; line-height: 1.6; }
+  .button-wrapper { text-align: center; margin-top: 35px; }
+  .button { background-color: #4F46E5; color: #ffffff !important; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+  .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
+  
+  .text-highlight { color: #4F46E5; font-weight: bold; }
+</style>
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h1>Báo Cáo Hoạt Động Tháng</h1>
+    </div>
+    <div class="content">
+      <h2>Chào {{fullname}}, 💪</h2>
+      <p>Chúc mừng bạn đã hoàn thành một tháng nỗ lực. Dưới đây là bảng tổng kết chi tiết</p>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-value">{{data.totalWorkouts}}</span>
+          <span class="stat-label">Tổng buổi tập</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{data.estimatedCalories}} kcal</span>
+          <span class="stat-label">Năng lượng tiêu thụ</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{roundNumber aiAnalysis.summary.workoutFrequencyPerWeek}} buổi/tuần</span>
+          <span class="stat-label">Tần suất trung bình</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{formatMinutes data.totalDuration}} phút</span>
+          <span class="stat-label">Tổng thời gian ghi nhận</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{formatMinutes aiAnalysis.summary.averageWorkoutDurationMinutes}} phút</span>
+          <span class="stat-label">Thời gian trung bình/buổi</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{data.totalExercises}} bài</span>
+          <span class="stat-label">Tổng số bài tập</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{aiAnalysis.summary.activityLevel}}</span>
+          <span class="stat-label">Mức độ hoạt động</span>
+        </div>
+      </div>
+
+      <div class="analysis-box">
+        <p style="margin: 0; font-weight: bold; color: #065f46;">📊 Nhận xét từ chuyên gia AI:</p>
+        <p style="margin: 10px 0 0 0; font-style: italic; color: #374151; line-height: 1.5;">
+          "{{aiAnalysis.analysis}}"
+        </p>
+      </div>
+
+      <h3 style="font-size: 18px; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px;">💡 Lời khuyên cho tháng tới</h3>
+      <ul class="improvement-list">
+        {{#each aiAnalysis.improvementSuggestions}}
+          <li>{{this}}</li>
+        {{/each}}
+      </ul>
+    </div>
+
+    <div class="footer">
+      © 2026 Workout Planner App. <br>
+    </div>
+  </div>
+</div>

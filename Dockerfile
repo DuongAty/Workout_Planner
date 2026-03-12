@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 WORKDIR /usr/src/app
-
+ENV TZ=Asia/Ho_Chi_Minh
 COPY package*.json ./
 RUN npm install
 

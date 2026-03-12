@@ -26,6 +26,7 @@ import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
 import { WorkoutStatus } from './workout-status';
 import { AIWorkoutChatDto } from './dto/ai-workout.dto';
 import { JobService } from 'src/jobs/job.service';
+import { I18nContext } from 'nestjs-i18n';
 
 @Controller({ path: 'workoutplans', version: '1' })
 @UseGuards(AuthGuard())
@@ -139,9 +140,11 @@ export class WorkoutplanController {
 
   @Post('ai')
   async createByAI(@Body() dto: AIWorkoutChatDto, @GetUser() user: User) {
+    const lang = I18nContext.current()?.lang || 'vi';
     await this.jobService.addOpenAIJobWorkout({
       prompt: dto.message,
       userId: user.id,
+      lang: lang,
     });
     return {
       message:

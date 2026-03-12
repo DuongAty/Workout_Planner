@@ -1,11 +1,12 @@
-export const workoutAIPrompt = (userMessage: string) => {
+export const workoutAIPrompt = (userMessage: string, lang: string) => {
   const today = new Date();
   const currentDateStr = today.toISOString().split('T')[0];
   const currentDayOfWeek = today.getDay();
-
+  const language = lang === 'vi' ? 'Vietnamese' : 'English';
   return `
 You are a professional gym trainer.
 Design a workout schedule based on the following request: "${userMessage}"
+Respond completely in ${language}.
 
 CURRENT TIME CONTEXT:
 - Today's date is: ${currentDateStr}
@@ -95,10 +96,11 @@ IMPORTANT RULES FOR RRULE COMPATIBILITY:
    `;
 };
 
-export const workoutAnalytics = (rawData: any) => {
+export const workoutAnalytics = (rawData: any, lang: string) => {
+  const language = lang === 'vi' ? 'Vietnamese' : 'English';
   return `
 Bạn là một chuyên gia phân tích dữ liệu thể hình và huấn luyện viên cao cấp (Elite Strength Coach).
-Hãy phân tích dữ liệu tập luyện sau đây và phản hồi bằng Tiếng Việt với phong cách chuyên nghiệp, khắt khe nhưng đầy khích lệ.
+Hãy phân tích dữ liệu tập luyện sau đây và phản hồi bằng ${language} với phong cách chuyên nghiệp, khắt khe nhưng đầy khích lệ.
 
 ### DATA CONTEXT (JSON):
 ${rawData}
@@ -179,6 +181,43 @@ return JSON with the same structure:
 `;
 };
 
-export const getMonthlyAnalysis = (rawData: any) => {
-  return `### YÊU CẦU CHI TIẾT:`;
+export const getMonthlyAnalysis = (rawData: any, lang: string) => {
+  const language = lang === 'vi' ? 'Vietnamese' : 'English';
+  return `
+You are an AI fitness coach. Analyze the user's workout statistics for the past month.
+
+User workout data:
+${rawData}
+Respond completely in ${language}.
+Based on this data, analyze and return STRICTLY in JSON format:
+
+{
+  "summary": {
+    "workoutFrequencyPerWeek": number,
+    "averageWorkoutDurationMinutes": number,
+    "averageExercisesPerWorkout": number,
+    "totalActivityHours": number,
+    "activityLevel": "low | moderate | high"
+  },
+  "analysis": "short paragraph about user's training consistency and progress",
+  "improvementSuggestions": [
+    "suggestion 1",
+    "suggestion 2",
+    "suggestion 3"
+  ]
+}
+
+Rules:
+- workoutFrequencyPerWeek = totalWorkouts / 4
+- averageWorkoutDurationMinutes = totalDuration / totalWorkouts
+- averageExercisesPerWorkout = totalExercises / totalWorkouts
+- totalActivityHours = totalDuration / 60
+
+Activity level classification:
+- low: < 2 workouts/week
+- moderate: 2 - 4 workouts/week
+- high: > 4 workouts/week
+
+Keep explanations concise and helpful.
+`;
 };

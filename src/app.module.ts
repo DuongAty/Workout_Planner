@@ -26,6 +26,7 @@ import {
   QueryResolver,
 } from 'nestjs-i18n';
 import path from 'path';
+import { MailHelpers } from './utils/helper/mail-helpers';
 
 @Module({
   imports: [
@@ -60,7 +61,7 @@ import path from 'path';
         },
         template: {
           dir: join(process.cwd(), 'src', 'templates'),
-          adapter: new HandlebarsAdapter(),
+          adapter: new HandlebarsAdapter(MailHelpers),
           options: {
             strict: true,
           },

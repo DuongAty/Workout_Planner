@@ -106,4 +106,28 @@ export class WorkoutReminderService {
       `--- Đã xếp hàng thành công ${totalJobsAdded} job phân tích cho hệ thống ---`,
     );
   }
+
+  async sendMonthlyReport() {
+    const users = await this.userRepo.find();
+
+    for (const user of users) {
+      const monthlyData = await this.analyticsService.getMonthlyAnalysis(
+        user.id,
+      );
+      if (!monthlyData) {
+        this.logger.log(
+          `User ${user.id} không có dữ liệu tập luyện trong tháng.`,
+        );
+        continue;
+      }
+      const lang = I18nContext.current()?.lang || 'vi';
+      await this.openaiQueue.add('openai-workout-statistics-monthly', {
+        userId: user.id,
+        email: user.email,
+        fullname: user.fullname,
+        rawMonthlyData: monthlyData,
+        lang,
+      });
+    }
+  }
 }

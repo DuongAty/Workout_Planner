@@ -12,6 +12,7 @@ async function bootstrap() {
   const logger = new Logger();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
+  process.env.TZ = configService.get<string>('TIME_ZONE') || 'Asia/Ho_Chi_Minh';
   app.enableCors();
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
