@@ -18,6 +18,7 @@ import { UploadService } from '../../upload/upload.service';
 import { OAuth2Client } from 'google-auth-library';
 import { GoogleStrategy } from '../user/strategy/google.strategy';
 import { FacebookStrategy } from '../user/strategy/facebook.strategy';
+import { Token } from '../user/fcmToken/token.entity';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { FacebookStrategy } from '../user/strategy/facebook.strategy';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Token]),
   ],
   providers: [
     AuthService,
@@ -46,6 +47,6 @@ import { FacebookStrategy } from '../user/strategy/facebook.strategy';
     OAuth2Client,
   ],
   controllers: [AuthController],
-  exports: [JwtStrategy, PassportModule],
+  exports: [JwtStrategy, PassportModule, UsersRepository],
 })
 export class AuthModule {}

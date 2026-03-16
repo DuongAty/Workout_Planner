@@ -20,11 +20,12 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ConfigService } from '@nestjs/config';
-import { UpdateUserProfileDto } from './dto/user.profile.dto';
+import { UpdateTokenDto, UpdateUserProfileDto } from './dto/user.profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { mediaFileFilter, storageConfig } from 'src/upload/file-upload';
 import { IMAGE_MIMETYPE_REGEX } from 'src/upload/file-upload.constants';
 import { User } from 'src/modules/user/user.entity';
+import { GetUser } from '../user/get-user.decorator';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -66,6 +67,12 @@ export class AuthController {
     const userId = req.user.id;
     const accessToken = this.extractToken(req) || '';
     return this.authService.signOut(userId, accessToken);
+  }
+
+  @UseGuards(AuthGuard())
+  @Patch('fcm-token')
+  async updateFcmToken(@Body() dto: UpdateTokenDto, @GetUser() user: User) {
+    return this.authService.updateToken(user.id, dto);
   }
 
   @Post('/refresh')

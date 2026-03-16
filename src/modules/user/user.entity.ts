@@ -3,6 +3,7 @@ import { Workout } from '../workoutplan/workoutplan.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { NutritionLog } from '../nutrition/nutrition-log.entity';
 import { AuthProvider, Gender, UserGoal } from '../../enums/user-enum';
+import { Token } from './fcmToken/token.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -14,7 +15,7 @@ export class User {
   @Column({ unique: true })
   username: string;
 
-  @Column({ nullable: true})
+  @Column({ nullable: true })
   password: string;
 
   @Column({ unique: true, nullable: true })
@@ -53,6 +54,9 @@ export class User {
 
   @OneToMany((_type) => Workout, (workout) => workout.user, { eager: true })
   workout: Workout[];
+
+  @OneToMany(() => Token, (token) => token.user)
+  token: Token[];
 
   @OneToMany(() => BodyMeasurement, (measurement) => measurement.user)
   measurements: BodyMeasurement[];

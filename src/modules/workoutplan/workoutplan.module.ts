@@ -13,13 +13,14 @@ import { BodyMeasurementController } from '../body-measurement/body-measurement.
 import { BodyMeasurementService } from '../body-measurement/body-measurement.service';
 import { WorkoutReminderService } from '../../common/emailSend/send-email.service';
 import { WorkoutReminderTask } from '../../scheduled-tasks/workout-reminder.task';
-import OpenAI from 'openai';
 import { OpenAIService } from '../openai/openai.service';
 import { NutritionController } from '../nutrition/nutrition.controller';
 import { NutritionService } from '../nutrition/nutrition.service';
 import { NutritionLog } from '../nutrition/nutrition-log.entity';
 import { User } from '../user/user.entity';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
+import { JobsModule } from 'src/jobs/job.module';
+import { NotificationService } from '../notification/notification.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ScheduleItem } from './schedule-items/schedule-item.entity';
     ]),
     AuthModule,
     LoggerModule,
+    JobsModule,
   ],
   controllers: [
     WorkoutplanController,
@@ -48,6 +50,8 @@ import { ScheduleItem } from './schedule-items/schedule-item.entity';
     WorkoutReminderTask,
     OpenAIService,
     NutritionService,
+    NotificationService,
   ],
+  exports: [WorkoutplanService],
 })
 export class WorkoutplanModule {}
