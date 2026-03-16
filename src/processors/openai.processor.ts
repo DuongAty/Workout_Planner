@@ -49,9 +49,13 @@ export class OpenAIProcessor {
           await this.notificationService.sendPushNotification(
             tokenEntity.fcmToken,
             'Lịch tập đã sẵn sàng! 💪',
-            `AI đã khởi tạo xong lịch tập ${result.name} cho bạn.` +
-              `Xem chi tiết: ${this.configService.get('FRONTEND_URL')}/workout/${result.id}`,
-            { workoutId: result.id.toString() },
+            `AI đã khởi tạo xong lịch tập ${result.name} cho bạn.`,
+            {
+              type: 'AI_WORKOUT_COMPLETE',
+              workoutId: result.id.toString(),
+              workoutName: result.name,
+              link: `${this.configService.get('FRONTEND_URL')}/workout/${result.id}`,
+            },
           );
         }
       }

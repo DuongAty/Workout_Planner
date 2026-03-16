@@ -26,7 +26,11 @@ import { mediaFileFilter, storageConfig } from 'src/upload/file-upload';
 import { IMAGE_MIMETYPE_REGEX } from 'src/upload/file-upload.constants';
 import { User } from 'src/modules/user/user.entity';
 import { GetUser } from '../user/get-user.decorator';
-import { I18nLang } from 'nestjs-i18n';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/change-password.dto';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -77,7 +81,6 @@ export class AuthController {
   }
 
   @Post('/refresh')
-
   async refresh(
     @Body('userId') userId: string,
     @Body('refreshToken') refreshToken: string,
@@ -144,5 +147,22 @@ export class AuthController {
       );
     }
     return await this.authService.updateAvatar(req.user.id, file);
+  }
+
+  @Patch('change-password')
+  @ApiBearerAuth('accessToken')
+  @UseGuards(AuthGuard())
+  async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user.id, dto);
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }

@@ -25,6 +25,7 @@ import { Workout } from '../workoutplan/workoutplan.entity';
 import { OpenAIService } from '../openai/openai.service';
 import { BullModule } from '@nestjs/bull';
 import { JobsModule } from 'src/jobs/job.module';
+import { ResetToken } from '../user/resetToken/reset-token.entity';
 
 @Module({
   imports: [
@@ -41,7 +42,7 @@ import { JobsModule } from 'src/jobs/job.module';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, Token, NutritionLog, Workout]),
+    TypeOrmModule.forFeature([User, Token, NutritionLog, Workout, ResetToken]),
     BullModule.registerQueue({ name: 'email' }),
   ],
   providers: [

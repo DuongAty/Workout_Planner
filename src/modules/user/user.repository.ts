@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { IsNull, MoreThan, Not, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { CreateUserDto } from '../auth/dto/create-user.dto';
@@ -21,6 +21,7 @@ import type { Queue } from 'bull';
 import { JobService } from 'src/jobs/job.service';
 import { I18nContext } from 'nestjs-i18n';
 import { SocialUserPayload } from 'src/interfaces/interface';
+import { ResetToken } from './resetToken/reset-token.entity';
 @Injectable()
 export class UsersRepository {
   constructor(
@@ -28,6 +29,8 @@ export class UsersRepository {
     private userRepository: Repository<User>,
     @InjectRepository(Token)
     private tokenRepository: Repository<Token>,
+    @InjectRepository(ResetToken)
+    private resetTokenRepository: Repository<ResetToken>,
     @InjectQueue('email') private mailQueue: Queue,
     private jobService: JobService,
   ) {}
@@ -115,6 +118,10 @@ export class UsersRepository {
     return await this.userRepository.findOneBy({ username });
   }
 
+  async findUserByEmail(email: string) {
+    return await this.userRepository.findOneBy({ email });
+  }
+
   async findUser(userId: string) {
     try {
       return await this.userRepository.findOneBy({ id: userId });
@@ -148,5 +155,40 @@ export class UsersRepository {
 
   async updateAvatar(userId: string, avatarPath: string) {
     return await this.updateUser(userId, { avatar: avatarPath });
+  }
+
+  async updatePassword(userId: string, password: string) {
+    await this.userRepository.update(userId, {
+      password,
+    });
+    return { message: 'Password updated successfully' };
+  }
+
+  async saveResetToken(userId: string, token: string, expiresAt: Date) {
+    const newToken = this.resetTokenRepository.create({
+      userId,
+      token,
+      expiresAt,
+    });
+    return await this.resetTokenRepository.save(newToken);
+  }
+
+  async findValidToken(token: string) {
+    return await this.resetTokenRepository.findOne({
+      where: {
+        token,
+        expiresAt: MoreThan(new Date()),
+        usedAt: IsNull(),
+      },
+    });
+  }
+
+  async updatePasswordAndToken(
+    userId: string,
+    passwordHash: string,
+    tokenId: string,
+  ) {
+    await this.userRepository.update(userId, { password: passwordHash });
+    await this.resetTokenRepository.update(tokenId, { usedAt: new Date() });
   }
 }

@@ -4,6 +4,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { NutritionLog } from '../nutrition/nutrition-log.entity';
 import { AuthProvider, Gender, UserGoal } from '../../enums/user-enum';
 import { Token } from './fcmToken/token.entity';
+import { ResetToken } from './resetToken/reset-token.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -63,4 +64,7 @@ export class User {
 
   @OneToMany(() => NutritionLog, (nutritionLog) => nutritionLog.user)
   nutritionLogs: NutritionLog[];
+
+  @OneToMany(() => ResetToken, (resetToken) => resetToken.user)
+  resetTokens: ResetToken[];
 }

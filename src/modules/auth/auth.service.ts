@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { UsersRepository } from '../user/user.repository';
 import { TokenPayload } from './type/accessToken.type';
@@ -12,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from './../../redis/redis.service';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import {
   ACCESS_TOKEN_BLACKLIST_TTL,
   ACCESS_TOKEN_TTL,
@@ -19,6 +25,12 @@ import {
 } from '../../constants/constants';
 import axios from 'axios';
 import { GoogleUserInfo } from 'src/interfaces/interface';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/change-password.dto';
+import { MailerService } from '@nestjs-modules/mailer';
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -28,6 +40,7 @@ export class AuthService {
     private configService: ConfigService,
     private jwtService: JwtService,
     private redisService: RedisService,
+    private mailService: MailerService,
   ) {
     const redirectUri = `${this.configService.get('FRONTEND_URL')}/auth/google/callback`;
     this.googleClient = new OAuth2Client(
@@ -162,7 +175,7 @@ export class AuthService {
           access_token: fbAccessToken,
         },
       });
-      const fbUser = userResponse.data as any;
+      const fbUser = userResponse.data;
       const socialData = {
         email: fbUser.email || `${fbUser.id}@facebook.user`,
         firstName: fbUser.first_name,
@@ -195,5 +208,59 @@ export class AuthService {
     const newAvatarPath = this.uploadService.getFilePath(file);
     await this.usersRepository.updateAvatar(userId, newAvatarPath);
     return { avatar: newAvatarPath };
+  }
+
+  private async verifyCurrentPassword(current: string, hash: string) {
+    if (!current)
+      throw new BadRequestException('Vui lòng nhập mật khẩu hiện tại');
+    const isMatch = await bcrypt.compare(current, hash);
+    if (!isMatch)
+      throw new BadRequestException('Mật khẩu hiện tại không chính xác');
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.usersRepository.findUser(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.provider === 'google' || user.provider === 'facebook') {
+      if (user.password) {
+        await this.verifyCurrentPassword(dto.currentPassword, user.password);
+      }
+    } else {
+      await this.verifyCurrentPassword(dto.currentPassword, user.password);
+    }
+    const salt = await bcrypt.genSalt();
+    const newPassword = await bcrypt.hash(dto.newPassword, salt);
+    return this.usersRepository.updatePassword(userId, newPassword);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.usersRepository.findUserByEmail(dto.email);
+    if (!user) throw new NotFoundException('Email không tồn tại');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
+    await this.usersRepository.saveResetToken(user.id, token, expiresAt);
+    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    await this.mailService.sendMail({
+      to: user.email,
+      subject: 'Đặt lại mật khẩu',
+      text: `Click vào đây: ${resetLink}`,
+    });
+
+    return { message: 'Link reset đã được gửi' };
+  }
+  async resetPassword(dto: ResetPasswordDto) {
+    const tokenData = await this.usersRepository.findValidToken(dto.token);
+    if (!tokenData)
+      throw new BadRequestException('Token không hợp lệ hoặc hết hạn');
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(dto.newPassword, salt);
+    await this.usersRepository.updatePasswordAndToken(
+      tokenData.userId,
+      hashedPassword,
+      tokenData.id,
+    );
+    return { message: 'Mật khẩu đã được cập nhật thành công' };
   }
 }

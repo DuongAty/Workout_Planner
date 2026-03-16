@@ -59,13 +59,13 @@ import { MailHelpers } from './utils/helper/mail-helpers';
         defaults: {
           from: `${configService.get('NAME')} <${configService.get('MAIL_USER')}>`,
         },
-        template: {
+        /*template: {
           dir: join(process.cwd(), 'src', 'templates'),
           adapter: new HandlebarsAdapter(MailHelpers),
           options: {
             strict: true,
           },
-        },
+        },*/
       }),
     }),
     I18nModule.forRoot({
