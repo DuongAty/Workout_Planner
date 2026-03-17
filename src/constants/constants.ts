@@ -24,6 +24,6 @@ export const MAX_LENGHT_USER = 20;
 export const trim = ({ value }) =>
   typeof value === 'string' ? value.trim() : value;
 
-export const passwordVal =
+export const passwordRegex =
   /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/;
-export const EVERY_MONTH = '0 0 1 * *';
+export const CRON_EVERY_MONTH = '0 0 1 * *';

@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -11,8 +16,6 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { THROTTLER_LIMIT, THROTTLER_TTL } from './constants/constants';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { join } from 'path';
 import { OpenAIModule } from './modules/openai/openai.module';
 import { JobsModule } from './jobs/job.module';
 import { EmailProcessor } from './processors/email.processor';
@@ -26,7 +29,9 @@ import {
   QueryResolver,
 } from 'nestjs-i18n';
 import path from 'path';
-import { MailHelpers } from './utils/helper/mail-helpers';
+import { RequestLoggerMiddleware } from './loggers/request-logger.middleware';
+import { AppLogger } from './loggers/app-logger.service';
+import { LoggerModule } from './loggers/logger.module';
 
 @Module({
   imports: [
@@ -40,6 +45,7 @@ import { MailHelpers } from './utils/helper/mail-helpers';
     OpenAIModule,
     JobsModule,
     NotificationModule,
+    LoggerModule,
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([User]),
     MailerModule.forRootAsync({
@@ -141,6 +147,13 @@ import { MailHelpers } from './utils/helper/mail-helpers';
       useClass: ThrottlerGuard,
     },
     EmailProcessor,
+    AppLogger,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestLoggerMiddleware)
+      .forRoutes({ path: '*path', method: RequestMethod.ALL });
+  }
+}

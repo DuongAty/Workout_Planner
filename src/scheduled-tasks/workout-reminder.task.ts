@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { WorkoutReminderService } from '../common/emailSend/send-email.service';
-import { EVERY_MONTH } from 'src/constants/constants';
+import { CRON_EVERY_MONTH } from 'src/constants/constants';
 
 @Injectable()
 export class WorkoutReminderTask {
@@ -16,7 +16,7 @@ export class WorkoutReminderTask {
     await this.reminderService.handleDailyAIAnalysis();
   }
 
-  @Cron(EVERY_MONTH)
+  @Cron(CRON_EVERY_MONTH)
   async handleMonthlyAIAnalysis() {
     await this.reminderService.sendMonthlyReport();
   }

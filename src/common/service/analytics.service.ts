@@ -87,26 +87,21 @@ export class AnalyticsService {
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       .toISOString()
       .split('T')[0];
-    const workouts = this.workoutRepository.createQueryBuilder('workout');
-    workouts
+    const workouts = await this.workoutRepository
+      .createQueryBuilder('workout')
       .leftJoinAndSelect('workout.scheduleItems', 'scheduleItems')
-      .leftJoinAndSelect('workout.exercises', 'exercises');
-    if (startDate) {
-      workouts.andWhere('workout.startDate >= :startDate', { startDate });
-    }
-    if (endDate) {
-      workouts.andWhere('workout.endDate <= :endDate', { endDate });
-    }
-    const rawData = await workouts
+      .leftJoinAndSelect('workout.exercises', 'exercises')
       .where('workout.user = :userId', { userId })
+      .andWhere('workout.startDate >= :startDate', { startDate })
+      .andWhere('workout.endDate <= :endDate', { endDate })
       .getMany();
-    if (!rawData.length) {
+
+    if (!workouts.length) {
       return 'Không có dữ liệu workout trong tháng này.';
     }
-    const stats = this.calculateStats(rawData);
     return {
-      stats,
-      prompt: getMonthlyAnalysis(rawData, lang),
+      stats: this.calculateStats(workouts),
+      prompt: getMonthlyAnalysis(workouts, lang),
     };
   }
 }

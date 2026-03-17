@@ -36,7 +36,9 @@ export class WorkoutplanController {
     private workoutService: WorkoutplanService,
     private logger: AppLogger,
     private jobService: JobService,
-  ) {}
+  ) {
+    this.logger.setContext(WorkoutplanController.name);
+  }
 
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
@@ -76,7 +78,7 @@ export class WorkoutplanController {
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
   ): Promise<{ data: Workout[]; totalPages: number }> {
-    this.logger.verbose(
+    this.logger.logData(
       `User "${user.username}" get all workout `,
       getWorkoutFilter,
       WorkoutplanController.name,
@@ -93,8 +95,8 @@ export class WorkoutplanController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Workout | null> {
-    this.logger.verbose(
-      `User "${user.username}" get a workout with id `,
+    this.logger.logData(
+      `User ${user.username} get a workout with id `,
       id,
       WorkoutplanController.name,
     );
@@ -103,8 +105,8 @@ export class WorkoutplanController {
 
   @Delete('/:id')
   delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
-    this.logger.warn(
-      `User "${user.username}" delete a workout `,
+    this.logger.logData(
+      `User ${user.username} delete a workout `,
       id,
       WorkoutplanController.name,
     );
@@ -117,8 +119,8 @@ export class WorkoutplanController {
     @Body() updateWorkoutDto: UpdateWorkoutDto,
     @GetUser() user: User,
   ) {
-    this.logger.verbose(
-      `User "${user.username}" update workout `,
+    this.logger.logData(
+      `User ${user.username} update workout `,
       updateWorkoutDto,
       WorkoutplanController.name,
     );
@@ -146,6 +148,7 @@ export class WorkoutplanController {
       userId: user.id,
       lang: lang,
     });
+    this.logger.logData(`User ${user.username} requested AI workout create`);
     return {
       message:
         'Your request is being processed in the background. Please wait!',
@@ -157,6 +160,9 @@ export class WorkoutplanController {
     await this.jobService.addOpenAIJobWorkoutStatistics({
       userId: user.id,
     });
+    this.logger.logData(
+      `User ${user.username} requested AI workout statistics`,
+    );
     return {
       message:
         'Your request is being processed in the background. Please wait!',

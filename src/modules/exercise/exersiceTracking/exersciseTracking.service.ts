@@ -9,6 +9,7 @@ import { WorkoutMath } from '../../../utils/mathUtils/math.util';
 import { checkDateRange, DateUtils } from '../../../utils/dateUtils/dateUtils';
 import { ExerciseService } from '../exercise.service';
 import { User } from 'src/modules/user/user.entity';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Injectable()
 export class ExerciseTrackingService {
@@ -16,7 +17,8 @@ export class ExerciseTrackingService {
     @InjectRepository(ExerciseSet)
     private setRepository: Repository<ExerciseSet>,
     private exerciseService: ExerciseService,
-  ) {}
+    private logger: AppLogger,
+  ) { this.logger.setContext(ExerciseTrackingService.name); }
 
   async logSet(user: User, exerciseId: string, dto: CreateSetDto) {
     const exercise = await this.exerciseService.findOneExercise(
@@ -27,6 +29,11 @@ export class ExerciseTrackingService {
       ...dto,
       exercise: exercise,
     });
+    this.logger.logData(
+      `User ${user.username} log set for exercise with Id: ${exerciseId}`,
+      newSet,
+      ExerciseTrackingService.name,
+    );
     return await this.setRepository.save(newSet);
   }
 

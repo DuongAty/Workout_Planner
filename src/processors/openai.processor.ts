@@ -12,6 +12,7 @@ import { JobService } from 'src/jobs/job.service';
 import { AnalyticsService } from 'src/common/service/analytics.service';
 import { OpenAIService } from 'src/modules/openai/openai.service';
 import { getMonthlyAnalysis } from 'src/modules/workoutplan/prompt/workout-ai.prompt';
+import { NameMailJobEnum, NameOpenAIJobEnum } from 'src/enums/name-job-enum';
 
 @Processor('openai')
 export class OpenAIProcessor {
@@ -30,7 +31,7 @@ export class OpenAIProcessor {
     private openAIService: OpenAIService,
   ) {}
 
-  @Process('openai-workout-generate')
+  @Process(NameOpenAIJobEnum.OPEN_AI_WORKOUT_GENERATE)
   async handleOpenAI(job: Job) {
     const { prompt, userId, lang } = job.data;
     this.logger.log(`Processing OpenAI job Workout create for User: ${userId}`);
@@ -77,7 +78,7 @@ export class OpenAIProcessor {
     }
   }
 
-  @Process('openai-workout-statistics-generate')
+  @Process(NameOpenAIJobEnum.OPEN_AI_WORKOUT_STATISTICS_GENERATE)
   async statisticsCreated(job: Job) {
     const { prompt, userId, email, workoutId } = job.data;
     try {
@@ -90,7 +91,7 @@ export class OpenAIProcessor {
       if (!email) {
         throw new Error('Email người dùng không tồn tại trong job');
       }
-      await this.mailQueue.add('send-workout-analysis', {
+      await this.mailQueue.add(NameMailJobEnum.SEND_WORKOUT_ANALYSIS, {
         to: email,
         subject: `📊 Phân tích tập luyện chuyên sâu: ${result.workout.name}`,
         template: 'workout-analysis',
@@ -103,7 +104,7 @@ export class OpenAIProcessor {
     }
   }
 
-  @Process('openai-calo-generate')
+  @Process(NameOpenAIJobEnum.OPEN_AI_CALO_GENERATE)
   async caloriesCreated(job: Job) {
     const { prompt, userId, lang } = job.data;
     this.logger.log(`Processing OpenAI job Meal Analyze for User: ${userId}`);
@@ -137,7 +138,7 @@ export class OpenAIProcessor {
     }
   }
 
-  @Process('openai-workout-statistics-monthly')
+  @Process(NameOpenAIJobEnum.OPEN_AI_WORKOUT_STATISTICS_MONTHLY)
   async handleAnalysis(job: Job) {
     const { rawMonthlyData, userId, email, fullname, lang } = job.data;
     try {
@@ -146,7 +147,7 @@ export class OpenAIProcessor {
       const data = rawMonthlyData.stats;
       const aiAnalysis =
         await this.openAIService.analyzeMonthlyProgress(prompt);
-      await this.mailQueue.add('send-workout-monthly', {
+      await this.mailQueue.add(NameMailJobEnum.SEND_WORKOUT_MONTHLY, {
         to: email,
         subject: `🌙 Báo cáo tập luyện tháng & Lời khuyên từ AI`,
         template: 'monthly-report',

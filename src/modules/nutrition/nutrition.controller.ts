@@ -7,6 +7,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JobService } from 'src/jobs/job.service';
 import { I18nContext } from 'nestjs-i18n';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Controller('nutrition')
 @UseGuards(AuthGuard())
@@ -15,7 +16,8 @@ export class NutritionController {
   constructor(
     private readonly nutritionService: NutritionService,
     private readonly jobService: JobService,
-  ) {}
+    private readonly logger: AppLogger,
+  ) { this.logger.setContext(NutritionController.name); }
 
   @Post('log')
   async logMeal(@Body() dto: LogMealDto, @GetUser() user: User) {
@@ -25,6 +27,7 @@ export class NutritionController {
       prompt: dto.meal,
       lang,
     });
+    this.logger.logData(`User ${user.username} requested AI meal log`);
     return {
       message:
         'Your request is being processed in the background. Please wait!',

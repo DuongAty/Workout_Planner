@@ -25,6 +25,7 @@ import { CloneScheduleDto } from './dto/clone-workout.dto';
 import { RRule } from 'rrule';
 import { AnalyticsService } from 'src/common/service/analytics.service';
 import { I18nContext } from 'nestjs-i18n';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Injectable()
 export class WorkoutplanService {
@@ -39,7 +40,10 @@ export class WorkoutplanService {
     @InjectRepository(ScheduleItem)
     private scheduleItemRepository: Repository<ScheduleItem>,
     private analyticsService: AnalyticsService,
-  ) {}
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(WorkoutplanService.name);
+  }
   async syncNumExercises(workoutId: string, manager?: EntityManager) {
     const exerciseRepo = manager
       ? manager.getRepository(Exercise)
@@ -113,8 +117,18 @@ export class WorkoutplanService {
           user,
           scheduleItems,
         });
+        this.logger.logData(
+          `Recurring workout created successfully with data: `,
+          workout,
+          WorkoutplanService.name,
+        );
         return await this.workoutPlanService.save(workout);
       } catch (err) {
+        this.logger.error(
+          'Error occurred while creating recurring workout',
+          err,
+          WorkoutplanService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
@@ -140,6 +154,11 @@ export class WorkoutplanService {
       }
       item.status = newStatus;
       await manager.save(item);
+      this.logger.logData(
+        `Schedule item status updated successfully with data: `,
+        item,
+        WorkoutplanService.name,
+      );
       return this.findOneWorkout(item.workout.id, user, [
         'scheduleItems',
         'exercises',
@@ -205,6 +224,11 @@ export class WorkoutplanService {
         }
         return this.findOneWorkout(id, user, ['scheduleItems']);
       } catch (err) {
+        this.logger.error(
+          'Error occurred while updating schedule',
+          err,
+          WorkoutplanService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
@@ -271,6 +295,11 @@ export class WorkoutplanService {
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
     const totalPages = Math.ceil(total / limit);
+    this.logger.logData(
+      `User ${user.username} getAllWorkout`,
+      { data, total, totalPages },
+      WorkoutplanService.name,
+    );
     return { data, total, totalPages };
   }
 
@@ -280,11 +309,22 @@ export class WorkoutplanService {
     relations: string[] = [],
   ): Promise<Workout> {
     try {
-      return await this.workoutPlanService.findOneOrFail({
+      const workout = await this.workoutPlanService.findOneOrFail({
         where: { id, user: { id: user.id } },
         relations,
       });
+      this.logger.logData(
+        `User ${user.username} findOneWorkout with ${id}`,
+        { workout },
+        WorkoutplanService.name,
+      );
+      return workout;
     } catch (error) {
+      this.logger.error(
+        `Workout with ID ${id} not found for user ${user.username}`,
+        error,
+        WorkoutplanService.name,
+      );
       throw new NotFoundException(`Workout with ID ${id} not found`);
     }
   }
@@ -303,8 +343,18 @@ export class WorkoutplanService {
             }
           }
         }
+        this.logger.logData(
+          `User ${user.username} delete workout with ID ${id}`,
+          { workoutPlan },
+          WorkoutplanService.name,
+        );
         await this.workoutPlanService.remove(workoutPlan);
       } catch (err) {
+        this.logger.error(
+          `Error occurred while deleting workout with ID ${id} for user ${user.username}`,
+          err,
+          WorkoutplanService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
@@ -381,8 +431,18 @@ export class WorkoutplanService {
           original.name = updateDto.name!;
           return this.workoutPlanService.save(original);
         }
+        this.logger.logData(
+          `User ${user.username} update workout with ID ${id}`,
+          { original },
+          WorkoutplanService.name,
+        );
         return original;
       } catch (err) {
+        this.logger.error(
+          `Error occurred while updating workout with ID ${id} for user ${user.username}`,
+          err,
+          WorkoutplanService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
@@ -428,8 +488,18 @@ export class WorkoutplanService {
           } as DeepPartial<Exercise>);
         });
         await this.exerciseService.save(exerciseData);
+        this.logger.logData(
+          `User ${user.username} cloned workout with ID ${id} to new workout with ID ${newWorkout.id}`,
+          { newWorkout },
+          WorkoutplanService.name,
+        );
         return newWorkout;
       } catch (err) {
+        this.logger.error(
+          `Error occurred while cloning workout with ID ${id} for user ${user.username}`,
+          err,
+          WorkoutplanService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
@@ -507,8 +577,18 @@ export class WorkoutplanService {
           }),
         );
         await manager.save('Exercise', exercises);
+        this.logger.logData(
+          `User with ID ${userId} generated a workout plan using AI with data: `,
+          { workout: savedWorkout },
+          WorkoutplanService.name,
+        );
         return savedWorkout;
       } catch (err) {
+        this.logger.error(
+          `Error occurred while generating workout plan using AI for user with ID ${userId}`,
+          err,
+          WorkoutplanService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });

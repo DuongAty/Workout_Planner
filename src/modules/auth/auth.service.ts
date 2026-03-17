@@ -31,6 +31,7 @@ import {
   ResetPasswordDto,
 } from './dto/change-password.dto';
 import { MailerService } from '@nestjs-modules/mailer';
+import { AppLogger } from 'src/loggers/app-logger.service';
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -41,6 +42,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redisService: RedisService,
     private mailService: MailerService,
+    private logger: AppLogger,
   ) {
     const redirectUri = `${this.configService.get('FRONTEND_URL')}/auth/google/callback`;
     this.googleClient = new OAuth2Client(
@@ -48,6 +50,7 @@ export class AuthService {
       this.configService.get('GOOGLE_CLIENT_SECRET'),
       redirectUri,
     );
+    this.logger.setContext(AuthService.name);
   }
 
   private async generateAndSaveTokens(user: User): Promise<TokenPayload> {
@@ -72,6 +75,7 @@ export class AuthService {
   }
 
   async signUp(createUserDto: CreateUserDto): Promise<User> {
+    this.logger.logData('Created user', createUserDto, AuthService.name);
     return await this.usersRepository.createUser(createUserDto);
   }
 
@@ -88,6 +92,11 @@ export class AuthService {
     if (user && isMatch) {
       return await this.generateAndSaveTokens(user);
     }
+    this.logger.logData(
+      'Invalid credentials',
+      authCredentialsDto,
+      AuthService.name,
+    );
     throw new UnauthorizedException('Invalid credentials');
   }
 
@@ -146,8 +155,10 @@ export class AuthService {
         provider: AuthProvider.GOOGLE,
         providerId: payload.sub,
       });
+      this.logger.logData('Google Auth Success', user, AuthService.name);
       return await this.generateAndSaveTokens(user);
     } catch (error) {
+      this.logger.error('Google Auth Failed', error, AuthService.name);
       throw new UnauthorizedException('Google Auth Failed: ' + error.message);
     }
   }
@@ -186,17 +197,20 @@ export class AuthService {
       };
       const user =
         await this.usersRepository.findOrCreateSocialUser(socialData);
+      this.logger.logData('Facebook Auth Success', user, AuthService.name);
       return await this.generateAndSaveTokens(user);
     } catch (error) {
-      console.error(
-        'Facebook API Error:',
-        error.response?.data || error.message,
-      );
+      this.logger.error('Facebook Auth Failed', error, AuthService.name);
       throw new UnauthorizedException('Facebook Auth Failed: ' + error.message);
     }
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserProfileDto) {
+    this.logger.logData(
+      `User ${userId} updated `,
+      updateUserDto,
+      AuthService.name,
+    );
     return await this.usersRepository.updateUser(userId, updateUserDto);
   }
 
@@ -232,6 +246,11 @@ export class AuthService {
     }
     const salt = await bcrypt.genSalt();
     const newPassword = await bcrypt.hash(dto.newPassword, salt);
+    this.logger.logData(
+      `User ${userId} change password `,
+      newPassword,
+      AuthService.name,
+    );
     return this.usersRepository.updatePassword(userId, newPassword);
   }
 
@@ -241,13 +260,17 @@ export class AuthService {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
     await this.usersRepository.saveResetToken(user.id, token, expiresAt);
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    const resetLink = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
     await this.mailService.sendMail({
       to: user.email,
       subject: 'Đặt lại mật khẩu',
       text: `Click vào đây: ${resetLink}`,
     });
-
+    this.logger.logData(
+      'User forgot password',
+      { email: user.email },
+      AuthService.name,
+    );
     return { message: 'Link reset đã được gửi' };
   }
   async resetPassword(dto: ResetPasswordDto) {
@@ -261,6 +284,7 @@ export class AuthService {
       hashedPassword,
       tokenData.id,
     );
+    this.logger.logData('User reset password');
     return { message: 'Mật khẩu đã được cập nhật thành công' };
   }
 }

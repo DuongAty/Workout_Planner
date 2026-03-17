@@ -3,6 +3,7 @@ import type { Job } from 'bull';
 import { MailerService } from '@nestjs-modules/mailer';
 import { Logger } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
+import { NameMailJobEnum } from 'src/enums/name-job-enum';
 
 @Processor('email')
 export class EmailProcessor {
@@ -13,7 +14,7 @@ export class EmailProcessor {
     private readonly i18n: I18nService,
   ) {}
 
-  @Process('send-email')
+  @Process(NameMailJobEnum.SEND_EMAIL)
   async handleSendEmail(job: Job) {
     const { email, fullname, workoutName, date, numExercises, url, lang } =
       job.data;
@@ -79,7 +80,7 @@ export class EmailProcessor {
     }
   }
 
-  @Process('send-register-email')
+  @Process(NameMailJobEnum.SEND_REGISTER_EMAIL)
   async handleRegisterEmail(job: Job) {
     const { email, fullname, lang } = job.data;
     try {
@@ -127,7 +128,7 @@ export class EmailProcessor {
     }
   }
 
-  @Process('send-workout-analysis')
+  @Process(NameMailJobEnum.SEND_WORKOUT_ANALYSIS)
   async handleSendWorkoutAnalysis(job: Job) {
     const { to, subject, template, context } = job.data;
     try {
@@ -144,7 +145,7 @@ export class EmailProcessor {
       throw error;
     }
   }
-  @Process('send-workout-created-email')
+  @Process(NameMailJobEnum.SEND_WORKOUT_CREATED_EMAIL)
   async handleWorkoutCreatedEmail(job: Job) {
     const {
       email,
@@ -215,7 +216,7 @@ export class EmailProcessor {
     }
   }
 
-  @Process('send-workout-monthly')
+  @Process(NameMailJobEnum.SEND_WORKOUT_MONTHLY)
   async processSendMail(job: Job) {
     const { to, subject, template, context } = job.data;
     try {

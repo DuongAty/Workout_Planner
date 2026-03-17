@@ -16,12 +16,18 @@ import { GetUser } from 'src/modules/user/get-user.decorator';
 import { User } from 'src/modules/user/user.entity';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Controller('tracking')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class ExerciseTrackingController {
-  constructor(private readonly trackingService: ExerciseTrackingService) {}
+  constructor(
+    private readonly trackingService: ExerciseTrackingService,
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(ExerciseTrackingController.name);
+  }
 
   @Post(':exerciseId/set')
   async logSet(
@@ -29,6 +35,11 @@ export class ExerciseTrackingController {
     @Body() createSetDto: CreateSetDto,
     @Param('exerciseId', ParseUUIDPipe) exerciseId: string,
   ): Promise<ExerciseSet> {
+    this.logger.logData(
+      `User ${user.username} log set for exercise with Id: `,
+      exerciseId,
+      ExerciseTrackingController.name,
+    );
     return this.trackingService.logSet(user, exerciseId, createSetDto);
   }
 

@@ -13,7 +13,7 @@ import { i18nValidationMessage } from 'nestjs-i18n';
 import {
   MAX_LENGHT_USER,
   MIN_LENGHT_USER,
-  passwordVal,
+  passwordRegex,
   trim,
 } from 'src/constants/constants';
 
@@ -31,7 +31,7 @@ export class ChangePasswordDto {
   @MaxLength(MAX_LENGHT_USER, {
     message: i18nValidationMessage('common.validation.MaxLength'),
   })
-  @Matches(passwordVal, {
+  @Matches(passwordRegex, {
     message: i18nValidationMessage('common.validation.Password'),
   })
   currentPassword: string;
@@ -45,7 +45,7 @@ export class ChangePasswordDto {
   @MaxLength(MAX_LENGHT_USER, {
     message: i18nValidationMessage('common.validation.MaxLength'),
   })
-  @Matches(passwordVal, {
+  @Matches(passwordRegex, {
     message: i18nValidationMessage('common.validation.Password'),
   })
   @ApiProperty({
@@ -77,7 +77,7 @@ export class ResetPasswordDto {
   @MaxLength(MAX_LENGHT_USER, {
     message: i18nValidationMessage('common.validation.MaxLength'),
   })
-  @Matches(passwordVal, {
+  @Matches(passwordRegex, {
     message: i18nValidationMessage('common.validation.Password'),
   })
   @ApiProperty({

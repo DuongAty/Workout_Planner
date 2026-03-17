@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Exercise } from './exercise.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +15,7 @@ import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../../upload/upload.service';
 import { applyExerciseFilters } from '../../filters/exercese-filter';
 import { TransactionService } from '../../transaction/transaction';
+import { AppLogger } from 'src/loggers/app-logger.service';
 @Injectable()
 export class ExerciseService {
   constructor(
@@ -19,7 +24,10 @@ export class ExerciseService {
     private readonly exerciseService: Repository<Exercise>,
     private uploadService: UploadService,
     private transactionService: TransactionService,
-  ) {}
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(ExerciseService.name);
+  }
 
   async uploadMedia(
     id: string,
@@ -52,8 +60,18 @@ export class ExerciseService {
         });
         const savedExercise = await manager.save(exercise);
         await this.workoutService.syncNumExercises(workoutId, manager);
+        this.logger.logData(
+          'Created exercise',
+          savedExercise,
+          ExerciseService.name,
+        );
         return savedExercise;
       } catch (err) {
+        this.logger.error(
+          'Failed to create exercise',
+          err,
+          ExerciseService.name,
+        );
         throw new BadRequestException('Lỗi DB: ' + err.message);
       }
     });
@@ -74,15 +92,30 @@ export class ExerciseService {
     query.skip(skip).take(limit);
     const [data, total] = await query.getManyAndCount();
     const totalPages = Math.ceil(total / limit);
+    this.logger.logData(
+      'Get all exercises',
+      { data, total, totalPages },
+      ExerciseService.name,
+    );
     return { data, total, totalPages };
   }
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {
     try {
+      this.logger.logData(
+        `User ${user.username} findOneExercise with Id: `,
+        id,
+        ExerciseService.name,
+      );
       return await this.exerciseService.findOneOrFail({
         where: { id, workoutPlan: { user: { id: user.id } } },
       });
     } catch (error) {
+      this.logger.error(
+        `User ${user.username} findOneExercise error: `,
+        error,
+        ExerciseService.name,
+      );
       throw new NotFoundException(`Exercise with ID ${id} not found`);
     }
   }
@@ -90,6 +123,11 @@ export class ExerciseService {
   async deleteExerciseById(id: string, user: User): Promise<void> {
     return this.transactionService.run(async (manager) => {
       const exercise = await this.findOneExercise(id, user);
+      this.logger.logData(
+        `User ${user.username} delete exercise with Id: `,
+        id,
+        ExerciseService.name,
+      );
       await manager.softRemove(exercise);
       await this.workoutService.syncNumExercises(exercise.workoutId, manager);
       if (exercise.thumbnail)
@@ -102,6 +140,11 @@ export class ExerciseService {
     return this.transactionService.run(async (manager) => {
       const exercise = await this.findOneExercise(id, user);
       Object.assign(exercise, dto);
+      this.logger.logData(
+        `User ${user.username} update exercise with Id: `,
+        id,
+        ExerciseService.name,
+      );
       return await manager.save(exercise);
     });
   }

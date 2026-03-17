@@ -40,7 +40,7 @@ export class ExerciseController {
     private readonly exerciseService: ExerciseService,
     private uploadService: UploadService,
     private logger: AppLogger,
-  ) {}
+  ) {this.logger.setContext(ExerciseController.name); }
 
   @Post(':id/upload')
   @ApiBearerAuth('accessToken')
@@ -105,7 +105,7 @@ export class ExerciseController {
     @Body() createExerciseDto: CreateExerciseDto,
     @GetUser() user: User,
   ) {
-    this.logger.verbose(
+    this.logger.logData(
       `User "${user.username}" create an exercises `,
       createExerciseDto,
       ExerciseController.name,
@@ -123,7 +123,7 @@ export class ExerciseController {
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
   ): Promise<{ data: Exercise[]; totalPages: number }> {
-    this.logger.verbose(
+    this.logger.logData(
       `User "${user.username}" get all exercise`,
       getExerciseFilter,
       ExerciseController.name,
@@ -140,7 +140,7 @@ export class ExerciseController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Exercise | null> {
-    this.logger.verbose(
+    this.logger.logData(
       `User "${user.username}" get an exercise with id`,
       id,
       ExerciseController.name,
@@ -150,7 +150,7 @@ export class ExerciseController {
 
   @Delete('/:id')
   delete(@Param('id') id: string, @GetUser() user: User): Promise<void> {
-    this.logger.verbose(
+    this.logger.logData(
       `User "${user.username}" delete an exercise`,
       id,
       ExerciseController.name,
@@ -164,7 +164,7 @@ export class ExerciseController {
     @Body() updateExerciseDto: UpdateExerciseDto,
     @GetUser() user: User,
   ) {
-    this.logger.verbose(
+    this.logger.logData(
       `User "${user.username}" update an exercises `,
       updateExerciseDto,
       ExerciseController.name,

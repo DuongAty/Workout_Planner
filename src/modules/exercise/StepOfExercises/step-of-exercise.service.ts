@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { ExerciseService } from '../exercise.service';
 import { User } from '../../user/user.entity';
 import { SortDirection } from '../../body-measurement/body-measurement.enum';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Injectable()
 export class StepOfExerciseService {
@@ -13,7 +14,10 @@ export class StepOfExerciseService {
     @InjectRepository(StepOfExercise)
     private readonly stepRepo: Repository<StepOfExercise>,
     private exerciseService: ExerciseService,
-  ) {}
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(StepOfExerciseService.name);
+  }
 
   async saveMany(exerciseId: string, stepsDto: UpsertStepDto[], user: User) {
     const exercise = await this.exerciseService.findOneExercise(
@@ -36,7 +40,11 @@ export class StepOfExerciseService {
         ids: activeIds.length > 0 ? activeIds : ['none'],
       })
       .execute();
-
+    this.logger.logData(
+      `Saved steps for exercise`,
+      exerciseId,
+      StepOfExerciseService.name,
+    );
     return savedSteps;
   }
 

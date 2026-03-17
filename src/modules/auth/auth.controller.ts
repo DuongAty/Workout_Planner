@@ -31,13 +31,15 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
 } from './dto/change-password.dto';
+import { AppLogger } from 'src/loggers/app-logger.service';
+import { OwnerMiddleware } from 'src/middleware/owner.middleware';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
-  private logger = new Logger('AuthController');
   constructor(
     private authService: AuthService,
     private configService: ConfigService,
+    private logger: AppLogger,
   ) {}
 
   private extractToken(req: Request): string | null {
@@ -49,6 +51,7 @@ export class AuthController {
 
   @Post('/register')
   signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
+    this.logger.logData('Created user', createUserDto, AuthController.name);
     return this.authService.signUp(createUserDto);
   }
 
@@ -56,6 +59,7 @@ export class AuthController {
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
   ): Promise<TokenPayload> {
+    this.logger.logData('Sign in', authCredentialsDto, AuthController.name);
     return this.authService.signIn(authCredentialsDto);
   }
 
@@ -102,23 +106,23 @@ export class AuthController {
 
   @Patch(':id/update-user')
   @ApiBearerAuth('accessToken')
-  @UseGuards(AuthGuard())
+  @UseGuards(AuthGuard(), OwnerMiddleware)
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserProfileDto: UpdateUserProfileDto,
     @Req() req: any,
   ) {
-    if (req.user.id !== id) {
-      throw new ForbiddenException(
-        'You do not have permission to edit this information.',
-      );
-    }
+    this.logger.logData(
+      `Update user with Id ${id}`,
+      updateUserProfileDto,
+      AuthController.name,
+    );
     return this.authService.updateUser(id, updateUserProfileDto);
   }
 
   @Post(':id/upload-avatar')
   @ApiBearerAuth('accessToken')
-  @UseGuards(AuthGuard())
+  @UseGuards(AuthGuard(), OwnerMiddleware)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -153,16 +157,19 @@ export class AuthController {
   @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard())
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
+    this.logger.logData('Change password', dto, AuthController.name);
     return this.authService.changePassword(req.user.id, dto);
   }
 
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    this.logger.logData('Forgot password', dto, AuthController.name);
     return this.authService.forgotPassword(dto);
   }
 
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
+    this.logger.logData('Reset password', dto, AuthController.name);
     return this.authService.resetPassword(dto);
   }
 }

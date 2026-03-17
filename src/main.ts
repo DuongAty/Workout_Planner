@@ -7,10 +7,15 @@ import { DocumentConfig } from './document-builder';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
+import { AppLogger } from './loggers/app-logger.service';
 
 async function bootstrap() {
-  const logger = new Logger();
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    logger: false,
+  });
+  const appLogger = app.get(AppLogger);
+  app.useLogger(appLogger);
   const configService = app.get(ConfigService);
   process.env.TZ = configService.get<string>('TIME_ZONE') || 'Asia/Ho_Chi_Minh';
   app.enableCors();
@@ -20,7 +25,6 @@ async function bootstrap() {
   app.enableVersioning({
     type: VersioningType.URI,
   });
-
   const port = configService.get<number>('PORT')!;
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
@@ -39,6 +43,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
   await app.listen(port);
-  logger.log(`Port ${port}`);
+  appLogger.log(`Port ${port}`);
 }
 bootstrap();

@@ -15,6 +15,7 @@ import { OpenAIService } from 'src/modules/openai/openai.service';
 import { ScheduleItem } from 'src/modules/workoutplan/schedule-items/schedule-item.entity';
 import { AnalyticsService } from 'src/common/service/analytics.service';
 import { NutritionLog } from 'src/modules/nutrition/nutrition-log.entity';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { NutritionLog } from 'src/modules/nutrition/nutrition-log.entity';
     TransactionService,
     OpenAIService,
     AnalyticsService,
+    AppLogger,
   ],
   exports: [JobService],
 })

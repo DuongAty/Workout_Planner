@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
+import { NameMailJobEnum, NameOpenAIJobEnum } from 'src/enums/name-job-enum';
+import { JobEnum } from 'src/enums/job-enum';
 
 @Injectable()
 export class JobService {
@@ -20,9 +22,9 @@ export class JobService {
     url: string;
     lang: string;
   }) {
-    return this.emailQueue.add('send-email', data, {
-      attempts: 3,
-      backoff: 5000,
+    return this.emailQueue.add(NameMailJobEnum.SEND_EMAIL, data, {
+      attempts: JobEnum.ATTEMPTS,
+      backoff: JobEnum.BACKOFF,
       removeOnComplete: true,
     });
   }
@@ -32,22 +34,30 @@ export class JobService {
     type?: string;
     lang?: string;
   }) {
-    return this.openaiQueue.add('openai-workout-generate', data, {
-      attempts: 3,
-      backoff: 5000,
-      removeOnComplete: true,
-    });
+    return this.openaiQueue.add(
+      NameOpenAIJobEnum.OPEN_AI_WORKOUT_GENERATE,
+      data,
+      {
+        attempts: JobEnum.ATTEMPTS,
+        backoff: JobEnum.BACKOFF,
+        removeOnComplete: true,
+      },
+    );
   }
 
   async addOpenAIJobWorkoutStatistics(data: {
     userId?: string;
     type?: string;
   }) {
-    return this.openaiQueue.add('openai-workout-statistics-generate', data, {
-      attempts: 3,
-      backoff: 5000,
-      removeOnComplete: true,
-    });
+    return this.openaiQueue.add(
+      NameOpenAIJobEnum.OPEN_AI_WORKOUT_STATISTICS_GENERATE,
+      data,
+      {
+        attempts: JobEnum.ATTEMPTS,
+        backoff: JobEnum.BACKOFF,
+        removeOnComplete: true,
+      },
+    );
   }
 
   async addOpenAIJobCalo(data: {
@@ -56,9 +66,9 @@ export class JobService {
     type?: string;
     lang?: string;
   }) {
-    return this.openaiQueue.add('openai-calo-generate', data, {
-      attempts: 3,
-      backoff: 5000,
+    return this.openaiQueue.add(NameOpenAIJobEnum.OPEN_AI_CALO_GENERATE, data, {
+      attempts: JobEnum.ATTEMPTS,
+      backoff: JobEnum.BACKOFF,
       removeOnComplete: true,
     });
   }
@@ -68,9 +78,9 @@ export class JobService {
     fullname: string;
     lang: string;
   }) {
-    return this.emailQueue.add('send-register-email', data, {
-      attempts: 3,
-      backoff: 5000,
+    return this.emailQueue.add(NameMailJobEnum.SEND_REGISTER_EMAIL, data, {
+      attempts: JobEnum.ATTEMPTS,
+      backoff: JobEnum.BACKOFF,
       removeOnComplete: true,
     });
   }
@@ -86,17 +96,21 @@ export class JobService {
     link: string;
     lang: string;
   }) {
-    return this.emailQueue.add('send-workout-created-email', data, {
-      attempts: 3,
-      backoff: 5000,
-      removeOnComplete: true,
-    });
+    return this.emailQueue.add(
+      NameMailJobEnum.SEND_WORKOUT_CREATED_EMAIL,
+      data,
+      {
+        attempts: JobEnum.ATTEMPTS,
+        backoff: JobEnum.BACKOFF,
+        removeOnComplete: true,
+      },
+    );
   }
 
   async addSendEmailJob(data: any) {
-    return this.emailQueue.add('send-analysis-email', data, {
-      attempts: 3,
-      backoff: 5000,
+    return this.emailQueue.add(NameMailJobEnum.SEND_ANALYSIS_EMAIL, data, {
+      attempts: JobEnum.ATTEMPTS,
+      backoff: JobEnum.BACKOFF,
       removeOnComplete: true,
     });
   }

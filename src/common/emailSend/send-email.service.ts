@@ -9,6 +9,7 @@ import { User } from 'src/modules/user/user.entity';
 import type { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { AnalyticsService } from '../service/analytics.service';
+import { NameOpenAIJobEnum } from 'src/enums/name-job-enum';
 
 @Injectable()
 export class WorkoutReminderService {
@@ -85,12 +86,15 @@ export class WorkoutReminderService {
           continue;
         }
         for (const analysis of workoutAnalyses) {
-          await this.openaiQueue.add('openai-workout-statistics-generate', {
-            userId: user.id,
-            email: user.email,
-            prompt: analysis.prompt,
-            workoutId: analysis.workoutId,
-          });
+          await this.openaiQueue.add(
+            NameOpenAIJobEnum.OPEN_AI_WORKOUT_STATISTICS_GENERATE,
+            {
+              userId: user.id,
+              email: user.email,
+              prompt: analysis.prompt,
+              workoutId: analysis.workoutId,
+            },
+          );
           totalJobsAdded++;
         }
         this.logger.debug(
@@ -121,13 +125,16 @@ export class WorkoutReminderService {
         continue;
       }
       const lang = I18nContext.current()?.lang || 'vi';
-      await this.openaiQueue.add('openai-workout-statistics-monthly', {
-        userId: user.id,
-        email: user.email,
-        fullname: user.fullname,
-        rawMonthlyData: monthlyData,
-        lang,
-      });
+      await this.openaiQueue.add(
+        NameOpenAIJobEnum.OPEN_AI_WORKOUT_STATISTICS_MONTHLY,
+        {
+          userId: user.id,
+          email: user.email,
+          fullname: user.fullname,
+          rawMonthlyData: monthlyData,
+          lang,
+        },
+      );
     }
   }
 }

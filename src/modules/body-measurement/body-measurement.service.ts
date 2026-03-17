@@ -15,16 +15,25 @@ import {
 } from '../../constants/constants';
 import { SortDirection } from './body-measurement.enum';
 import { checkDateRange, DateUtils } from '../../utils/dateUtils/dateUtils';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Injectable()
 export class BodyMeasurementService {
   constructor(
     @InjectRepository(BodyMeasurement)
     private repo: Repository<BodyMeasurement>,
-  ) {}
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(BodyMeasurementService.name);
+  }
 
   async create(user: User, dto: CreateMeasurementDto) {
     const measurement = this.repo.create({ ...dto, user });
+    this.logger.logData(
+      `User ${user.username} create measurement`,
+      measurement,
+      BodyMeasurementService.name,
+    );
     return await this.repo.save(measurement);
   }
 

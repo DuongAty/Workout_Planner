@@ -8,15 +8,27 @@ import {
 } from './dto/measurement.dto';
 import { MuscleGroup } from '../exercise/exercise-musclegroup';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { AppLogger } from 'src/loggers/app-logger.service';
+import { User } from '../user/user.entity';
 
 @Controller('body-measurements')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('accessToken')
 export class BodyMeasurementController {
-  constructor(private service: BodyMeasurementService) {}
+  constructor(
+    private service: BodyMeasurementService,
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(BodyMeasurementController.name);
+  }
 
   @Post()
-  create(@GetUser() user, @Body() dto: CreateMeasurementDto) {
+  create(@GetUser() user: User, @Body() dto: CreateMeasurementDto) {
+    this.logger.logData(
+      `User ${user.username} create body measurement`,
+      dto,
+      BodyMeasurementController.name,
+    );
     return this.service.create(user, dto);
   }
 

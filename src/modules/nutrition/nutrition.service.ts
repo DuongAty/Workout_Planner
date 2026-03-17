@@ -6,6 +6,7 @@ import { User } from '../user/user.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import { NutritionLog } from './nutrition-log.entity';
 import { Gender, UserGoal } from 'src/enums/user-enum';
+import { AppLogger } from 'src/loggers/app-logger.service';
 
 @Injectable()
 export class NutritionService {
@@ -17,7 +18,10 @@ export class NutritionService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
     private openAIService: OpenAIService,
-  ) {}
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext(NutritionService.name);
+  }
 
   async logMealAndAnalyze(user: User, mealDescription: string, lang: string) {
     const aiData = await this.openAIService.analyzeFood(mealDescription);
@@ -37,6 +41,11 @@ export class NutritionService {
       user: user,
     });
     await this.nutritionRepo.save(log);
+    this.logger.logData(
+      'Meal logged successfully: ',
+      log,
+      NutritionService.name,
+    );
     return await this.calculateDailyBalance(user);
   }
 
