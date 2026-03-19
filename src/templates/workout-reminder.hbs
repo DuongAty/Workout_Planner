@@ -1,37 +1,36 @@
-<style>
-  .container { background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-  .header { background-color: #4F46E5; padding: 30px; text-align: center; }
-  .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px; }
-  .content { padding: 30px; color: #1f2937; }
-  .workout-info { background-color: #f9fafb; border-left: 4px solid #4F46E5; padding: 20px; margin: 25px 0; }
-  .button-wrapper { text-align: center; margin-top: 35px; }
-  .button { background-color: #4F46E5; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
-  .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
-</style>
+{{!-- layout: main --}}
+{{!-- headerTitle, hello, fullname, today, date, remid,
+      workout_name, workoutName, num_Exercises, numExercises, ex,
+      desdescription, url, link --}}
+{{#> main}}
+<h2 style="font-size:22px;color:#1f2937;margin:0 0 8px 0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+  {{hello}} {{fullname}}, 💪
+</h2>
+<p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 20px 0;">
+  {{today}} (<strong>{{date}}</strong>), {{remid}}
+</p>
 
-<div class="container">
-  <div class="card">
-    <div class="header">
-      <h1>WORKOUT PLANNER</h1>
-    </div>
-    <div class="content">
-      <h2>{{hello}} {{fullname}}, 💪</h2>
-      <p>{{today}} (<b>{{date}}</b>), {{remid}}</p>
-      
-      <div class="workout-info">
-        <p style="margin: 0; font-size: 18px;"><b>{{workout_name}} </b> {{workoutName}}</p>
-        <p style="margin: 5px 0 0 0; color: #6b7280;">{{num_Exercises}} {{numExercises}} {{ex}}</p>
-      </div>
-
-      <p>{{desdescription}}</p>
-
-      <div class="button-wrapper">
-        <a href="{{url}}" class="button">{{link}}</a>
-      </div>
-    </div>
-    <div class="footer">
-      © 2026 Workout Planner App.
-    </div>
-  </div>
+<!-- Workout info box -->
+<div style="background-color:#f9fafb;border-left:4px solid #4F46E5;padding:20px;margin:25px 0;">
+  <p style="margin:0;font-size:18px;color:#1f2937;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+    <strong>{{workout_name}}</strong> {{workoutName}}
+  </p>
+  <p style="margin:8px 0 0 0;color:#6b7280;font-size:14px;">
+    {{num_Exercises}} {{numExercises}} {{ex}}
+  </p>
 </div>
+
+<p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 30px 0;">{{desdescription}}</p>
+
+<!-- Button -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center">
+      <a href="{{url}}"
+         style="background-color:#4F46E5;color:#ffffff;padding:14px 30px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:15px;">
+        {{link}}
+      </a>
+    </td>
+  </tr>
+</table>
+{{/main}}

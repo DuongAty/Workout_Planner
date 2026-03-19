@@ -1,55 +1,43 @@
-<style>
-  .container { background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-  .header { background-color: #4F46E5; padding: 30px; text-align: center; }
-  .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-  .content { padding: 30px; color: #1f2937; text-align: center; }
-  .welcome-icon { font-size: 60px; margin-bottom: 20px; display: block; }
-  
-  .info-box { background-color: #f9fafb; border: 1px dashed #4F46E5; padding: 20px; margin: 25px 0; border-radius: 12px; text-align: left; }
-  .info-text { margin: 5px 0; color: #4b5563; font-size: 14px; }
-  
-  .button-wrapper { text-align: center; margin-top: 35px; }
-  .button { background-color: #4F46E5; color: #ffffff !important; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
-  
-  .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
-  .text-highlight { color: #4F46E5; font-weight: bold; }
-</style>
+{{!-- layout: main --}}
+{{!-- headerTitle, hello, fullname, welcome_text, email, welcome_text2, loginUrl, login, contact, footerText --}}
+{{#> main}}
+<div style="text-align:center;">
+  <span style="font-size:60px;margin-bottom:20px;display:block;">🎉</span>
 
-<div class="container">
-  <div class="card">
-    <div class="header">
-      <h1>{{welcome}}</h1>
-    </div>
-    
-    <div class="content">
-      <span class="welcome-icon">🎉</span>
-      
-      <h2 style="margin-top: 0;">{{hello}} {{fullname}},</h2>
-      
-      <p style="line-height: 1.6; color: #4b5563;">
-        {{welcome_text}}
-      </p>
-      <div class="info-box">
-        <p class="info-text">📧 <b>Email:</b> <span class="text-highlight">{{email}}</span></p>
-      </div>
+  <h2 style="font-size:22px;color:#1f2937;margin:0 0 12px 0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+    {{hello}} {{fullname}},
+  </h2>
 
-      <p style="line-height: 1.6; color: #4b5563;">
-        {{welcome_text2}}
-      </p>
+  <p style="line-height:1.6;color:#4b5563;font-size:15px;margin:0 0 20px 0;">
+    {{welcome_text}}
+  </p>
 
-      <div class="button-wrapper">
-        <a href="{{loginUrl}}" class="button">{{login}}</a>
-      </div>
-
-      <p style="margin-top: 30px; font-size: 13px; color: #9ca3af; font-style: italic;">
-        {{contact}}
-      </p>
-    </div>
-
-    <div class="footer">
-      © 2026 Workout Planner App. <br>
-      {{desdescription}}
-    </div>
+  <!-- Info box -->
+  <div style="background-color:#f9fafb;border:1px dashed #4F46E5;padding:20px;margin:25px 0;border-radius:12px;text-align:left;">
+    <p style="margin:5px 0;color:#4b5563;font-size:14px;">
+      📧 <strong>Email:</strong>
+      <span style="color:#4F46E5;font-weight:bold;">{{email}}</span>
+    </p>
   </div>
+
+  <p style="line-height:1.6;color:#4b5563;font-size:15px;margin:0 0 30px 0;">
+    {{welcome_text2}}
+  </p>
+
+  <!-- Button -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <a href="{{loginUrl}}"
+           style="background-color:#4F46E5;color:#ffffff;padding:14px 35px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:15px;">
+          {{login}}
+        </a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin-top:30px;font-size:13px;color:#9ca3af;font-style:italic;">
+    {{contact}}
+  </p>
 </div>
+{{/main}}

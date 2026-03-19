@@ -26,6 +26,8 @@ import { RRule } from 'rrule';
 import { AnalyticsService } from 'src/common/service/analytics.service';
 import { I18nContext } from 'nestjs-i18n';
 import { AppLogger } from 'src/loggers/app-logger.service';
+import { CreateWorkoutPlanResponse } from './responses/workout-plan.response';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class WorkoutplanService {
@@ -84,54 +86,59 @@ export class WorkoutplanService {
   async createRecurringWorkout(
     dto: CreateWorkoutDto,
     user: User,
-  ): Promise<Workout> {
-    return await this.transactionService.run<Workout>(async () => {
-      try {
-        const { name, startDate, endDate, daysOfWeek } = dto;
-        checkDateRange(startDate, endDate);
-        const { items: scheduleItems, rruleString } =
-          this.generateScheduleItems(startDate, endDate, daysOfWeek);
-        if (scheduleItems.length === 0) {
-          throw new BadRequestException(
-            'No suitable training dates were found.',
+  ): Promise<CreateWorkoutPlanResponse> {
+    return await this.transactionService.run<CreateWorkoutPlanResponse>(
+      async () => {
+        try {
+          const { name, startDate, endDate, daysOfWeek } = dto;
+          checkDateRange(startDate, endDate);
+          const { items: scheduleItems, rruleString } =
+            this.generateScheduleItems(startDate, endDate, daysOfWeek);
+          if (scheduleItems.length === 0) {
+            throw new BadRequestException(
+              'No suitable training dates were found.',
+            );
+          }
+          const plannedDates = scheduleItems.map((item) => item.date);
+          const existingItems = await this.scheduleItemRepository.find({
+            where: {
+              workout: { user: { id: user.id } },
+              date: In(plannedDates),
+            },
+          });
+          if (existingItems.length > 0) {
+            const conflictDates = existingItems.map((item) => item.date);
+            throw new BadRequestException(
+              `The schedules overlap on these days: ${conflictDates.join(', ')}`,
+            );
+          }
+          const workout = this.workoutPlanService.create({
+            name,
+            startDate,
+            endDate,
+            recurrenceRule: rruleString,
+            user,
+            scheduleItems,
+          });
+          this.logger.logData(
+            `Recurring workout created successfully with data: `,
+            workout,
+            WorkoutplanService.name,
           );
-        }
-        const plannedDates = scheduleItems.map((item) => item.date);
-        const existingItems = await this.scheduleItemRepository.find({
-          where: {
-            workout: { user: { id: user.id } },
-            date: In(plannedDates),
-          },
-        });
-        if (existingItems.length > 0) {
-          const conflictDates = existingItems.map((item) => item.date);
-          throw new BadRequestException(
-            `The schedules overlap on these days: ${conflictDates.join(', ')}`,
+          const saveWorkout = await this.workoutPlanService.save(workout);
+          return plainToInstance(CreateWorkoutPlanResponse, saveWorkout, {
+            excludeExtraneousValues: true,
+          });
+        } catch (err) {
+          this.logger.error(
+            'Error occurred while creating recurring workout',
+            err,
+            WorkoutplanService.name,
           );
+          throw new BadRequestException('Lỗi DB: ' + err.message);
         }
-        const workout = this.workoutPlanService.create({
-          name,
-          startDate,
-          endDate,
-          recurrenceRule: rruleString,
-          user,
-          scheduleItems,
-        });
-        this.logger.logData(
-          `Recurring workout created successfully with data: `,
-          workout,
-          WorkoutplanService.name,
-        );
-        return await this.workoutPlanService.save(workout);
-      } catch (err) {
-        this.logger.error(
-          'Error occurred while creating recurring workout',
-          err,
-          WorkoutplanService.name,
-        );
-        throw new BadRequestException('Lỗi DB: ' + err.message);
-      }
-    });
+      },
+    );
   }
 
   async updateItemStatus(

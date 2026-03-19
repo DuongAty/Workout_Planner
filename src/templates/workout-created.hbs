@@ -1,65 +1,66 @@
-<style>
-  .container { background-color: #f3f4f6; padding: 40px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-  .header { background-color: #4F46E5; padding: 30px; text-align: center; }
-  .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
-  .content { padding: 30px; color: #1f2937; }
-    .plan-box { background-color: #f9fafb; border-left: 4px solid #4F46E5; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0; }
-  .plan-title { font-size: 18px; font-weight: bold; color: #4F46E5; margin-bottom: 10px; display: block; }
-    .detail-list { list-style: none; padding: 0; margin: 0; }
-  .detail-item { padding: 8px 0; border-bottom: 1px dashed #e5e7eb; display: flex; justify-content: space-between; }
-  .detail-item:last-child { border-bottom: none; }
-  .label { color: #6b7280; font-size: 14px; }
-  .value { font-weight: 600; color: #1f2937; }
+{{!-- layout: main --}}
+{{!-- headerTitle, hello, fullname, head_description, name,
+      start_Date, startDate, end_Date, endDate,
+      num_Exercises, numExercises, ex,
+      calories, estimatedCalories,
+      footer_description, link, details --}}
+{{#> main}}
+<h2 style="font-size:22px;color:#1f2937;margin:0 0 8px 0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+  {{hello}} {{fullname}}, 💪
+</h2>
+<p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 20px 0;">{{head_description}}</p>
 
-  .button-wrapper { text-align: center; margin-top: 35px; }
-  .button { background-color: #4F46E5; color: #ffffff !important; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
-  .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
-</style>
+<!-- Plan box -->
+<div style="background-color:#f9fafb;border-left:4px solid #4F46E5;padding:20px;margin:25px 0;border-radius:0 8px 8px 0;">
+  <span style="font-size:18px;font-weight:bold;color:#4F46E5;margin-bottom:12px;display:block;">{{name}}</span>
 
-<div class="container">
-  <div class="card">
-    <div class="header">
-      <h1>{{title}}</h1>
-    </div>
-    
-    <div class="content">
-      <h2>{{hello}} {{fullname}}, 💪</h2>
-      <p>{{head_description}}</p>
-      
-      <div class="plan-box">
-        <span class="plan-title">{{name}}</span>
-        <div class="detail-list">
-          <div class="detail-item">
-            <span class="label">📅 {{start_Date}}</span>
-            <span class="value">{{formatDate startDate}}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">🏁 {{end_Date}}</span>
-            <span class="value">{{formatDate endDate}}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">🏋️ {{num_Exercises}}</span>
-            <span class="value">{{numExercises}} {{ex}}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">🔥 {{calories}}</span>
-            <span class="value text-highlight">{{estimatedCalories}} kcal</span>
-          </div>
-        </div>
-      </div>
-
-      <p style="color: #4b5563; font-size: 14px; line-height: 1.6;">
-        {{footer_description}}
-      </p>
-
-      <div class="button-wrapper">
-        <a href="{{link}}" class="button">{{details}}</a>
-      </div>
-    </div>
-
-    <div class="footer">
-      © 2026 Workout Planner App. <br>
-    </div>
-  </div>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb;">
+        <span style="color:#6b7280;font-size:14px;">📅 {{start_Date}}</span>
+      </td>
+      <td align="right" style="padding:8px 0;border-bottom:1px dashed #e5e7eb;">
+        <span style="font-weight:600;color:#1f2937;">{{formatDate startDate}}</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb;">
+        <span style="color:#6b7280;font-size:14px;">🏁 {{end_Date}}</span>
+      </td>
+      <td align="right" style="padding:8px 0;border-bottom:1px dashed #e5e7eb;">
+        <span style="font-weight:600;color:#1f2937;">{{formatDate endDate}}</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb;">
+        <span style="color:#6b7280;font-size:14px;">🏋️ {{num_Exercises}}</span>
+      </td>
+      <td align="right" style="padding:8px 0;border-bottom:1px dashed #e5e7eb;">
+        <span style="font-weight:600;color:#1f2937;">{{numExercises}} {{ex}}</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;">
+        <span style="color:#6b7280;font-size:14px;">🔥 {{calories}}</span>
+      </td>
+      <td align="right" style="padding:8px 0;">
+        <span style="font-weight:600;color:#4F46E5;">{{estimatedCalories}} kcal</span>
+      </td>
+    </tr>
+  </table>
 </div>
+
+<p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0 0 30px 0;">{{footer_description}}</p>
+
+<!-- Button -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center">
+      <a href="{{link}}"
+         style="background-color:#4F46E5;color:#ffffff;padding:14px 30px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:15px;">
+        {{details}}
+      </a>
+    </td>
+  </tr>
+</table>
+{{/main}}

@@ -28,11 +28,12 @@ import {
   I18nModule,
   QueryResolver,
 } from 'nestjs-i18n';
-import path from 'path';
+import path, { join } from 'path';
 import { RequestLoggerMiddleware } from './loggers/request-logger.middleware';
 import { AppLogger } from './loggers/app-logger.service';
 import { LoggerModule } from './loggers/logger.module';
-
+import { MailHelpers } from './utils/helper/mail-helpers';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -51,7 +52,6 @@ import { LoggerModule } from './loggers/logger.module';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-
       useFactory: (configService: ConfigService) => ({
         transport: {
           host: configService.get('MAIL_HOST'),
@@ -65,13 +65,21 @@ import { LoggerModule } from './loggers/logger.module';
         defaults: {
           from: `${configService.get('NAME')} <${configService.get('MAIL_USER')}>`,
         },
-        /*template: {
+        template: {
           dir: join(process.cwd(), 'src', 'templates'),
           adapter: new HandlebarsAdapter(MailHelpers),
           options: {
             strict: true,
           },
-        },*/
+        },
+        options: {
+          partials: {
+            dir: join(process.cwd(), 'src', 'templates', 'layouts'),
+            options: {
+              strict: true,
+            },
+          },
+        },
       }),
     }),
     I18nModule.forRoot({

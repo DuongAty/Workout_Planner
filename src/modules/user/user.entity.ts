@@ -5,6 +5,7 @@ import { NutritionLog } from '../nutrition/nutrition-log.entity';
 import { AuthProvider, Gender, UserGoal } from '../../enums/user-enum';
 import { Token } from './fcmToken/token.entity';
 import { ResetToken } from './resetToken/reset-token.entity';
+import { Exclude } from 'class-transformer';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -17,6 +18,7 @@ export class User {
   username: string;
 
   @Column({ nullable: true })
+  @Exclude()
   password: string;
 
   @Column({ unique: true, nullable: true })
@@ -51,6 +53,7 @@ export class User {
   providerId?: string;
 
   @Column({ type: 'text', nullable: true })
+  @Exclude()
   refreshToken?: string | null;
 
   @OneToMany((_type) => Workout, (workout) => workout.user, { eager: false })

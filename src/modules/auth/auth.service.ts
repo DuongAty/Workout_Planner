@@ -258,14 +258,29 @@ export class AuthService {
     const user = await this.usersRepository.findUserByEmail(dto.email);
     if (!user) throw new NotFoundException('Email không tồn tại');
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await this.usersRepository.saveResetToken(user.id, token, expiresAt);
     const resetLink = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
-    await this.mailService.sendMail({
-      to: user.email,
-      subject: 'Đặt lại mật khẩu',
-      text: `Click vào đây: ${resetLink}`,
-    });
+    try {
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: 'Đặt lại mật khẩu - Workout App',
+        template: 'forgot-password',
+        context: {
+          headerTitle: 'Đặt Lại Mật Khẩu',
+          fullname: user.fullname || user.email,
+          email_value: user.email,
+          expire_value: expiresAt.toLocaleTimeString('vi-VN', {
+            hour12: false,
+          }),
+          link: resetLink,
+        },
+      });
+    } catch (error) {
+      console.log('❌ Lỗi gửi email forgot-password:', error.message);
+      console.log('Stack:', error.stack);
+      throw error; // giữ lại để FE nhận 500
+    }
     this.logger.logData(
       'User forgot password',
       { email: user.email },

@@ -4,6 +4,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Logger } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { NameMailJobEnum } from 'src/enums/name-job-enum';
+import { head } from 'axios';
 
 @Processor('email')
 export class EmailProcessor {
@@ -46,7 +47,7 @@ export class EmailProcessor {
       await this.mailerService.sendMail({
         to: email,
         subject:
-          `🚀` +
+          `🚀 ` +
           ready +
           ' ' +
           workout +
@@ -55,6 +56,7 @@ export class EmailProcessor {
           '!',
         template: 'workout-reminder',
         context: {
+          headerTitle: 'Nhắc Nhở Lịch Tập',
           fullname,
           date,
           workoutName,
@@ -108,6 +110,7 @@ export class EmailProcessor {
         subject: '🎉 ' + subject,
         template: 'register',
         context: {
+          headerTitle: 'Đăng Ký',
           welcome,
           hello,
           welcome_text,
@@ -137,7 +140,10 @@ export class EmailProcessor {
         to,
         subject,
         template,
-        context,
+        context: {
+          headerTitle: 'Phân tích tập luyện chuyên sâu',
+          ...context,
+        },
       });
       this.logger.log(`[Queue] ✅ Gửi mail thành công cho: ${to}`);
     } catch (error) {
@@ -190,6 +196,7 @@ export class EmailProcessor {
         subject: subject + ' 💪',
         template: 'workout-created',
         context: {
+          headerTitle: 'Lịch Tập Luyện',
           fullname,
           name,
           startDate,
@@ -224,7 +231,10 @@ export class EmailProcessor {
         to,
         subject,
         template,
-        context,
+        context: {
+          headerTitle: 'Báo cáo tháng',
+          ...context,
+        },
       });
       this.logger.log(`Đã gửi báo cáo tháng thành công tới: ${to}`);
     } catch (error) {

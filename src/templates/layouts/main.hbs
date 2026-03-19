@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{headerTitle}} - Workout Planner</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f3f4f6;padding:40px 10px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background-color:#4F46E5;padding:30px;text-align:center;">
+              <h1 style="color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;text-transform:uppercase;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                {{headerTitle}}
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:30px;color:#1f2937;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+              {{> @partial-block }}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+              © 2026 Workout Planner App.<br>
+              {{#if footerText}}{{footerText}}{{else}}Keep pushing your limits!{{/if}}
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -1,5 +1,4 @@
 import { Exclude } from 'class-transformer';
-import { User } from '../user/user.entity';
 import { Workout } from '../workoutplan/workoutplan.entity';
 import {
   Entity,
@@ -46,6 +45,7 @@ export class Exercise {
   videoUrl: string;
 
   @DeleteDateColumn()
+  @Exclude()
   deletedAt: Date;
 
   @ManyToOne(() => Workout, (plan) => plan.exercises, {

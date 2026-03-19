@@ -65,7 +65,7 @@ export class AuthController {
 
   @Get('/me')
   @ApiBearerAuth('accessToken')
-  @UseGuards(AuthGuard())
+  @UseGuards(AuthGuard(), OwnerMiddleware)
   getMe(@Req() req) {
     return req.user;
   }

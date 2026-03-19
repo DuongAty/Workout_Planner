@@ -39,7 +39,9 @@ export class Workout {
   estimatedCalories: number;
 
   @DeleteDateColumn()
+  @Exclude()
   deletedAt: Date;
+
   @OneToMany(() => ScheduleItem, (scheduleItem) => scheduleItem.workout, {
     cascade: true,
   })
