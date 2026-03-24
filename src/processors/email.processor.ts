@@ -242,4 +242,25 @@ export class EmailProcessor {
       throw error;
     }
   }
+
+  @Process(NameMailJobEnum.SEND_FORGET_PASSWORD_EMAIL)
+  async handleSendEmailForgotPassword(job: Job<any>) {
+    this.logger.log(`Đang xử lý gửi mail reset password cho: ${job.data.to}`);
+    try {
+      const { to, subject, template, context } = job.data;
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        template,
+        context,
+      });
+      this.logger.log(`Gửi mail thành công đến: ${to}`);
+    } catch (error) {
+      this.logger.error(
+        `Lỗi khi xử lý job gửi mail cho ${job.data.to}:`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 }

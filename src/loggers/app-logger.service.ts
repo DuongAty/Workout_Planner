@@ -69,12 +69,11 @@ export class AppLogger implements LoggerService {
       data,
     });
   }
-  error(message: string, trace?: string, data?: unknown, context?: string) {
+  error(message: string, trace?: string, context?: string) {
     const type = this.detectType(context);
     this.logger.error(message, {
       context,
       type,
-      data,
       trace,
     });
   }

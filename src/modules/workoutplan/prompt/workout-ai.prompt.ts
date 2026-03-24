@@ -212,6 +212,7 @@ Rules:
 - averageWorkoutDurationMinutes = totalDuration / totalWorkouts
 - averageExercisesPerWorkout = totalExercises / totalWorkouts
 - totalActivityHours = totalDuration / 60
+- My duration is currently in seconds when calculating, which will convert it to minutes and round it.
 
 Activity level classification:
 - low: < 2 workouts/week

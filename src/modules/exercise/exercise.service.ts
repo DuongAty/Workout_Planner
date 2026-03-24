@@ -13,11 +13,12 @@ import { User } from '../user/user.entity';
 import { PaginationDto } from '../../common/pagination/pagination.dto';
 import { WorkoutplanService } from '../workoutplan/workoutplan.service';
 import { UploadService } from '../../upload/upload.service';
-import { applyExerciseFilters } from '../../filters/exercese-filter';
 import { TransactionService } from '../../transaction/transaction';
 import { AppLogger } from 'src/loggers/app-logger.service';
+import { ExerciseFilter } from 'src/filters/exercise.filter';
+import { AbstractService } from 'src/common/pageService/page.service';
 @Injectable()
-export class ExerciseService {
+export class ExerciseService extends AbstractService<Exercise> {
   constructor(
     private workoutService: WorkoutplanService,
     @InjectRepository(Exercise)
@@ -26,6 +27,7 @@ export class ExerciseService {
     private transactionService: TransactionService,
     private logger: AppLogger,
   ) {
+    super(exerciseService);
     this.logger.setContext(ExerciseService.name);
   }
 
@@ -81,23 +83,17 @@ export class ExerciseService {
     getExerciseFilter: GetExerciseFilter,
     paginationDto: PaginationDto,
     user: User,
-  ): Promise<{ data: Exercise[]; total: number; totalPages: number }> {
-    const { page, limit } = paginationDto;
-    const skip = (page - 1) * limit;
-    const query = this.exerciseService.createQueryBuilder('exercises');
-    query
+  ) {
+    const queryBuilder = this.baseQuery('exercises', getExerciseFilter);
+    queryBuilder
       .innerJoin('exercises.workoutPlan', 'workout')
       .where('workout.userId = :userId', { userId: user.id });
-    applyExerciseFilters(query, getExerciseFilter, 'exercises');
-    query.skip(skip).take(limit);
-    const [data, total] = await query.getManyAndCount();
-    const totalPages = Math.ceil(total / limit);
-    this.logger.logData(
-      'Get all exercises',
-      { data, total, totalPages },
-      ExerciseService.name,
-    );
-    return { data, total, totalPages };
+    const filter = new ExerciseFilter(this.exerciseService);
+    filter.apply(queryBuilder, getExerciseFilter, 'exercises');
+    const result = await this.paginate(queryBuilder, paginationDto);
+    this.logger.logData('Get all exercises', result.meta, ExerciseService.name);
+
+    return result;
   }
 
   async findOneExercise(id: string, user: User): Promise<Exercise> {

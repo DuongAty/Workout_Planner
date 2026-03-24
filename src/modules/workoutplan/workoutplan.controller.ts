@@ -77,7 +77,7 @@ export class WorkoutplanController {
     @Query() getWorkoutFilter: GetWorkoutFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
-  ): Promise<{ data: Workout[]; totalPages: number }> {
+  ) {
     this.logger.logData(
       `User "${user.username}" get all workout `,
       getWorkoutFilter,

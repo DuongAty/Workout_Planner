@@ -14,7 +14,6 @@ import { PaginationDto } from '../../common/pagination/pagination.dto';
 import { UploadService } from '../../upload/upload.service';
 import { WorkoutStatus } from './workout-status';
 import { GetExerciseFilter } from '../exercise/dto/musclegroup-filter.dto';
-import { applyExerciseFilters } from '../../filters/exercese-filter';
 import { UpdateWorkoutDto } from './dto/update-name-dto';
 import { TransactionService } from '../../transaction/transaction';
 import { ScheduleItem } from './schedule-items/schedule-item.entity';
@@ -28,9 +27,11 @@ import { I18nContext } from 'nestjs-i18n';
 import { AppLogger } from 'src/loggers/app-logger.service';
 import { CreateWorkoutPlanResponse } from './responses/workout-plan.response';
 import { plainToInstance } from 'class-transformer';
+import { AbstractService } from 'src/common/pageService/page.service';
+import { ExerciseFilter } from 'src/filters/exercise.filter';
 
 @Injectable()
-export class WorkoutplanService {
+export class WorkoutplanService extends AbstractService<Workout> {
   constructor(
     @InjectRepository(Workout)
     private workoutPlanService: Repository<Workout>,
@@ -44,6 +45,7 @@ export class WorkoutplanService {
     private analyticsService: AnalyticsService,
     private logger: AppLogger,
   ) {
+    super(workoutPlanService);
     this.logger.setContext(WorkoutplanService.name);
   }
   async syncNumExercises(workoutId: string, manager?: EntityManager) {
@@ -265,49 +267,24 @@ export class WorkoutplanService {
     getWorkoutFilter: GetWorkoutFilter,
     paginationDto: PaginationDto,
     user: User,
-  ): Promise<{ data: Workout[]; total: number; totalPages: number }> {
-    const { page, limit } = paginationDto;
-    const { search, numExercises, startDate, endDate, todayOnly } =
-      getWorkoutFilter;
-    if (startDate && endDate) {
-      checkDateRange(startDate, endDate);
-    }
-    const skip = (page - 1) * limit;
-    const query = this.workoutPlanService.createQueryBuilder('workout');
-    query.leftJoinAndSelect('workout.scheduleItems', 'scheduleItems');
-    query.where({ user });
-    if (search) {
-      query.andWhere('workout.name ILIKE :search', {
-        search: `%${search}%`,
+  ) {
+    const { todayOnly, ...otherFilters } = getWorkoutFilter;
+    const queryBuilder = this.baseQuery('workout', otherFilters, ['name']);
+    queryBuilder
+      .leftJoinAndSelect('workout.scheduleItems', 'scheduleItems')
+      .andWhere('workout.userId = :userId', { userId: user.id });
+    if (todayOnly) {
+      queryBuilder.andWhere('scheduleItems.date = :today', {
+        today: todayOnly,
       });
     }
-    if (numExercises !== undefined && numExercises !== null) {
-      query.andWhere('workout.numExercises = :numExercises', { numExercises });
-    }
-    if (startDate) {
-      query.andWhere('workout.startDate >= :startDate', { startDate });
-    }
-    if (endDate) {
-      query.andWhere('workout.endDate <= :endDate', { endDate });
-    }
-    if (todayOnly) {
-      const today = new Date().toISOString().split('T')[0];
-      query.innerJoin(
-        'workout.scheduleItems',
-        'todayItem',
-        'todayItem.date = :today',
-        { today },
-      );
-    }
-    query.skip(skip).take(limit);
-    const [data, total] = await query.getManyAndCount();
-    const totalPages = Math.ceil(total / limit);
+    const result = await this.paginate(queryBuilder, paginationDto);
     this.logger.logData(
-      `User ${user.username} getAllWorkout`,
-      { data, total, totalPages },
+      'Get all workouts',
+      result.meta,
       WorkoutplanService.name,
     );
-    return { data, total, totalPages };
+    return result;
   }
 
   async findOneWorkout(
@@ -513,11 +490,12 @@ export class WorkoutplanService {
   }
 
   private buildExerciseQuery(workoutId: string, filters: GetExerciseFilter) {
-    const query = this.exerciseService
+    const qb = this.exerciseService
       .createQueryBuilder('exercise')
       .where('exercise.workoutId = :workoutId', { workoutId });
-    applyExerciseFilters(query, filters, 'exercise');
-    return query;
+    const filter = new ExerciseFilter(this.exerciseService);
+    filter.apply(qb, filters, 'exercise');
+    return qb;
   }
 
   async getExercisesByWorkoutId(
@@ -525,13 +503,12 @@ export class WorkoutplanService {
     user: User,
     filters: GetExerciseFilter,
   ): Promise<Workout> {
-    return await this.transactionService.run<Workout>(async () => {
+    return this.transactionService.run(async () => {
       const workout = await this.findOneWorkout(id, user, ['scheduleItems']);
       workout.exercises = await this.buildExerciseQuery(id, filters).getMany();
       return workout;
     });
   }
-
   async generateFromChat(message: string) {
     const lang = I18nContext.current()?.lang || 'vi';
     const prompt = workoutAIPrompt(message, lang);

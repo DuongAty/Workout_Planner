@@ -11,4 +11,5 @@ export enum NameMailJobEnum {
   SEND_ANALYSIS_EMAIL = 'send-analysis-email',
   SEND_WORKOUT_ANALYSIS = 'send-workout-analysis',
   SEND_WORKOUT_MONTHLY = 'send-workout-monthly',
+  SEND_FORGET_PASSWORD_EMAIL = 'send-forget-password-email',
 }

@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class GetWorkoutFilter {
   @ApiProperty({
     required: false,
-    description: 'Search',
+    description: 'Search workout name',
   })
   @IsOptional()
   @IsString()
@@ -12,14 +13,16 @@ export class GetWorkoutFilter {
 
   @ApiProperty({
     required: false,
-    description: 'Number of Exercises',
+    description: 'Number of exercises',
   })
   @IsOptional()
-  numExercises?: string;
+  @Type(() => Number)
+  @IsNumber()
+  numExercises?: number;
 
   @ApiProperty({
     required: false,
-    description: 'Filter by start date (YYYY-MM-DD)',
+    description: 'Start date filter',
   })
   @IsOptional()
   @IsString()
@@ -27,7 +30,7 @@ export class GetWorkoutFilter {
 
   @ApiProperty({
     required: false,
-    description: 'Filter by end date (YYYY-MM-DD)',
+    description: 'End date filter',
   })
   @IsOptional()
   @IsString()
@@ -35,7 +38,7 @@ export class GetWorkoutFilter {
 
   @ApiProperty({
     required: false,
-    description: 'Filter by end date (YYYY-MM-DD)',
+    description: 'Only today workout',
   })
   @IsOptional()
   @IsString()

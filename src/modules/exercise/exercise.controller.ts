@@ -40,7 +40,9 @@ export class ExerciseController {
     private readonly exerciseService: ExerciseService,
     private uploadService: UploadService,
     private logger: AppLogger,
-  ) {this.logger.setContext(ExerciseController.name); }
+  ) {
+    this.logger.setContext(ExerciseController.name);
+  }
 
   @Post(':id/upload')
   @ApiBearerAuth('accessToken')
@@ -122,7 +124,7 @@ export class ExerciseController {
     @Query() getExerciseFilter: GetExerciseFilter,
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User,
-  ): Promise<{ data: Exercise[]; totalPages: number }> {
+  ) {
     this.logger.logData(
       `User "${user.username}" get all exercise`,
       getExerciseFilter,

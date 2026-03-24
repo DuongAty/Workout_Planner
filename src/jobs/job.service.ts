@@ -114,4 +114,16 @@ export class JobService {
       removeOnComplete: true,
     });
   }
+
+  async addSendEmailForgetPasswordJob(data: any) {
+    return this.emailQueue.add(
+      NameMailJobEnum.SEND_FORGET_PASSWORD_EMAIL,
+      data,
+      {
+        attempts: JobEnum.ATTEMPTS,
+        backoff: JobEnum.BACKOFF,
+        removeOnComplete: true,
+      },
+    );
+  }
 }

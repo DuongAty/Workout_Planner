@@ -32,6 +32,7 @@ import {
 } from './dto/change-password.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import { AppLogger } from 'src/loggers/app-logger.service';
+import { JobService } from 'src/jobs/job.service';
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -43,6 +44,7 @@ export class AuthService {
     private redisService: RedisService,
     private mailService: MailerService,
     private logger: AppLogger,
+    private jobService: JobService,
   ) {
     const redirectUri = `${this.configService.get('FRONTEND_URL')}/auth/google/callback`;
     this.googleClient = new OAuth2Client(
@@ -262,7 +264,7 @@ export class AuthService {
     await this.usersRepository.saveResetToken(user.id, token, expiresAt);
     const resetLink = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
     try {
-      await this.mailService.sendMail({
+      await this.jobService.addSendEmailForgetPasswordJob({
         to: user.email,
         subject: 'Đặt lại mật khẩu - Workout App',
         template: 'forgot-password',
@@ -276,10 +278,18 @@ export class AuthService {
           link: resetLink,
         },
       });
+      this.logger.logData(
+        'User forgot password - Mail queued',
+        user.email,
+        AuthService.name,
+      );
     } catch (error) {
-      console.log('❌ Lỗi gửi email forgot-password:', error.message);
-      console.log('Stack:', error.stack);
-      throw error; // giữ lại để FE nhận 500
+      this.logger.error(
+        '❌ Lỗi gửi email forgot-password:',
+        error,
+        AuthService.name,
+      );
+      throw error;
     }
     this.logger.logData(
       'User forgot password',

@@ -1,11 +1,11 @@
 import {
+  CallHandler,
+  ExecutionContext,
   Injectable,
   NestInterceptor,
-  ExecutionContext,
-  CallHandler,
 } from '@nestjs/common';
 import { instanceToPlain } from 'class-transformer';
-import { map } from 'rxjs/operators';
+import { map } from 'rxjs';
 
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor {
@@ -15,6 +15,14 @@ export class TransformInterceptor<T> implements NestInterceptor {
 
     return next.handle().pipe(
       map((res) => {
+        if (res && res.data && res.meta) {
+          return {
+            statusCode,
+            message: res.message || 'Suscess',
+            data: instanceToPlain(res.data),
+            meta: res.meta,
+          };
+        }
         if (
           res &&
           res.data &&
@@ -23,7 +31,7 @@ export class TransformInterceptor<T> implements NestInterceptor {
           return {
             statusCode,
             message: res.message || 'Suscess',
-            data: instanceToPlain(res.data !== undefined ? res.data : res),
+            data: instanceToPlain(res.data),
             meta: {
               total: res.total,
               totalPages: res.totalPages,
@@ -31,10 +39,12 @@ export class TransformInterceptor<T> implements NestInterceptor {
             },
           };
         }
+
+        // 3. Trường hợp trả về data thông thường
         return {
           statusCode,
           message: res?.message || 'Suscess',
-          data: res?.data !== undefined ? res.data : res,
+          data: instanceToPlain(res?.data !== undefined ? res.data : res),
         };
       }),
     );
